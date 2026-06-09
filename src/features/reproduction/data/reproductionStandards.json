@@ -1,0 +1,9 @@
+{
+  "gestationPeriodDays": 114,
+  "stages": {
+    "monta": "Inseminación o monta natural",
+    "confirmacion": "Diagnóstico de gestación (25-30 días)",
+    "maternidad": "Traslado a sala de maternidad (110 días)",
+    "parto": "Atención del parto (114 días)"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "units": {
+    "alimento": "kg",
+    "vacunas": "dosis",
+    "medicamentos": "ml",
+    "limpieza": "litros"
+  },
+  "minStockThresholds": {
+    "alimento": 500,
+    "vacunas": 50,
+    "medicamentos": 100,
+    "limpieza": 20
+  }
+}

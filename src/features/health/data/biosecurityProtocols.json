@@ -1,0 +1,5 @@
+[
+  { "id": 1, "name": "Desinfección de Calzado", "frequency": "Diario en entrada", "required": true },
+  { "id": 2, "name": "Control de Plagas", "frequency": "Mensual", "required": true },
+  { "id": 3, "name": "Limpieza de Parideras", "frequency": "Post-destete", "required": true }
+]

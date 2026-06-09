@@ -1,0 +1,11 @@
+{
+  "targetWeeklyGainKg": 5.5,
+  "weeklyWeights": [
+    { "week": 1, "targetKg": 1.5 },
+    { "week": 4, "targetKg": 6.5 },
+    { "week": 8, "targetKg": 22.0 },
+    { "week": 12, "targetKg": 50.0 },
+    { "week": 16, "targetKg": 85.0 },
+    { "week": 20, "targetKg": 110.0 }
+  ]
+}

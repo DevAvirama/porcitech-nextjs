@@ -1,0 +1,8 @@
+{
+  "normalTemperatureRange": { "min": 38.5, "max": 39.5, "unit": "°C" },
+  "criticalSymptons": ["tos", "inapetencia", "diarrea", "manchas púrpuras"],
+  "standardVaccines": [
+    { "name": "Triple Porcina", "ageWeeks": 4 },
+    { "name": "Parvovirus/Erisipela", "ageWeeks": 20 }
+  ]
+}
