@@ -4,7 +4,7 @@ import Image from "next/image";
 export default function BrandMark({ className = "" }) {
   return (
     <Link href="/" className={`flex items-center gap-3 ${className}`}>
-      <div className="relative w-8 h-8 rounded-lg overflow-hidden bg-rose-500/10 flex items-center justify-center border border-rose-500/20">
+      <div className="relative w-8 h-8 rounded-lg overflow-hidden bg-sena-green/10 flex items-center justify-center border border-sena-green/20">
         <Image
           src="/assets/SENA.png"
           alt="SENA Logo"
@@ -14,7 +14,7 @@ export default function BrandMark({ className = "" }) {
         />
       </div>
       <span className="font-bold tracking-tight text-white text-base">
-        Sistema Integral <span className="text-rose-500">Porcino</span>
+        Sistema Integral <span className="text-sena-green">Porcino</span>
       </span>
     </Link>
   );

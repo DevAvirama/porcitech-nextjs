@@ -33,7 +33,7 @@ export default function DashboardSidebar() {
               href={item.path}
               className={`flex items-center px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
                 isActive
-                  ? "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+                  ? "bg-sena-green/10 text-sena-green border border-sena-green/20"
                   : "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200 border border-transparent"
               }`}
             >

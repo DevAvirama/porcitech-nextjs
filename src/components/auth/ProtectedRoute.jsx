@@ -20,13 +20,14 @@ export default function ProtectedRoute({ children, allowedRoles }) {
       return;
     }
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setAuthorized(true);
   }, [router, allowedRoles]);
 
   if (!authorized) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#09090b]">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-rose-500 border-t-transparent"></div>
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-sena-green border-t-transparent"></div>
       </div>
     );
   }
