@@ -13,7 +13,7 @@ export default function LoginShowcase() {
       />
 
       <div className="relative z-20">
-        <span className="text-xs font-semibold uppercase tracking-wider text-rose-400">
+        <span className="text-xs font-semibold uppercase tracking-wider text-sena-green">
           SISTEMA INTEGRAL PORCINO
         </span>
       </div>

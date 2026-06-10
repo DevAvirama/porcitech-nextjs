@@ -26,7 +26,7 @@ export default function FeedingView() {
               <td className="px-4 py-3.5 font-medium text-white">{rat.lot}</td>
               <td className="px-4 py-3.5">{rat.stage}</td>
               <td className="px-4 py-3.5">{rat.type}</td>
-              <td className="px-4 py-3.5 font-semibold text-rose-400">{rat.ration}</td>
+              <td className="px-4 py-3.5 font-semibold text-sena-green">{rat.ration}</td>
               <td className="px-4 py-3.5 text-zinc-400 text-xs">{rat.next}</td>
             </tr>
           ))}

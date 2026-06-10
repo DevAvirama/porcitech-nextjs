@@ -21,7 +21,7 @@ export default function ReportsView() {
         {reportsList.map((rep, idx) => (
           <Card key={idx} className="flex flex-col justify-between space-y-4">
             <div className="space-y-2">
-              <span className="text-[10px] font-bold text-rose-400 uppercase tracking-wider">{rep.type}</span>
+              <span className="text-[10px] font-bold text-sena-green uppercase tracking-wider">{rep.type}</span>
               <h3 className="text-base font-bold text-white">{rep.title}</h3>
               <p className="text-xs text-zinc-400 leading-relaxed">{rep.desc}</p>
             </div>

@@ -2,7 +2,7 @@ import Card from "@/components/ui/Card";
 
 export default function StatsGrid() {
   const stats = [
-    { label: "Población Activa", value: "320 cabezas", change: "+12% este mes", color: "text-rose-400" },
+    { label: "Población Activa", value: "320 cabezas", change: "+12% este mes", color: "text-sena-green" },
     { label: "Consumo Alimento", value: "4.2 ton", change: "Semana actual", color: "text-indigo-400" },
     { label: "Índice de Conversión", value: "2.4 FCR", change: "Meta: 2.2", color: "text-emerald-400" },
     { label: "Alertas Sanitarias", value: "0 activas", change: "Estado óptimo", color: "text-amber-400" },

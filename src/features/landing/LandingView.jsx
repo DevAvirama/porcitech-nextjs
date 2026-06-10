@@ -16,8 +16,8 @@ export default function LandingView() {
 
         <div className="relative z-10 max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <div className="space-y-8 text-left">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-rose-500/20 bg-rose-500/10 text-rose-400 text-xs font-semibold animate-pulse">
-              <span className="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-sena-green/20 bg-sena-green/10 text-sena-green text-xs font-semibold animate-pulse">
+              <span className="w-1.5 h-1.5 rounded-full bg-sena-green"></span>
               Plataforma Institucional SENA
             </div>
             
@@ -32,7 +32,7 @@ export default function LandingView() {
             <div className="flex gap-4">
               <Link
                 href="/login"
-                className="px-6 py-3 rounded-lg bg-rose-600 hover:bg-rose-500 text-sm font-semibold text-white shadow-md shadow-rose-600/10 transition-all"
+                className="px-6 py-3 rounded-lg bg-sena-green hover:bg-[#2c8300] text-sm font-semibold text-white shadow-md shadow-sena-green/10 transition-all"
               >
                 Ingresar al Sistema
               </Link>

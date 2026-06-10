@@ -12,7 +12,7 @@ export default function PublicHeader() {
           </Link>
           <Link
             href="/login"
-            className="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-sm font-semibold text-white transition-colors"
+            className="px-4 py-2 rounded-lg bg-sena-green hover:bg-[#2c8300] text-sm font-semibold text-white transition-colors"
           >
             Acceder al Sistema
           </Link>

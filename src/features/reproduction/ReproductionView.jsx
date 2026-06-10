@@ -38,7 +38,7 @@ export default function ReproductionView() {
                     {cyc.status}
                   </span>
                 </td>
-                <td className="px-4 py-3.5 font-semibold text-rose-400">{cyc.expected}</td>
+                <td className="px-4 py-3.5 font-semibold text-sena-green">{cyc.expected}</td>
                 <td className="px-4 py-3.5 text-zinc-500 text-xs">Período: {reproductionStandards.gestationPeriodDays} días</td>
               </tr>
             ))}
@@ -50,7 +50,7 @@ export default function ReproductionView() {
           <div className="space-y-3">
             {Object.entries(reproductionStandards.stages).map(([key, desc], idx) => (
               <div key={idx} className="p-3 rounded bg-zinc-900/40 text-xs border border-zinc-900 space-y-1">
-                <span className="font-bold text-rose-400 capitalize">{key}</span>
+                <span className="font-bold text-sena-green capitalize">{key}</span>
                 <p className="text-zinc-300 leading-relaxed">{desc}</p>
               </div>
             ))}

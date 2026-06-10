@@ -47,7 +47,7 @@ export default function AnimalProfileView() {
             </div>
             <div>
               <span className="text-xs text-zinc-500 block">Peso Actual</span>
-              <span className="text-rose-400 font-semibold">{profile.weight} kg</span>
+              <span className="text-sena-green font-semibold">{profile.weight} kg</span>
             </div>
             <div>
               <span className="text-xs text-zinc-500 block">Estado Actual</span>

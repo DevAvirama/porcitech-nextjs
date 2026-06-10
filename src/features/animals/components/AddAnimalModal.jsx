@@ -7,7 +7,7 @@ export default function AddAnimalModal({ isOpen, onClose }) {
         <p className="text-zinc-400 text-sm mb-6">Formulario base para registrar datos biológicos del animal.</p>
         <div className="flex justify-end gap-3">
           <button onClick={onClose} className="px-4 py-2 text-zinc-400 hover:text-white text-sm">Cancelar</button>
-          <button className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white text-sm font-semibold rounded-lg">Guardar</button>
+          <button className="px-4 py-2 bg-sena-green hover:bg-[#2c8300] text-white text-sm font-semibold rounded-lg">Guardar</button>
         </div>
       </div>
     </div>

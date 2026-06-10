@@ -14,7 +14,7 @@ export default function BiosecurityView() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {protocols.map((protocol) => (
           <Card key={protocol.id} className="space-y-4">
-            <span className="text-xs font-semibold text-rose-400 uppercase tracking-wider">
+            <span className="text-xs font-semibold text-sena-green uppercase tracking-wider">
               {protocol.required ? "Requerido" : "Opcional"}
             </span>
             <h3 className="text-lg font-bold text-white">{protocol.name}</h3>

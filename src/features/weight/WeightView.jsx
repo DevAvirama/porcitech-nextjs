@@ -21,7 +21,7 @@ export default function WeightView() {
             {weightStandards.weeklyWeights.map((w, idx) => (
               <tr key={idx} className="hover:bg-zinc-900/40 transition-colors">
                 <td className="px-4 py-3.5 font-medium text-white">Semana {w.week}</td>
-                <td className="px-4 py-3.5 text-rose-400 font-semibold">{w.targetKg} kg</td>
+                <td className="px-4 py-3.5 text-sena-green font-semibold">{w.targetKg} kg</td>
                 <td className="px-4 py-3.5 text-zinc-400 text-xs">+{weightStandards.targetWeeklyGainKg} kg/sem promedio</td>
               </tr>
             ))}
