@@ -2,9 +2,24 @@ const USER_KEY = "sigep_user";
 const TOKEN_KEY = "sigep_token";
 
 const MOCK_USERS = [
-  { email: "admin@sigep.com", password: "admin123", role: "administrador", name: "Administrador" },
-  { email: "vet@sigep.com", password: "vet123", role: "veterinario", name: "Veterinario" },
-  { email: "operario@sigep.com", password: "ope123", role: "operativo", name: "Operario" },
+  {
+    email: "admin@sigep.com",
+    password: "admin123",
+    role: "administrador",
+    name: "Administrador",
+  },
+  {
+    email: "vet@sigep.com",
+    password: "vet123",
+    role: "veterinario",
+    name: "Veterinario",
+  },
+  {
+    email: "operario@sigep.com",
+    password: "ope123",
+    role: "operativo",
+    name: "Operario",
+  },
 ];
 
 const mapRole = (role) => {
@@ -17,7 +32,7 @@ const authService = {
   login: async (email, password) => {
     // Check against standard mock users from React project
     const matchedUser = MOCK_USERS.find(
-      (u) => u.email === email && u.password === password
+      (u) => u.email === email && u.password === password,
     );
 
     if (matchedUser) {
@@ -35,11 +50,23 @@ const authService = {
     }
 
     // Support test logins for dev using sena.edu.co or general emails
-    if (email && password && (email.includes("@sena.edu.co") || email.includes("@gmail.com") || email.includes("demo"))) {
-      const isTeacherOrAdmin = email.includes("admin") || email.includes("instructor");
-      const isOperator = email.includes("operario") || email.includes("operativo");
-      
-      const role = isTeacherOrAdmin ? "admin" : isOperator ? "operario" : "veterinario";
+    if (
+      email &&
+      password &&
+      (email.includes("@sena.edu.co") ||
+        email.includes("@gmail.com") ||
+        email.includes("demo"))
+    ) {
+      const isTeacherOrAdmin =
+        email.includes("admin") || email.includes("instructor");
+      const isOperator =
+        email.includes("operario") || email.includes("operativo");
+
+      const role = isTeacherOrAdmin
+        ? "admin"
+        : isOperator
+          ? "operario"
+          : "veterinario";
       const userInfo = {
         email,
         role,
@@ -82,7 +109,10 @@ const authService = {
 
 // Named exports for compatibility with React codebase patterns
 export async function signIn(credentials) {
-  const success = await authService.login(credentials.email, credentials.password);
+  const success = await authService.login(
+    credentials.email,
+    credentials.password,
+  );
   if (success) {
     return { ok: true, user: authService.getCurrentUser() };
   }
