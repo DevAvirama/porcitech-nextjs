@@ -16,6 +16,9 @@ export default function ProtectedRoute({ children, allowedRoles }) {
     }
 
     if (allowedRoles && !allowedRoles.includes(user.role)) {
+      alert(
+        "Acceso Denegado: Tu rol no tiene permisos para acceder a esta área.",
+      );
       router.push("/dashboard");
       return;
     }
@@ -26,9 +29,9 @@ export default function ProtectedRoute({ children, allowedRoles }) {
 
   if (!authorized) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#09090b]">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-sena-green border-t-transparent"></div>
-      </div>
+      <section className="flex min-h-screen items-center justify-center bg-[#09090b]">
+        <article className="h-8 w-8 animate-spin rounded-full border-2 border-sena-green border-t-transparent"></article>
+      </section>
     );
   }
 
