@@ -12,3 +12,8 @@ export function formatDate(dateString) {
     day: "numeric",
   });
 }
+
+export function formatCount(value) {
+  if (value === undefined || value === null) return "0";
+  return new Intl.NumberFormat("es-CO").format(value);
+}
