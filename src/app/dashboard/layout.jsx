@@ -2,11 +2,13 @@ import DashboardSidebar from "@/components/layout/DashboardSidebar";
 
 export default function DashboardLayout({ children }) {
   return (
-    <div className="min-h-screen flex bg-[#09090b]">
-      <DashboardSidebar />
-      <main className="flex-1 p-6 md:p-8 overflow-y-auto">
-        {children}
-      </main>
-    </div>
+    <main className="min-h-screen bg-slate-100 text-slate-900">
+      <div className="mx-auto flex min-h-screen w-full flex-col xl:flex-row">
+        <DashboardSidebar />
+        <section className="flex-1 px-6 py-8 lg:px-10 overflow-y-auto">
+          {children}
+        </section>
+      </div>
+    </main>
   );
 }

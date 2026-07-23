@@ -1,23 +1,30 @@
-import Link from "next/link";
-import BrandMark from "../BrandMark";
+import Link from 'next/link'
+import BrandMark from '../BrandMark.jsx'
+import Button from '../ui/Button.jsx'
 
 export default function PublicHeader() {
   return (
-    <header className="w-full bg-[#09090b]/80 backdrop-blur-md border-b border-zinc-900 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+    <header className="sticky top-0 z-20 border-b border-white/50 bg-white/70 backdrop-blur-xl">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 lg:px-10">
         <BrandMark />
-        <nav className="flex items-center gap-6">
-          <Link href="/login" className="text-sm font-semibold text-zinc-300 hover:text-white transition-colors">
-            Iniciar Sesión
-          </Link>
-          <Link
-            href="/login"
-            className="px-4 py-2 rounded-lg bg-sena-green hover:bg-[#2c8300] text-sm font-semibold text-white transition-colors"
-          >
-            Acceder al Sistema
-          </Link>
+        <nav className="hidden items-center gap-8 text-sm font-semibold text-slate-500 md:flex">
+          <a href="#inicio" className="transition hover:text-slate-950">
+            Inicio
+          </a>
+          <a href="#caracteristicas" className="transition hover:text-slate-950">
+            Caracteristicas
+          </a>
+          <a href="#impacto" className="transition hover:text-slate-950">
+            Impacto
+          </a>
         </nav>
+         <Link href="/login">
+          <Button className="rounded-full px-8 py-2 text-sm">
+            Acceder
+          </Button>
+        </Link>
       </div>
     </header>
-  );
+  )
 }
+
