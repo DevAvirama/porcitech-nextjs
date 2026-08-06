@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { toast } from "sonner";
 
 const AddAnimalModal = ({ isOpen, onClose, onSave }) => {
   const [form, setForm] = useState({
@@ -16,6 +17,7 @@ const AddAnimalModal = ({ isOpen, onClose, onSave }) => {
     // Generar un ID único ficticio para el nuevo animal
     const generatedId = `2026-${Math.floor(100 + Math.random() * 900)}`;
     onSave({ ...form, id: generatedId });
+    toast.success("Animal registrado correctamente");
     onClose();
     setForm({ id: "", raza: "Duroc", edad: "", lote: "", estado: "SALUDABLE" });
   };

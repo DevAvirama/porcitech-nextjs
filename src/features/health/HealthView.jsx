@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Syringe,
   ShieldCheck,
@@ -11,38 +11,58 @@ import {
   Pencil,
   Trash2,
 } from "lucide-react";
+import { toast } from "sonner";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import ModuleHeader from "@/components/layout/ModuleHeader";
 import AddHealthRecordModal from "./components/AddHealthRecordModal";
 
 const HealthView = () => {
-  const [records, setRecords] = useState([
-    {
-      id: "2026-X1",
-      type: "vacuna",
-      producto: "Peste Porcina Clásica",
-      lote: "Lote B-24 / C-01",
-      fecha: "Oct 24, 2023",
-      estado: "APLICADA",
-    },
-    {
-      id: "2026-X8",
-      type: "tratamiento",
-      producto: "Complejo B Forte",
-      lote: "Lote A-12 / C-05",
-      fecha: "Oct 25, 2023",
-      estado: "EN CURSO",
-    },
-    {
-      id: "2026-Y4",
-      type: "vacuna",
-      producto: "Circovirus Porcino",
-      lote: "Lote C-02 / C-02",
-      fecha: "Oct 28, 2023",
-      estado: "PENDIENTE",
-    },
-  ]);
+  const [records, setRecords] = useState([]);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("sip_health_records");
+    if (stored) {
+      setRecords(JSON.parse(stored));
+    } else {
+      const defaultRecords = [
+        {
+          id: "2026-X1",
+          type: "vacuna",
+          producto: "Peste Porcina Clásica",
+          lote: "Lote B-24 / C-01",
+          fecha: "Oct 24, 2023",
+          estado: "APLICADA",
+        },
+        {
+          id: "2026-X8",
+          type: "tratamiento",
+          producto: "Complejo B Forte",
+          lote: "Lote A-12 / C-05",
+          fecha: "Oct 25, 2023",
+          estado: "EN CURSO",
+        },
+        {
+          id: "2026-Y4",
+          type: "vacuna",
+          producto: "Circovirus Porcino",
+          lote: "Lote C-02 / C-02",
+          fecha: "Oct 28, 2023",
+          estado: "PENDIENTE",
+        },
+      ];
+      setRecords(defaultRecords);
+      localStorage.setItem("sip_health_records", JSON.stringify(defaultRecords));
+    }
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (isMounted) {
+      localStorage.setItem("sip_health_records", JSON.stringify(records));
+    }
+  }, [records, isMounted]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [filter, setFilter] = useState("Todos");
@@ -70,6 +90,7 @@ const HealthView = () => {
   const handleDelete = (id) => {
     if (window.confirm("¿Estás seguro de eliminar este registro sanitario?")) {
       setRecords(records.filter((r) => r.id !== id));
+      toast.success("Registro sanitario eliminado");
     }
   };
 

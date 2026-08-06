@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Search,
   Filter,
@@ -10,6 +10,7 @@ import {
   Layers,
   Tag,
 } from "lucide-react";
+import { toast } from "sonner";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import Table from "@/components/ui/Table";
@@ -85,24 +86,81 @@ const Badge = ({ children, colorTheme }) => {
 
 const InventoryView = () => {
   const router = useRouter();
-  const [inventory, setInventory] = useState(initialInventory);
+  const [inventory, setInventory] = useState([]);
+  const [isMounted, setIsMounted] = useState(false);
+  
   const [searchTerm, setSearchTerm] = useState("");
   const [filterEtapa, setFilterEtapa] = useState("");
   const [filterSalud, setFilterSalud] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedRaza, setSelectedRaza] = useState("");
+  const [customRaza, setCustomRaza] = useState("");
+  
+  // Controlled modal inputs
+  const [formId, setFormId] = useState("");
+  const [formSexo, setFormSexo] = useState("Macho");
+  const [formPeso, setFormPeso] = useState("");
+
+  useEffect(() => {
+    const stored = localStorage.getItem("sip_inventory");
+    if (stored) {
+      setInventory(JSON.parse(stored));
+    } else {
+      setInventory(initialInventory);
+      localStorage.setItem("sip_inventory", JSON.stringify(initialInventory));
+    }
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (isMounted) {
+      localStorage.setItem("sip_inventory", JSON.stringify(inventory));
+    }
+  }, [inventory, isMounted]);
 
   const handleAddAnimal = () => {
+    if (!formId.trim()) {
+      toast.error("El ID del animal es requerido");
+      return;
+    }
+    const finalRaza = selectedRaza === "Otra" ? customRaza : selectedRaza;
+    if (!finalRaza) {
+      toast.error("La raza del animal es requerida");
+      return;
+    }
+    const pesoNum = parseFloat(formPeso);
+    if (isNaN(pesoNum) || pesoNum <= 0) {
+      toast.error("El peso inicial debe ser un número mayor a 0");
+      return;
+    }
+
+    // Validar ID duplicado
+    const exists = inventory.some((a) => a.id.toLowerCase() === formId.trim().toLowerCase());
+    if (exists) {
+      toast.error("Ya existe un animal registrado con este ID");
+      return;
+    }
+
     const newAnimal = {
-      id: `N-${Math.floor(Math.random() * 1000)}`,
-      raza: selectedRaza || "Cruce",
-      sexo: "Macho",
+      id: formId.trim(),
+      raza: finalRaza,
+      sexo: formSexo,
       etapa: "lactancia",
-      ultimoPeso: 1.5,
+      ultimoPeso: pesoNum,
       estadoSalud: "Óptimo",
     };
+
     setInventory([newAnimal, ...inventory]);
     setIsModalOpen(false);
+
+    // Reset forms
+    setFormId("");
+    setSelectedRaza("");
+    setCustomRaza("");
+    setFormSexo("Macho");
+    setFormPeso("");
+
+    toast.success("Animal registrado en el inventario");
   };
 
   const filteredInventory = inventory.filter((animal) => {
@@ -178,7 +236,7 @@ const InventoryView = () => {
       render: (row) => (
         <Button
           tone="soft"
-          className="px-3! py-1.5! text-xs flex items-center gap-1.5 font-bold rounded-lg hover:bg-slate-200 text-slate-650 text-slate-600 border border-slate-250 border-slate-200 shadow-sm cursor-pointer"
+          className="px-3! py-1.5! text-xs flex items-center gap-1.5 font-bold rounded-lg hover:bg-slate-200 text-slate-600 border border-slate-200 shadow-sm cursor-pointer"
           onClick={() =>
             router.push(`/dashboard/inventory/profile?id=${row.id}`)
           }
@@ -212,7 +270,7 @@ const InventoryView = () => {
       <Card className="rounded-4xl! p-5 flex flex-col md:flex-row gap-5 items-end bg-white border border-slate-100 shadow-sm">
         <div className="w-full md:w-1/3">
           <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-            <Search size={14} className="text-indigo-450 text-indigo-400" />{" "}
+            <Search size={14} className="text-indigo-400" />{" "}
             Buscar ID
           </label>
           <Input
@@ -231,7 +289,7 @@ const InventoryView = () => {
             <select
               value={filterEtapa}
               onChange={(e) => setFilterEtapa(e.target.value)}
-              className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-semibold focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all shadow-sm appearance-none cursor-pointer font-semibold"
+              className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-semibold focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all shadow-sm appearance-none cursor-pointer"
             >
               <option value="">Todas las Etapas</option>
               {inventoryConstants.etapas.map((etapa) => (
@@ -254,7 +312,7 @@ const InventoryView = () => {
             <select
               value={filterSalud}
               onChange={(e) => setFilterSalud(e.target.value)}
-              className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-semibold focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all shadow-sm appearance-none cursor-pointer font-semibold"
+              className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-semibold focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all shadow-sm appearance-none cursor-pointer"
             >
               <option value="">Todos los Estados</option>
               {inventoryConstants.estados_salud.map((estado) => (
@@ -294,6 +352,10 @@ const InventoryView = () => {
         <div className="fixed inset-0 z-100 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 text-slate-900">
           <Card
             as="form"
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleAddAnimal();
+            }}
             className="w-full max-w-lg p-8! rounded-[2.5rem]! shadow-2xl relative border border-slate-100 bg-white"
           >
             <button
@@ -311,7 +373,13 @@ const InventoryView = () => {
             </h2>
 
             <div className="grid grid-cols-2 gap-5">
-              <Input label="ID Animal" placeholder="Ej: L-045" required />
+              <Input
+                label="ID Animal"
+                placeholder="Ej: L-045"
+                required
+                value={formId}
+                onChange={(e) => setFormId(e.target.value)}
+              />
               <div className="space-y-2">
                 <label className="text-sm font-bold text-slate-700">Raza</label>
                 <div className="space-y-3">
@@ -319,7 +387,7 @@ const InventoryView = () => {
                     <select
                       value={selectedRaza}
                       onChange={(e) => setSelectedRaza(e.target.value)}
-                      className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-55 bg-slate-50 outline-none font-medium text-slate-700 focus:ring-2 focus:ring-indigo-500 appearance-none cursor-pointer"
+                      className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50 outline-none font-medium text-slate-700 focus:ring-2 focus:ring-indigo-500 appearance-none cursor-pointer"
                     >
                       <option value="">Seleccione una raza</option>
                       {inventoryConstants.razas.map((r) => (
@@ -338,6 +406,8 @@ const InventoryView = () => {
                     <input
                       type="text"
                       placeholder="Ingrese la nueva raza"
+                      value={customRaza}
+                      onChange={(e) => setCustomRaza(e.target.value)}
                       className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50 outline-none font-medium text-slate-700 focus:ring-2 focus:ring-indigo-500"
                     />
                   )}
@@ -346,7 +416,11 @@ const InventoryView = () => {
               <div className="space-y-2">
                 <label className="text-sm font-bold text-slate-700">Sexo</label>
                 <div className="relative">
-                  <select className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 outline-none font-medium text-slate-700 focus:ring-2 focus:ring-indigo-500 appearance-none cursor-pointer">
+                  <select
+                    value={formSexo}
+                    onChange={(e) => setFormSexo(e.target.value)}
+                    className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-55 bg-slate-50 outline-none font-medium text-slate-700 focus:ring-2 focus:ring-indigo-500 appearance-none cursor-pointer"
+                  >
                     <option value="Macho">Macho</option>
                     <option value="Hembra">Hembra</option>
                   </select>
@@ -361,6 +435,8 @@ const InventoryView = () => {
                 step="0.1"
                 placeholder="Ej: 1.5"
                 required
+                value={formPeso}
+                onChange={(e) => setFormPeso(e.target.value)}
               />
             </div>
 
@@ -374,8 +450,7 @@ const InventoryView = () => {
                 Cancelar
               </Button>
               <Button
-                type="button"
-                onClick={handleAddAnimal}
+                type="submit"
                 tone="secondary"
                 className="flex-1 font-black rounded-xl!"
               >

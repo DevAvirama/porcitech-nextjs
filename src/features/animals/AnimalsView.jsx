@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { toast } from "sonner";
 import AnimalTable from "./components/AnimalTable";
 import AddAnimalModal from "./components/AddAnimalModal";
 import Card from "@/components/ui/Card";
@@ -8,25 +9,49 @@ import Button from "@/components/ui/Button";
 import ModuleHeader from "@/components/layout/ModuleHeader";
 
 const AnimalsView = () => {
-  const [animals, setAnimals] = useState([
-    {
-      id: "2024-001",
-      raza: "Duroc",
-      edad: 5,
-      lote: "Lote #42",
-      estado: "SALUDABLE",
-    },
-    {
-      id: "2024-042",
-      raza: "Landrace",
-      edad: 6,
-      lote: "Lote #15",
-      estado: "OBSERVACIÓN",
-    },
-  ]);
+  const [animals, setAnimals] = useState([]);
   const [trash, setTrash] = useState([]);
+  const [isMounted, setIsMounted] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+
+  useEffect(() => {
+    const storedAnimals = localStorage.getItem("sip_animals");
+    const storedTrash = localStorage.getItem("sip_animals_trash");
+    if (storedAnimals) {
+      setAnimals(JSON.parse(storedAnimals));
+    } else {
+      const defaultAnimals = [
+        {
+          id: "2024-001",
+          raza: "Duroc",
+          edad: 5,
+          lote: "Lote #42",
+          estado: "SALUDABLE",
+        },
+        {
+          id: "2024-042",
+          raza: "Landrace",
+          edad: 6,
+          lote: "Lote #15",
+          estado: "OBSERVACIÓN",
+        },
+      ];
+      setAnimals(defaultAnimals);
+      localStorage.setItem("sip_animals", JSON.stringify(defaultAnimals));
+    }
+    if (storedTrash) {
+      setTrash(JSON.parse(storedTrash));
+    }
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (isMounted) {
+      localStorage.setItem("sip_animals", JSON.stringify(animals));
+      localStorage.setItem("sip_animals_trash", JSON.stringify(trash));
+    }
+  }, [animals, trash, isMounted]);
 
   const handleSave = (newAnimal) => {
     setAnimals([...animals, { ...newAnimal }]);
@@ -35,15 +60,21 @@ const AnimalsView = () => {
   // Mover a papelera
   const moveToTrash = (id) => {
     const animal = animals.find((a) => a.id === id);
-    setTrash([...trash, animal]);
-    setAnimals(animals.filter((a) => a.id !== id));
+    if (animal) {
+      setTrash([...trash, animal]);
+      setAnimals(animals.filter((a) => a.id !== id));
+      toast.success("Animal movido a la papelera");
+    }
   };
 
   // Recuperar de papelera
   const recover = (id) => {
     const animal = trash.find((a) => a.id === id);
-    setAnimals([...animals, animal]);
-    setTrash(trash.filter((a) => a.id !== id));
+    if (animal) {
+      setAnimals([...animals, animal]);
+      setTrash(trash.filter((a) => a.id !== id));
+      toast.success("Animal recuperado con éxito");
+    }
   };
 
   // Borrar PARA SIEMPRE
@@ -54,6 +85,7 @@ const AnimalsView = () => {
       )
     ) {
       setTrash(trash.filter((a) => a.id !== id));
+      toast.success("Animal eliminado de forma permanente");
     }
   };
 

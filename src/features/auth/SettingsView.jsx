@@ -1,309 +1,489 @@
 "use client";
 
-import React, { useState } from "react";
-import { UserPlus, Shield, Check, X, Tag } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Shield, Key, CheckCircle, AlertTriangle, Trash2, Plus, Users, User } from "lucide-react";
+import { toast } from "sonner";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
-import Table from "@/components/ui/Table";
 import Input from "@/components/ui/Input";
 import ModuleHeader from "@/components/layout/ModuleHeader";
+import * as authService from "@/services/auth/authService";
 
-const SettingsView = () => {
-  // Team data with Email included
-  const initialTeamData = [
-    {
-      id: 1,
-      name: "Dr. Alejandro Ruiz",
-      email: "alejandro.ruiz@porcitech.com",
-      role: "Administrador",
-      status: "Activo",
-    },
-    {
-      id: 2,
-      name: "Dra. María Silva",
-      email: "maria.silva@porcitech.com",
-      role: "Veterinario",
-      status: "Activo",
-    },
-    {
-      id: 3,
-      name: "Carlos Mendoza",
-      email: "carlos.m@porcitech.com",
-      role: "Operativo",
-      status: "Activo",
-    },
-    {
-      id: 4,
-      name: "Luis Fernando",
-      email: "luis.f@porcitech.com",
-      role: "Operativo",
-      status: "Inactivo",
-    },
-  ];
+export default function SettingsView() {
+  const [user, setUser] = useState(null);
 
-  const [teamData, setTeamData] = useState(initialTeamData);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  // Profile form states
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
 
-  // Form states
-  const [formName, setFormName] = useState("");
-  const [formEmail, setFormEmail] = useState("");
-  const [formRole, setFormRole] = useState("Operativo");
-  const [formStatus, setFormStatus] = useState("Activo");
+  // Password form states
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
-  const handleToggleStatus = (id) => {
-    setTeamData(
-      teamData.map((u) => {
-        if (u.id === id) {
-          return {
-            ...u,
-            status: u.status === "Activo" ? "Inactivo" : "Activo",
-          };
-        }
-        return u;
-      }),
-    );
-  };
+  // UX Feedback states
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [isSavingPassword, setIsSavingPassword] = useState(false);
 
-  const handleOpenModal = () => {
-    setFormName("");
-    setFormEmail("");
-    setFormRole("Operativo");
-    setFormStatus("Activo");
-    setIsModalOpen(true);
-  };
+  // User Management states (Admin only)
+  const [activeTab, setActiveTab] = useState("perfil"); // "perfil" | "usuarios"
+  const [usersList, setUsersList] = useState([]);
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+  const [newUserForm, setNewUserForm] = useState({
+    name: "",
+    email: "",
+    role: "operativo",
+    password: ""
+  });
 
-  const handleSaveUser = (e) => {
+  useEffect(() => {
+    const currentUser = authService.getCurrentUser();
+    if (currentUser) {
+      setUser(currentUser);
+      setName(currentUser.name || "");
+      setEmail(currentUser.email || "");
+    }
+    const list = authService.getUsers();
+    setUsersList(list);
+  }, []);
+
+  const handleSaveProfile = async (e) => {
     e.preventDefault();
-    const newUser = {
-      id: Date.now(),
-      name: formName || "Nuevo Usuario",
-      email: formEmail || "usuario@porcitech.com",
-      role: formRole,
-      status: formStatus,
-    };
-    setTeamData([...teamData, newUser]);
-    setIsModalOpen(false);
+    if (!name.trim()) {
+      toast.error("El nombre completo no puede estar vacío.");
+      return;
+    }
+
+    setIsSavingProfile(true);
+    // Simular un delay para simular comunicación de red/procesamiento
+    setTimeout(() => {
+      try {
+        const updated = authService.updateCurrentUser({ name });
+        if (updated) {
+          setUser(updated);
+          // Actualizar el header del sidebar si es posible forzando renderizado
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(new Event("storage"));
+          }
+          toast.success("Perfil actualizado con éxito");
+        } else {
+          toast.error("No se pudo actualizar el perfil.");
+        }
+      } catch (err) {
+        toast.error("Error inesperado al guardar el perfil.");
+      } finally {
+        setIsSavingProfile(false);
+      }
+    }, 800);
   };
 
-  const teamCols = [
-    {
-      header: "Usuario",
-      key: "name",
-      render: (row) => (
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-505 text-slate-500 text-sm">
-            {row.name
-              .split(" ")
-              .map((n) => n[0])
-              .join("")
-              .substring(0, 2)}
-          </div>
-          <div>
-            <span className="font-bold text-slate-800 block">{row.name}</span>
-            <span className="text-xs text-slate-500">{row.email}</span>
-          </div>
-        </div>
-      ),
-    },
-    {
-      header: "Rol",
-      key: "role",
-      render: (row) => {
-        const roleColors = {
-          Administrador: "bg-indigo-100 text-indigo-700",
-          Veterinario: "bg-emerald-100 text-emerald-700",
-          Operativo: "bg-slate-100 text-slate-700",
-        };
-        return (
-          <span
-            className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${roleColors[row.role] || roleColors["Operativo"]}`}
-          >
-            {row.role}
-          </span>
-        );
-      },
-    },
-    {
-      header: "Estado (Act/Inac)",
-      key: "status",
-      render: (row) => (
-        <button
-          onClick={() => handleToggleStatus(row.id)}
-          className={`w-12 h-6 rounded-full transition-colors relative cursor-pointer ${row.status === "Activo" ? "bg-emerald-500" : "bg-slate-200"}`}
-        >
-          <div
-            className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-transform shadow-sm ${row.status === "Activo" ? "translate-x-7" : "translate-x-1"}`}
-          ></div>
-        </button>
-      ),
-    },
-  ];
+  const handleUpdatePassword = (e) => {
+    e.preventDefault();
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      toast.error("Todos los campos de contraseña son requeridos.");
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast.error("La nueva contraseña debe tener al menos 6 caracteres.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error("La nueva contraseña y la confirmación no coinciden.");
+      return;
+    }
 
-  const permissionMatrix = [
-    { module: "Inventario y Animales", admin: true, vet: true, op: true },
-    { module: "Alimentación y Peso", admin: true, vet: false, op: true },
-    { module: "Salud y Vacunación", admin: true, vet: true, op: false },
-    { module: "Reproducción y Partos", admin: true, vet: true, op: false },
-    { module: "Alertas y Reportes", admin: true, vet: true, op: false },
-    { module: "Configuración de Usuarios", admin: true, vet: false, op: false },
-  ];
+    setIsSavingPassword(true);
+    // Simular delay de guardado
+    setTimeout(() => {
+      toast.success("Contraseña actualizada exitosamente.");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setIsSavingPassword(false);
+    }, 1000);
+  };
+
+  // User list actions (Admin only)
+  const handleChangeRole = (id, newRole) => {
+    const updated = authService.updateUser(id, { role: newRole });
+    if (updated) {
+      setUsersList(authService.getUsers());
+      toast.success("Rol de usuario actualizado con éxito");
+    }
+  };
+
+  const handleDeleteUser = (id) => {
+    const targetUser = usersList.find(u => u.id === id);
+    if (targetUser && targetUser.email === user.email) {
+      toast.error("No puedes eliminar tu propio usuario administrador.");
+      return;
+    }
+    if (window.confirm("¿Estás seguro de eliminar este usuario?")) {
+      authService.deleteUser(id);
+      setUsersList(authService.getUsers());
+      toast.success("Usuario eliminado correctamente");
+    }
+  };
+
+  const handleAddUserSubmit = (e) => {
+    e.preventDefault();
+    if (!newUserForm.name || !newUserForm.email || !newUserForm.password) {
+      toast.error("Todos los campos son requeridos");
+      return;
+    }
+    if (newUserForm.password.length < 6) {
+      toast.error("La contraseña debe tener al menos 6 caracteres");
+      return;
+    }
+    
+    // Validar correo duplicado
+    const exists = usersList.some(u => u.email.toLowerCase() === newUserForm.email.toLowerCase());
+    if (exists) {
+      toast.error("Ya existe un usuario con este correo electrónico");
+      return;
+    }
+
+    authService.createUser(newUserForm);
+    setUsersList(authService.getUsers());
+    setIsUserModalOpen(false);
+    setNewUserForm({
+      name: "",
+      email: "",
+      role: "operativo",
+      password: ""
+    });
+    toast.success("Usuario registrado con éxito");
+  };
+
+  const isAdmin = user && (user.role === "administrador" || user.role === "admin");
+
+  if (!user) {
+    return (
+      <div className="w-full flex flex-col gap-6">
+        <ModuleHeader
+          category="CONFIGURACIÓN DE USUARIO"
+          title="Perfil y Seguridad"
+          description="Gestiona tu información personal, rol y credenciales de acceso al sistema."
+        />
+        <Card className="p-8 text-center bg-white border border-slate-100 shadow-sm rounded-4xl">
+          <p className="text-slate-500 font-medium">Cargando información del usuario...</p>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full flex flex-col gap-6">
       {/* Cabecera Estandarizada */}
       <ModuleHeader
-        category="CONFIGURACIÓN"
-        title="Ajustes del Sistema"
-        description="Administración de usuarios, roles y parámetros generales del sistema."
-        actions={
-          <Button
-            onClick={handleOpenModal}
-            tone="primary"
-            className="flex items-center justify-center gap-2 font-bold rounded-xl!"
-          >
-            <UserPlus size={18} /> Crear Nuevo Usuario
-          </Button>
-        }
+        category="CONFIGURACIÓN DE USUARIO"
+        title="Perfil y Seguridad"
+        description="Gestiona tu información personal, rol y credenciales de acceso al sistema."
       />
 
-      {/* Tabla de Usuarios */}
-      <section className="flex flex-col gap-4">
-        <h3 className="text-xl font-bold text-slate-800">
-          Directorio de Personal
-        </h3>
-        <div className="bg-white rounded-4xl shadow-sm overflow-hidden border border-slate-100 p-2">
-          <Table columns={teamCols} rows={teamData} />
+      {/* Tabs selector para Administrador */}
+      {isAdmin && (
+        <div className="flex gap-2 bg-white p-2 rounded-2xl shadow-sm border border-slate-100 w-fit">
+          <button
+            onClick={() => setActiveTab("perfil")}
+            className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-colors whitespace-nowrap cursor-pointer ${
+              activeTab === "perfil"
+                ? "bg-slate-900 text-white shadow-md"
+                : "text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+            }`}
+          >
+            <User className="inline-block w-4 h-4 mr-1.5 mb-0.5" />
+            Mi Cuenta
+          </button>
+          <button
+            onClick={() => setActiveTab("usuarios")}
+            className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-colors whitespace-nowrap cursor-pointer ${
+              activeTab === "usuarios"
+                ? "bg-slate-900 text-white shadow-md"
+                : "text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+            }`}
+          >
+            <Users className="inline-block w-4 h-4 mr-1.5 mb-0.5" />
+            Gestión de Usuarios
+          </button>
         </div>
-      </section>
+      )}
 
-      {/* Matriz de Permisos */}
-      <section className="flex flex-col gap-4">
-        <h3 className="text-xl font-bold text-slate-800">
-          Matriz de Permisos Visual
-        </h3>
-        <Card className="p-6 border border-slate-100 rounded-4xl bg-white shadow-sm overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr>
-                <th className="p-4 border-b border-slate-100 font-bold text-slate-650 text-slate-600 uppercase tracking-wider text-sm">
-                  Módulo
-                </th>
-                <th className="p-4 border-b border-slate-100 font-bold text-indigo-600 uppercase tracking-wider text-sm text-center">
-                  Administrador
-                </th>
-                <th className="p-4 border-b border-slate-100 font-bold text-emerald-600 uppercase tracking-wider text-sm text-center">
-                  Veterinario
-                </th>
-                <th className="p-4 border-b border-slate-100 font-bold text-slate-500 uppercase tracking-wider text-sm text-center">
-                  Operativo
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {permissionMatrix.map((row, idx) => (
-                <tr key={idx} className="hover:bg-slate-50 transition-colors">
-                  <td className="p-4 border-b border-slate-50 font-bold text-slate-800">
-                    {row.module}
-                  </td>
-                  <td className="p-4 border-b border-slate-50 text-center">
-                    {row.admin ? (
-                      <Check className="inline text-emerald-500 h-5 w-5" />
-                    ) : (
-                      <X className="inline text-rose-500 h-5 w-5" />
-                    )}
-                  </td>
-                  <td className="p-4 border-b border-slate-50 text-center">
-                    {row.vet ? (
-                      <Check className="inline text-emerald-500 h-5 w-5" />
-                    ) : (
-                      <X className="inline text-rose-500 h-5 w-5" />
-                    )}
-                  </td>
-                  <td className="p-4 border-b border-slate-50 text-center">
-                    {row.op ? (
-                      <Check className="inline text-emerald-500 h-5 w-5" />
-                    ) : (
-                      <X className="inline text-rose-500 h-5 w-5" />
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </Card>
-      </section>
-
-      {/* Modal para Crear Usuario */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-100 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+      {/* Vista de Perfil */}
+      {activeTab === "perfil" && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Formulario de Perfil */}
           <Card
             as="form"
-            onSubmit={handleSaveUser}
-            className="w-full max-w-md p-8! rounded-[2.5rem] shadow-2xl relative border border-slate-100 bg-white"
+            onSubmit={handleSaveProfile}
+            className="p-8 bg-white border border-slate-100 shadow-sm rounded-4xl flex flex-col gap-6 justify-between"
+          >
+            <div className="space-y-6">
+              <h3 className="text-xl font-black text-slate-900 flex items-center gap-2 border-b pb-3 border-slate-100">
+                <Shield className="text-emerald-500 w-6 h-6" /> Información de Perfil
+              </h3>
+
+              {/* Rol actual */}
+              <div className="space-y-2">
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+                  Rol asignado
+                </span>
+                <div className="inline-flex">
+                  <span className="px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider bg-emerald-100 text-emerald-700 border border-emerald-200">
+                    {user.role}
+                  </span>
+                </div>
+              </div>
+
+              {/* Nombre Completo */}
+              <Input
+                label="Nombre Completo"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Ingresa tu nombre..."
+                required
+              />
+
+              {/* Correo Institucional */}
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-700">
+                  Correo Institucional
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  disabled
+                  className="w-full p-3.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-400 font-semibold cursor-not-allowed outline-none"
+                />
+                <span className="text-[10px] text-slate-400 font-bold block">
+                  El correo institucional no puede modificarse por seguridad informática.
+                </span>
+              </div>
+            </div>
+
+            <div className="pt-4">
+              <Button
+                type="submit"
+                tone="primary"
+                isLoading={isSavingProfile}
+                className="w-full py-4 font-black rounded-xl!"
+              >
+                Guardar Cambios
+              </Button>
+            </div>
+          </Card>
+
+          {/* Formulario de Cambio de Contraseña */}
+          <Card
+            as="form"
+            onSubmit={handleUpdatePassword}
+            className="p-8 bg-white border border-slate-100 shadow-sm rounded-4xl flex flex-col gap-6 justify-between"
+          >
+            <div className="space-y-6">
+              <h3 className="text-xl font-black text-slate-900 flex items-center gap-2 border-b pb-3 border-slate-100">
+                <Key className="text-indigo-500 w-6 h-6" /> Seguridad y Credenciales
+              </h3>
+
+              {/* Contraseña Actual */}
+              <Input
+                label="Contraseña Actual"
+                type="password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+              />
+
+              {/* Nueva Contraseña */}
+              <Input
+                label="Nueva Contraseña"
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Mínimo 6 caracteres"
+                required
+              />
+
+              {/* Confirmar Nueva Contraseña */}
+              <Input
+                label="Confirmar Nueva Contraseña"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Confirmación de contraseña"
+                required
+              />
+            </div>
+
+            <div className="pt-4">
+              <Button
+                type="submit"
+                tone="secondary"
+                isLoading={isSavingPassword}
+                className="w-full py-4 font-black rounded-xl!"
+              >
+                Actualizar Contraseña
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Vista de Gestión de Usuarios (Admin only) */}
+      {isAdmin && activeTab === "usuarios" && (
+        <Card className="rounded-[2.5rem]! p-8 bg-white border border-slate-100 shadow-sm flex flex-col gap-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-slate-100">
+            <div>
+              <h3 className="text-xl font-black text-slate-900 flex items-center gap-2">
+                <Users className="text-indigo-500 w-6 h-6" />
+                Gestión de Usuarios del Sistema
+              </h3>
+              <p className="text-xs text-slate-400 font-bold mt-1 uppercase tracking-wider">
+                Administra los accesos y roles del equipo técnico.
+              </p>
+            </div>
+            <Button
+              onClick={() => setIsUserModalOpen(true)}
+              tone="primary"
+              className="flex items-center gap-1.5 font-bold rounded-xl! py-3 px-5 text-sm"
+            >
+              <Plus size={16} />
+              Agregar Usuario
+            </Button>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-separate border-spacing-y-4">
+              <thead>
+                <tr className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">
+                  <th className="px-8">Nombre</th>
+                  <th className="px-6">Correo</th>
+                  <th className="px-6">Rol</th>
+                  <th className="px-6 text-center">Estado</th>
+                  <th className="px-6 text-right pr-10">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {usersList.map((usr) => (
+                  <tr
+                    key={usr.id}
+                    className="bg-white hover:bg-slate-50 transition-all shadow-[0_4px_20px_-10px_rgba(0,0,0,0.05)] border border-slate-100"
+                  >
+                    <td className="px-8 py-5 rounded-l-2xl font-black text-slate-900">
+                      {usr.name}
+                    </td>
+                    <td className="px-6 py-5 font-semibold text-slate-600 text-sm">
+                      {usr.email}
+                    </td>
+                    <td className="px-6 py-5">
+                      <select
+                        value={usr.role}
+                        onChange={(e) => handleChangeRole(usr.id, e.target.value)}
+                        className="p-2.5 border border-slate-200 rounded-xl bg-slate-55 bg-slate-50 text-slate-800 font-bold cursor-pointer outline-none text-xs font-bold"
+                      >
+                        <option value="administrador">Administrador</option>
+                        <option value="veterinario">Veterinario</option>
+                        <option value="operativo">Operario</option>
+                      </select>
+                    </td>
+                    <td className="px-6 py-5 text-center">
+                      <span className="px-4 py-1.5 rounded-full text-[9px] font-black tracking-widest text-white bg-sena-green uppercase">
+                        {usr.estado}
+                      </span>
+                    </td>
+                    <td className="px-8 py-5 rounded-r-2xl text-right">
+                      <button
+                        onClick={() => handleDeleteUser(usr.id)}
+                        disabled={usr.email === user.email}
+                        className="p-3 bg-slate-50 rounded-xl text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                        title={usr.email === user.email ? "No puedes eliminarte a ti mismo" : "Eliminar usuario"}
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Modal Agregar Usuario */}
+      {isUserModalOpen && (
+        <div className="fixed inset-0 z-100 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 text-slate-900">
+          <Card
+            as="form"
+            onSubmit={handleAddUserSubmit}
+            className="w-full max-w-md p-8! rounded-[2.5rem]! shadow-2xl relative border border-slate-100 bg-white"
           >
             <button
               type="button"
-              onClick={() => setIsModalOpen(false)}
-              className="absolute top-6 right-6 text-slate-400 hover:text-slate-700 font-bold bg-slate-100 w-8 h-8 rounded-full flex items-center justify-center transition-colors cursor-pointer"
+              onClick={() => setIsUserModalOpen(false)}
+              className="absolute top-6 right-6 text-slate-400 hover:text-slate-700 font-bold bg-slate-100 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer"
             >
               ✕
             </button>
             <h2 className="text-2xl font-black mb-6 text-slate-900 flex items-center gap-2">
-              <div className="p-2 bg-indigo-100 rounded-xl text-indigo-600">
-                <Tag className="w-6 h-6" />
-              </div>
-              Nuevo Usuario
+              <Plus className="text-emerald-500 w-6 h-6" />
+              Agregar Nuevo Usuario
             </h2>
 
             <div className="space-y-4">
               <Input
                 label="Nombre Completo"
-                placeholder="Ej: Juan Pérez"
+                placeholder="Nombre del usuario"
+                value={newUserForm.name}
+                onChange={(e) => setNewUserForm({ ...newUserForm, name: e.target.value })}
                 required
-                value={formName}
-                onChange={(e) => setFormName(e.target.value)}
               />
-
               <Input
                 label="Correo Electrónico"
                 type="email"
-                placeholder="Ej: juan@porcitech.com"
+                placeholder="usuario@sigep.com"
+                value={newUserForm.email}
+                onChange={(e) => setNewUserForm({ ...newUserForm, email: e.target.value })}
                 required
-                value={formEmail}
-                onChange={(e) => setFormEmail(e.target.value)}
               />
-
               <div className="space-y-2">
                 <label className="text-sm font-bold text-slate-700">Rol</label>
                 <div className="relative">
                   <select
-                    value={formRole}
-                    onChange={(e) => setFormRole(e.target.value)}
-                    className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 outline-none font-medium text-slate-700 focus:ring-2 focus:ring-indigo-500 appearance-none cursor-pointer"
+                    value={newUserForm.role}
+                    onChange={(e) => setNewUserForm({ ...newUserForm, role: e.target.value })}
+                    className="w-full p-3.5 rounded-xl border border-slate-200 bg-slate-50 outline-none font-bold text-slate-700 appearance-none cursor-pointer"
                   >
-                    <option value="Administrador">Administrador</option>
-                    <option value="Veterinario">Veterinario</option>
-                    <option value="Operativo">Operativo</option>
+                    <option value="administrador">Administrador</option>
+                    <option value="veterinario">Veterinario</option>
+                    <option value="operativo">Operario</option>
                   </select>
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-xs">
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-xs">
                     ▼
                   </div>
                 </div>
               </div>
+              <Input
+                label="Contraseña"
+                type="password"
+                placeholder="Mínimo 6 caracteres"
+                value={newUserForm.password}
+                onChange={(e) => setNewUserForm({ ...newUserForm, password: e.target.value })}
+                required
+              />
             </div>
 
             <div className="flex gap-4 mt-8">
               <Button
                 type="button"
                 tone="soft"
-                onClick={() => setIsModalOpen(false)}
+                onClick={() => setIsUserModalOpen(false)}
                 className="flex-1 font-bold rounded-xl!"
               >
                 Cancelar
               </Button>
               <Button
                 type="submit"
-                tone="secondary"
+                tone="primary"
                 className="flex-1 font-black rounded-xl!"
               >
                 Guardar
@@ -314,6 +494,4 @@ const SettingsView = () => {
       )}
     </div>
   );
-};
-
-export default SettingsView;
+}

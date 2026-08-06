@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Utensils, Database, Plus, TrendingDown } from "lucide-react";
+import { toast } from "sonner";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import Table from "@/components/ui/Table";
@@ -67,13 +68,39 @@ const initialDailyConsumption = [
 
 const FeedingView = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [consumption, setConsumption] = useState(initialDailyConsumption);
-  const [inventory, setInventory] = useState(initialInventoryStats);
+  const [consumption, setConsumption] = useState([]);
+  const [inventory, setInventory] = useState([]);
+  const [isMounted, setIsMounted] = useState(false);
 
   // Form fields state
   const [formTipo, setFormTipo] = useState("Pre-iniciador");
   const [formCantidad, setFormCantidad] = useState("");
   const [formDestino, setFormDestino] = useState("");
+
+  useEffect(() => {
+    const storedInventory = localStorage.getItem("sip_feeding_inventory");
+    const storedConsumption = localStorage.getItem("sip_feeding_consumption");
+    if (storedInventory) {
+      setInventory(JSON.parse(storedInventory));
+    } else {
+      setInventory(initialInventoryStats);
+      localStorage.setItem("sip_feeding_inventory", JSON.stringify(initialInventoryStats));
+    }
+    if (storedConsumption) {
+      setConsumption(JSON.parse(storedConsumption));
+    } else {
+      setConsumption(initialDailyConsumption);
+      localStorage.setItem("sip_feeding_consumption", JSON.stringify(initialDailyConsumption));
+    }
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (isMounted) {
+      localStorage.setItem("sip_feeding_inventory", JSON.stringify(inventory));
+      localStorage.setItem("sip_feeding_consumption", JSON.stringify(consumption));
+    }
+  }, [inventory, consumption, isMounted]);
 
   const columns = [
     { key: "fecha", header: "Fecha" },
@@ -90,7 +117,7 @@ const FeedingView = () => {
     // Validar stock disponible
     const matchedSilo = inventory.find((s) => s.type === formTipo);
     if (matchedSilo && matchedSilo.stock < quantityNum) {
-      alert(
+      toast.error(
         `Stock insuficiente en silo de ${formTipo}. Disponible: ${matchedSilo.stock} kg`,
       );
       return;
@@ -117,6 +144,7 @@ const FeedingView = () => {
       }),
     );
 
+    toast.success("Suministro de alimento registrado");
     setIsModalOpen(false);
     setFormCantidad("");
     setFormDestino("");

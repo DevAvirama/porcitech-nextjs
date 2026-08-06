@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Scale,
   TrendingUp,
@@ -9,6 +9,7 @@ import {
   Activity,
   Plus,
 } from "lucide-react";
+import { toast } from "sonner";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import Table from "@/components/ui/Table";
@@ -162,7 +163,8 @@ const GrowthChart = () => {
 };
 
 const WeightView = () => {
-  const [animals, setAnimals] = useState(initialAnimals);
+  const [animals, setAnimals] = useState([]);
+  const [isMounted, setIsMounted] = useState(false);
   const [filterEtapa, setFilterEtapa] = useState("todas");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form, setForm] = useState({
@@ -170,6 +172,23 @@ const WeightView = () => {
     peso: "",
     fecha: new Date().toISOString().split("T")[0],
   });
+
+  useEffect(() => {
+    const stored = localStorage.getItem("sip_weight_animals");
+    if (stored) {
+      setAnimals(JSON.parse(stored));
+    } else {
+      setAnimals(initialAnimals);
+      localStorage.setItem("sip_weight_animals", JSON.stringify(initialAnimals));
+    }
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (isMounted) {
+      localStorage.setItem("sip_weight_animals", JSON.stringify(animals));
+    }
+  }, [animals, isMounted]);
 
   const alertas =
     weightStandards.configuracion_crecimiento_colombia.alertas_rendimiento;
@@ -217,19 +236,37 @@ const WeightView = () => {
   const handleAddWeight = (e) => {
     e.preventDefault();
     if (form.animalId && form.peso) {
-      setAnimals((prev) =>
-        prev.map((a) =>
-          a.id === form.animalId
-            ? {
-                ...a,
-                pesos: [
-                  ...a.pesos,
-                  { fecha: form.fecha, peso: parseFloat(form.peso) },
-                ],
-              }
-            : a,
-        ),
-      );
+      const pesoNum = parseFloat(form.peso);
+      if (isNaN(pesoNum) || pesoNum <= 0) {
+        toast.error("El peso debe ser un número mayor a 0");
+        return;
+      }
+      setAnimals((prev) => {
+        const exists = prev.some((a) => a.id.toLowerCase() === form.animalId.trim().toLowerCase());
+        if (exists) {
+          return prev.map((a) =>
+            a.id.toLowerCase() === form.animalId.trim().toLowerCase()
+              ? {
+                  ...a,
+                  pesos: [
+                    ...a.pesos,
+                    { fecha: form.fecha, peso: pesoNum },
+                  ],
+                }
+              : a
+          );
+        } else {
+          return [
+            ...prev,
+            {
+              id: form.animalId.trim(),
+              etapa: "pre_ceba",
+              pesos: [{ fecha: form.fecha, peso: pesoNum }],
+            },
+          ];
+        }
+      });
+      toast.success("Pesaje registrado correctamente");
     }
     setIsModalOpen(false);
     setForm({

@@ -1,4 +1,5 @@
 import { Geist, Geist_Mono } from "next/font/google";
+import { Toaster } from "sonner";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -24,6 +25,7 @@ export default function RootLayout({ children }) {
     >
       <body className="min-h-full flex flex-col bg-[#09090b] text-[#fafafa]">
         {children}
+        <Toaster position="bottom-right" richColors theme="dark" closeButton />
       </body>
     </html>
   );

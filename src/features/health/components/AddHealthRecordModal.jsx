@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { X, Syringe, Pill, ChevronDown } from "lucide-react";
+import { toast } from "sonner";
 import Card from "../../../components/ui/Card";
 import Button from "../../../components/ui/Button";
 
@@ -30,6 +31,7 @@ const AddHealthRecordModal = ({ isOpen, onClose, onSave }) => {
     // Generar un ID único de registro
     const generatedId = `2026-${form.lote || "G1"}-${Math.floor(10 + Math.random() * 90)}`;
     onSave({ ...form, id: generatedId, type: eventType, estado: "PENDIENTE" });
+    toast.success("Novedad médica/vacuna registrada");
     onClose();
   };
 
