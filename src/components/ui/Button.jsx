@@ -1,17 +1,37 @@
-export default function Button({ children, className = "", variant = "primary", ...props }) {
-  const baseStyle = "inline-flex items-center justify-center px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed";
-  
-  const variants = {
-    primary: "bg-sena-green hover:bg-[#2c8300] text-white shadow-md shadow-sena-green/30",
-    secondary: "bg-sena-blue hover:bg-[#002235] text-white shadow-md shadow-sena-blue/30",
-    accent: "bg-sena-yellow hover:bg-[#e6ad00] text-sena-blue shadow-md shadow-sena-yellow/20",
-    danger: "bg-red-600 hover:bg-red-500 text-white shadow-md shadow-red-600/10",
-    ghost: "bg-transparent hover:bg-zinc-900 text-zinc-400 hover:text-zinc-200"
-  };
+function Button({
+  as: Component = 'button',
+  className = '',
+  tone = 'primary',
+  type = 'button',
+  ...props
+}) {
+  const tones = {
+    primary:
+      'bg-sena-green text-white hover:bg-[#2c8300] shadow-md shadow-sena-green/30',
+
+    secondary:
+      'bg-sena-blue text-white hover:bg-[#002235] shadow-md shadow-sena-blue/30',
+
+    outline:
+      'border border-white bg-transparent text-white hover:bg-white/10',
+
+    accent:
+      'bg-sena-green text-white hover:bg-[#2c8300]',
+
+    ghost:
+      'border border-white/10 bg-white/0 text-slate-200 hover:bg-white/5 hover:text-white',
+
+    soft:
+      'border border-slate-200 bg-slate-50 text-slate-700 hover:border-emerald-300 hover:bg-emerald-50 hover:text-slate-950',
+  }
 
   return (
-    <button className={`${baseStyle} ${variants[variant]} ${className}`} {...props}>
-      {children}
-    </button>
-  );
+    <Component
+      className={`inline-flex items-center justify-center rounded-2xl px-5 py-3 font-semibold transition ${tones[tone]} ${className}`}
+      type={Component === 'button' ? type : undefined}
+      {...props}
+    />
+  )
 }
+
+export default Button
