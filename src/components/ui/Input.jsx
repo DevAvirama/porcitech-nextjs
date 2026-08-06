@@ -1,22 +1,15 @@
-export default function Input({ label, error, className = "", ...props }) {
+function Input({ label, className = '', ...props }) {
   return (
-    <div className="flex flex-col gap-1.5 w-full">
-      {label && (
-        <label className="text-xs font-semibold text-zinc-400">
-          {label}
-        </label>
-      )}
+    <label className="block">
+      {label ? (
+        <span className="mb-2 block text-sm font-semibold text-slate-700">{label}</span>
+      ) : null}
       <input
-        className={`w-full px-4 py-2.5 bg-zinc-900 border border-zinc-800 rounded-lg text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-sena-green/50 transition-all ${
-          error ? "border-red-500 focus:border-red-500" : ""
-        } ${className}`}
+        className={`w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-950 outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100 ${className}`}
         {...props}
       />
-      {error && (
-        <span className="text-[11px] font-semibold text-red-500">
-          {error}
-        </span>
-      )}
-    </div>
-  );
+    </label>
+  )
 }
+
+export default Input

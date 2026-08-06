@@ -2,14 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import authService from "@/services/auth/authService";
+import { getCurrentUser } from "@/services/auth/authService";
 
 export default function ProtectedRoute({ children, allowedRoles }) {
   const router = useRouter();
   const [authorized, setAuthorized] = useState(false);
 
   useEffect(() => {
-    const user = authService.getCurrentUser();
+    const user = getCurrentUser();
     if (!user) {
       router.push("/login");
       return;
@@ -23,7 +23,6 @@ export default function ProtectedRoute({ children, allowedRoles }) {
       return;
     }
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setAuthorized(true);
   }, [router, allowedRoles]);
 

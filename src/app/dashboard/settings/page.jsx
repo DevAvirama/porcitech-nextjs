@@ -3,7 +3,7 @@ import ProtectedRoute from "@/components/auth/ProtectedRoute";
 
 export default function SettingsPage() {
   return (
-    <ProtectedRoute allowedRoles={["admin", "veterinario", "operario"]}>
+    <ProtectedRoute allowedRoles={["administrador"]}>
       <SettingsView />
     </ProtectedRoute>
   );

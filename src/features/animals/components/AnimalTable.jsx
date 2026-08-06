@@ -1,30 +1,39 @@
-import Table from "@/components/ui/Table";
+import Table from "../../../components/ui/Table";
 import AnimalStatusBadge from "./AnimalStatusBadge";
 
-export default function AnimalTable({ animals = [] }) {
-  const headers = ["Código", "Raza", "Peso", "Estado", "Último Registro"];
+const AnimalTable = ({ animals, onDelete, isTrash, onRecover, onPermanentDelete }) => {
+    const columns = [
+        {
+            key: 'id',
+            header: 'ID',
+            render: (row) => <span className="font-bold text-slate-800">#{row.id || 'N/A'}</span>
+        },
+        { key: 'lote', header: 'LOTE' },
+        { key: 'raza', header: 'RAZA' },
+        {
+            key: 'estado',
+            header: 'ESTADO',
+            render: (row) => <AnimalStatusBadge status={row.estado} />
+        },
+        {
+            key: 'acciones',
+            header: isTrash ? 'ACCIONES PAPELERA' : 'ACCIONES',
+            render: (row) => (
+                <div className="flex justify-center gap-3">
+                    {isTrash ? (
+                        <>
+                            <button onClick={() => onRecover(row.id)} title="Recuperar" className="text-xl hover:scale-120 transition-transform cursor-pointer">🔄</button>
+                            <button onClick={() => onPermanentDelete(row.id)} title="Eliminar para siempre" className="text-xl hover:scale-120 transition-transform text-red-500 cursor-pointer">❌</button>
+                        </>
+                    ) : (
+                        <button onClick={() => onDelete(row.id)} className="text-slate-300 hover:text-red-500 text-xl transition-all cursor-pointer">🗑️</button>
+                    )}
+                </div>
+            )
+        }
+    ];
 
-  return (
-    <Table headers={headers}>
-      {animals.length === 0 ? (
-        <tr>
-          <td colSpan={headers.length} className="px-4 py-8 text-center text-zinc-500 text-sm">
-            No hay porcinos registrados en este lote.
-          </td>
-        </tr>
-      ) : (
-        animals.map((animal) => (
-          <tr key={animal.id} className="hover:bg-zinc-900/40 transition-colors">
-            <td className="px-4 py-3.5 font-medium text-white">{animal.code}</td>
-            <td className="px-4 py-3.5">{animal.breed}</td>
-            <td className="px-4 py-3.5">{animal.weight} kg</td>
-            <td className="px-4 py-3.5">
-              <AnimalStatusBadge status={animal.status} />
-            </td>
-            <td className="px-4 py-3.5 text-zinc-400 text-xs">{animal.lastRecord}</td>
-          </tr>
-        ))
-      )}
-    </Table>
-  );
-}
+    return <Table columns={columns} rows={animals} />;
+};
+
+export default AnimalTable;
