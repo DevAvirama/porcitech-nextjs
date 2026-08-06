@@ -9,10 +9,11 @@ import {
   Percent,
   AlertTriangle,
 } from "lucide-react";
-import Button from "../../components/ui/Button";
-import Card from "../../components/ui/Card";
-import Table from "../../components/ui/Table";
-import Input from "../../components/ui/Input";
+import Button from "@/components/ui/Button";
+import Card from "@/components/ui/Card";
+import Table from "@/components/ui/Table";
+import Input from "@/components/ui/Input";
+import ModuleHeader from "@/components/layout/ModuleHeader";
 import reproductionStandards from "./data/reproductionStandards.json";
 
 // Mock Data
@@ -148,11 +149,11 @@ const ReproductionView = () => {
     const isAlert = dias >= total - alertaWindow;
     const colorClass = isAlert
       ? "bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.6)]"
-      : "bg-fuchsia-500";
+      : "bg-fuchsia-505 bg-fuchsia-500";
 
     return (
       <div className="w-full max-w-30 mt-2">
-        <div className="flex justify-between text-[10px] text-slate-500 font-bold mb-1">
+        <div className="flex justify-between text-[10px] text-slate-505 text-slate-500 font-bold mb-1">
           <span>{dias}d</span>
           <span>{total}d</span>
         </div>
@@ -188,41 +189,37 @@ const ReproductionView = () => {
   ];
 
   return (
-    <div className="space-y-8 max-w-400 mx-auto pb-10">
-      {/* Cabecera y Acciones Principales */}
-      <Card
-        as="header"
-        className="flex flex-col gap-6 rounded-4xl! lg:flex-row lg:items-center lg:justify-between border-t-4 border-sena-green"
-      >
-        <div>
-          <h2 className="text-3xl font-black text-slate-900 flex items-center gap-3">
-            <Heart className="text-sena-green w-8 h-8" />
-            Control de Reproducción
-          </h2>
-          <p className="text-slate-500 mt-2 font-medium">
-            Gestión del ciclo reproductivo, servicios y partos.
-          </p>
-        </div>
+    <div className="w-full flex flex-col gap-6">
+      {/* Cabecera Estandarizada */}
+      <ModuleHeader
+        category="REPRODUCCIÓN Y PARTOS"
+        title="Gestión Reproductiva"
+        description="Seguimiento a ciclos, inseminaciones, gestaciones y partos."
+        actions={
+          <div className="flex gap-3">
+            <Button
+              tone="primary"
+              className="flex items-center justify-center gap-2 font-bold rounded-xl!"
+            >
+              <Baby size={20} />
+              Registrar Parto
+            </Button>
 
-        <div className="flex flex-col sm:flex-row gap-4">
-          <Button className="flex items-center justify-center gap-2 bg-sena-green hover:bg-[#2c8300] hover:-translate-y-1 hover:shadow-xl text-white border-none shadow-md shadow-sena-green/30 transition-all duration-200 cursor-pointer">
-            <Baby size={20} />
-            Registrar Parto
-          </Button>
-
-          <Button
-            onClick={() => setIsServiceModalOpen(true)}
-            className="flex items-center justify-center gap-2 bg-sena-green hover:bg-[#2c8300] hover:-translate-y-1 hover:shadow-xl text-white border-none shadow-md shadow-sena-green/30 transition-all duration-200 cursor-pointer"
-          >
-            <Heart size={20} />
-            Registrar Servicio
-          </Button>
-        </div>
-      </Card>
+            <Button
+              onClick={() => setIsServiceModalOpen(true)}
+              tone="primary"
+              className="flex items-center justify-center gap-2 font-bold rounded-xl!"
+            >
+              <Heart size={20} />
+              Registrar Servicio
+            </Button>
+          </div>
+        }
+      />
 
       {/* Resumen de Ciclo */}
-      <section>
-        <h3 className="text-xl font-bold mb-6 text-slate-800">
+      <section className="flex flex-col gap-4">
+        <h3 className="text-xl font-bold text-slate-800">
           Resumen de Ciclo
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -231,7 +228,7 @@ const ReproductionView = () => {
             return (
               <Card
                 key={idx}
-                className="rounded-4xl! flex items-center gap-5 hover:shadow-md hover:shadow-slate-200/50 transition-shadow cursor-default"
+                className="rounded-[2rem]! flex items-center gap-5 hover:shadow-md hover:shadow-slate-200/50 transition-shadow cursor-default border border-slate-100 shadow-sm bg-white"
               >
                 <div className={`p-4 rounded-2xl ${stat.bg}`}>
                   <IconComponent className={`w-8 h-8 ${stat.tone}`} />
@@ -251,11 +248,11 @@ const ReproductionView = () => {
       </section>
 
       {/* Tabla de Eventos Reproductivos */}
-      <section>
-        <h3 className="text-xl font-bold mb-6 text-slate-800">
+      <section className="flex flex-col gap-4">
+        <h3 className="text-xl font-bold text-slate-800">
           Eventos Reproductivos Recientes
         </h3>
-        <div className="bg-white rounded-4xl! shadow-sm overflow-hidden p-2">
+        <div className="bg-white rounded-[2rem]! shadow-sm overflow-hidden p-2 border border-slate-100">
           <Table columns={columns} rows={reproductionEvents} />
         </div>
       </section>
@@ -265,14 +262,14 @@ const ReproductionView = () => {
         <div className="fixed inset-0 z-100 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 text-slate-900">
           <Card
             as="form"
-            className="w-full max-w-md p-8! rounded-4xl! shadow-2xl relative border border-slate-100 bg-white"
+            className="w-full max-w-md p-8! rounded-[2.5rem]! shadow-2xl relative border border-slate-100 bg-white"
           >
             <button
               type="button"
               onClick={() => setIsServiceModalOpen(false)}
-              className="absolute top-6 right-6 text-slate-400 hover:text-slate-700 font-bold bg-slate-105 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer"
+              className="absolute top-6 right-6 text-slate-400 hover:text-slate-700 font-bold bg-slate-100 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer"
             >
-              X
+              ✕
             </button>
             <h2 className="text-2xl font-black mb-6 text-slate-900 flex items-center gap-2">
               <Heart className="text-fuchsia-500 w-6 h-6" />
@@ -328,7 +325,7 @@ const ReproductionView = () => {
                 type="button"
                 tone="soft"
                 onClick={() => setIsServiceModalOpen(false)}
-                className="flex-1 font-bold"
+                className="flex-1 font-bold rounded-xl!"
               >
                 Cancelar
               </Button>
@@ -338,7 +335,7 @@ const ReproductionView = () => {
                   e.preventDefault();
                   setIsServiceModalOpen(false);
                 }}
-                className="flex-1 font-black bg-fuchsia-500 hover:bg-fuchsia-600 text-white border-none shadow-md shadow-fuchsia-500/30"
+                className="flex-1 font-black bg-fuchsia-500 hover:bg-fuchsia-600 text-white border-none shadow-md shadow-fuchsia-500/30 rounded-xl!"
               >
                 Guardar
               </Button>

@@ -2,10 +2,11 @@
 
 import React, { useState } from "react";
 import { Utensils, Database, Plus, TrendingDown } from "lucide-react";
-import Button from "../../components/ui/Button";
-import Card from "../../components/ui/Card";
-import Table from "../../components/ui/Table";
-import Input from "../../components/ui/Input";
+import Button from "@/components/ui/Button";
+import Card from "@/components/ui/Card";
+import Table from "@/components/ui/Table";
+import Input from "@/components/ui/Input";
+import ModuleHeader from "@/components/layout/ModuleHeader";
 
 // Mock Data
 const initialInventoryStats = [
@@ -122,33 +123,27 @@ const FeedingView = () => {
   };
 
   return (
-    <div className="space-y-8 max-w-400 mx-auto pb-10">
-      {/* Cabecera */}
-      <Card
-        as="header"
-        className="flex flex-col gap-4 rounded-4xl! lg:flex-row lg:items-center lg:justify-between border-t-4 border-sena-yellow"
-      >
-        <div>
-          <h2 className="text-3xl font-black text-slate-900 flex items-center gap-3">
-            <Utensils className="text-sena-yellow w-8 h-8" />
-            Control de Alimentación
-          </h2>
-          <p className="text-slate-500 mt-2 font-medium">
-            Gestión de inventario y consumo diario del plantel.
-          </p>
-        </div>
-        <Button
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 bg-sena-yellow hover:bg-yellow-500 hover:-translate-y-1 hover:shadow-xl shadow-md shadow-yellow-500/20 text-slate-950 border-none transition-all duration-200 cursor-pointer font-bold"
-        >
-          <Plus size={20} />
-          Registrar Suministro
-        </Button>
-      </Card>
+    <div className="w-full flex flex-col gap-6">
+      {/* Cabecera Estandarizada */}
+      <ModuleHeader
+        category="NUTRICIÓN"
+        title="Alimentación"
+        description="Gestión de inventario y consumo diario del plantel."
+        actions={
+          <Button
+            onClick={() => setIsModalOpen(true)}
+            tone="primary"
+            className="flex items-center gap-2 font-bold rounded-xl!"
+          >
+            <Plus size={20} />
+            Registrar Suministro
+          </Button>
+        }
+      />
 
       {/* Dashboard de Inventario */}
-      <section>
-        <h3 className="text-xl font-bold mb-6 text-slate-800 flex items-center gap-2">
+      <section className="flex flex-col gap-4">
+        <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
           <Database className="text-blue-500 w-6 h-6" />
           Inventario de Silos
         </h3>
@@ -160,12 +155,12 @@ const FeedingView = () => {
             return (
               <Card
                 key={idx}
-                className="rounded-3xl! relative overflow-hidden group"
+                className="rounded-3xl! relative overflow-hidden group border border-slate-100 shadow-sm"
               >
                 <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform">
                   <Database className="w-20 h-20 text-slate-900" />
                 </div>
-                <p className="text-sm font-semibold uppercase tracking-widest text-slate-500 mb-1">
+                <p className="text-sm font-semibold uppercase tracking-widest text-slate-505 text-slate-500 mb-1">
                   {stat.type}
                 </p>
                 <div className="flex items-end gap-2 mb-4">
@@ -205,11 +200,11 @@ const FeedingView = () => {
       </section>
 
       {/* Consumos */}
-      <section>
-        <h3 className="text-xl font-bold mb-6 text-slate-800">
+      <section className="flex flex-col gap-4">
+        <h3 className="text-xl font-bold text-slate-800">
           Historial de Suministros
         </h3>
-        <div className="bg-white rounded-4xl shadow-sm border border-slate-100 p-2">
+        <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-2">
           <Table columns={columns} rows={consumption} />
         </div>
       </section>
@@ -220,7 +215,7 @@ const FeedingView = () => {
           <Card
             as="form"
             onSubmit={handleSubmitSupply}
-            className="w-full max-w-md p-8! rounded-[2.5rem]! shadow-2xl relative border border-slate-100"
+            className="w-full max-w-md p-8! rounded-[2.5rem]! shadow-2xl relative border border-slate-100 bg-white"
           >
             <button
               type="button"
@@ -279,7 +274,8 @@ const FeedingView = () => {
               </Button>
               <Button
                 type="submit"
-                className="flex-1 font-black bg-sena-yellow text-slate-950 border-none shadow-md shadow-yellow-500/20 rounded-xl!"
+                tone="primary"
+                className="flex-1 font-black rounded-xl!"
               >
                 Guardar
               </Button>

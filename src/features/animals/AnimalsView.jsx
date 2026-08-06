@@ -3,8 +3,9 @@
 import React, { useState } from "react";
 import AnimalTable from "./components/AnimalTable";
 import AddAnimalModal from "./components/AddAnimalModal";
-import Card from "../../components/ui/Card";
-import { PiggyBank } from "lucide-react";
+import Card from "@/components/ui/Card";
+import Button from "@/components/ui/Button";
+import ModuleHeader from "@/components/layout/ModuleHeader";
 
 const AnimalsView = () => {
   const [animals, setAnimals] = useState([
@@ -61,39 +62,33 @@ const AnimalsView = () => {
   );
 
   return (
-    <div className="space-y-8 max-w-400 mx-auto pb-10">
-      {/* Cabecera */}
-      <Card
-        as="header"
-        className="flex flex-col gap-4 rounded-4xl lg:flex-row lg:items-center lg:justify-between border-t-4 border-sena-yellow"
-      >
-        <div>
-          <h2 className="text-3xl font-black text-slate-900 flex items-center gap-3">
-            <PiggyBank className="bg-sena-green h-7 w-7" />
-            Registro de animales
-          </h2>
-          <p className="text-slate-500 mt-2 font-medium">
-            Gestión y control del inventario porcino.
-          </p>
-        </div>
-      </Card>
+    <div className="w-full flex flex-col gap-6">
+      {/* Cabecera Estandarizada */}
+      <ModuleHeader
+        category="GESTIÓN DE HATO"
+        title="Registro de animales"
+        description="Gestión y control del inventario porcino."
+        actions={
+          <Button
+            onClick={() => setIsModalOpen(true)}
+            tone="primary"
+            className="rounded-xl! shadow-md hover:shadow-xl transition-all duration-200"
+          >
+            + Añadir Cerdo
+          </Button>
+        }
+      />
 
-      <div className="space-y-10">
+      <div className="flex flex-col gap-6">
         {/* SECCIÓN PRINCIPAL */}
-        <div className="space-y-4">
-          <div className="flex justify-between items-center bg-white p-6 rounded-4xl shadow-sm">
-            <div className="flex gap-3">
+        <div className="flex flex-col gap-4">
+          <div className="flex justify-between items-center bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100">
+            <div className="flex gap-3 w-full max-w-md">
               <input
                 placeholder="Buscar por Lote..."
-                className="border rounded-xl px-4 py-2 text-sm outline-none focus:border-emerald-400 text-slate-900"
+                className="w-full border rounded-xl px-4 py-2.5 text-sm outline-none focus:border-emerald-450 text-slate-900 bg-slate-50 border-slate-200 font-semibold"
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
-              <button
-                onClick={() => setIsModalOpen(true)}
-                className="bg-sena-yellow text-slate-950 font-bold px-6 py-2 rounded-xl shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-200 cursor-pointer"
-              >
-                + Añadir Cerdo
-              </button>
             </div>
           </div>
           <AnimalTable animals={filtered} onDelete={moveToTrash} />
@@ -101,7 +96,7 @@ const AnimalsView = () => {
 
         {/* SECCIÓN PAPELERA (Solo aparece si hay algo) */}
         {trash.length > 0 && (
-          <div className="space-y-4 opacity-80">
+          <div className="flex flex-col gap-4 opacity-80 mt-4">
             <div className="flex items-center gap-4 bg-slate-200/50 p-4 rounded-2xl">
               <span className="text-xl">🗑️</span>
               <h3 className="font-bold text-slate-600 uppercase tracking-widest text-sm">

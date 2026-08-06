@@ -2,9 +2,10 @@
 
 import React, { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Card from "../../components/ui/Card.jsx";
-import Button from "../../components/ui/Button.jsx";
-import Table from "../../components/ui/Table.jsx";
+import Card from "@/components/ui/Card";
+import Button from "@/components/ui/Button";
+import Table from "@/components/ui/Table";
+import ModuleHeader from "@/components/layout/ModuleHeader";
 import {
   Stethoscope,
   Scale,
@@ -111,7 +112,7 @@ export default function AnimalProfileView() {
   // Funciones de tabs
   const renderTabResumen = () => (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <Card className="bg-slate-50 border border-slate-100 shadow-none">
+      <Card className="bg-slate-50 border border-slate-100 shadow-none rounded-2xl p-6">
         <div className="flex justify-between items-start">
           <div>
             <p className="text-sm font-semibold uppercase tracking-wider text-slate-500">
@@ -127,7 +128,7 @@ export default function AnimalProfileView() {
           </div>
         </div>
       </Card>
-      <Card className="bg-slate-50 border border-slate-100 shadow-none">
+      <Card className="bg-slate-50 border border-slate-100 shadow-none rounded-2xl p-6">
         <div className="flex justify-between items-start">
           <div>
             <p className="text-sm font-semibold uppercase tracking-wider text-slate-500">
@@ -142,7 +143,7 @@ export default function AnimalProfileView() {
           </div>
         </div>
       </Card>
-      <Card className="bg-slate-50 border border-slate-100 shadow-none">
+      <Card className="bg-slate-50 border border-slate-100 shadow-none rounded-2xl p-6">
         <div className="flex justify-between items-start">
           <div>
             <p className="text-sm font-semibold uppercase tracking-wider text-slate-500">
@@ -193,8 +194,8 @@ export default function AnimalProfileView() {
         <div className="relative border-l-2 border-indigo-100 ml-4 space-y-8">
           {timeline.map((item, idx) => (
             <div key={idx} className="relative pl-6">
-              <div className="absolute -left-2.25 top-1 h-4 w-4 rounded-full bg-indigo-500 ring-4 ring-white" />
-              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+              <div className="absolute -left-2 top-1.5 h-3.5 w-3.5 rounded-full bg-indigo-500 ring-4 ring-white" />
+              <div className="bg-slate-55 bg-slate-50 p-4 rounded-2xl border border-slate-100">
                 <div className="flex justify-between items-center mb-2">
                   <span className="font-bold text-slate-900">
                     {item.evento}
@@ -228,7 +229,7 @@ export default function AnimalProfileView() {
           <TrendingUp className="text-blue-500" /> Crecimiento vs Estándar
           (Porkcolombia)
         </h3>
-        <Card className="bg-slate-50 border border-slate-100 shadow-none h-64 relative overflow-hidden flex flex-col justify-end p-0">
+        <Card className="bg-slate-50 border border-slate-100 shadow-none h-64 relative overflow-hidden flex flex-col justify-end p-0 rounded-2xl">
           <svg
             className="w-full h-48"
             viewBox="0 0 100 100"
@@ -309,7 +310,7 @@ export default function AnimalProfileView() {
         </div>
 
         <div className="mb-8">
-          <div className="flex justify-between text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">
+          <div className="flex justify-between text-xs font-bold text-slate-505 text-slate-500 mb-2 uppercase tracking-wider">
             <span>Servicio (Día 0)</span>
             <span>
               Progreso: {Math.round((animal.diasGestacion / 114) * 100)}%
@@ -324,7 +325,7 @@ export default function AnimalProfileView() {
           </div>
         </div>
 
-        <div className="border border-slate-100 rounded-4xl overflow-hidden">
+        <div className="border border-slate-100 rounded-[2rem] overflow-hidden">
           <Table columns={cols} rows={partos} />
         </div>
       </div>
@@ -332,19 +333,32 @@ export default function AnimalProfileView() {
   };
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto text-slate-900">
+    <div className="w-full flex flex-col gap-6 text-slate-900">
       {/* Botón Volver */}
       <button
         onClick={() => router.push("/dashboard/inventory")}
-        className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-indigo-600 transition-colors cursor-pointer"
+        className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-indigo-650 hover:text-indigo-600 transition-colors cursor-pointer w-fit no-print"
       >
         <ChevronLeft size={16} /> Volver al Inventario
       </button>
 
+      {/* Cabecera Estandarizada */}
+      <ModuleHeader
+        category="HOJA DE VIDA"
+        title={`Ficha de Animal #${animal.id}`}
+        description={`${animal.raza} • ${animal.sexo} • Edad: ${calcularEdad(animal.fechaNacimiento)}`}
+        actions={
+          <div className="flex gap-2">
+            <Badge estado={animal.etapa} type="etapa" />
+            <Badge estado={animal.estadoSalud} type="salud" />
+          </div>
+        }
+      />
+
       <div className="flex flex-col lg:flex-row gap-6 items-start">
         <div className="flex-1 w-full space-y-6">
           {/* Header de Perfil */}
-          <Card className="p-8!">
+          <Card className="p-8! border border-slate-100 bg-white rounded-[2rem] shadow-sm">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div className="flex items-center gap-6">
                 <div className="h-24 w-24 rounded-3xl bg-indigo-50 flex items-center justify-center border-2 border-indigo-100">
@@ -353,26 +367,20 @@ export default function AnimalProfileView() {
                   </span>
                 </div>
                 <div>
-                  <h1 className="text-4xl font-black text-slate-900 tracking-tight">
-                    #{animal.id}
-                  </h1>
-                  <p className="text-lg font-medium text-slate-500 mt-1">
-                    {animal.raza} • {animal.sexo}
+                  <h3 className="text-2xl font-black text-slate-900 tracking-tight">
+                    Resumen Técnico
+                  </h3>
+                  <p className="text-sm font-medium text-slate-500 mt-1">
+                    Historial reproductivo: {animal.estadoReproductivo}
                   </p>
-
-                  <div className="flex flex-wrap gap-3 mt-4">
-                    <Badge estado={animal.etapa} type="etapa" />
-                    <Badge estado={animal.estadoSalud} type="salud" />
-                    <span className="flex items-center gap-1.5 text-xs font-bold text-slate-600 bg-slate-100 px-3 py-1 rounded-full uppercase">
-                      <Calendar size={14} className="text-slate-400" />
-                      Edad: {calcularEdad(animal.fechaNacimiento)}
-                    </span>
-                  </div>
+                  <p className="text-sm font-medium text-slate-500 mt-0.5">
+                    Último tratamiento: {animal.ultimoTratamiento}
+                  </p>
                 </div>
               </div>
 
               {/* Acciones Rápidas */}
-              <div className="flex flex-col gap-3 min-w-50">
+              <div className="flex flex-col gap-3 min-w-50 w-full md:w-auto">
                 <Button className="w-full justify-start gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl! shadow-md border-none cursor-pointer">
                   <Scale size={16} /> Registrar Pesaje
                 </Button>
@@ -390,7 +398,7 @@ export default function AnimalProfileView() {
           </Card>
 
           {/* Navegación por Pestañas */}
-          <Card className="p-2!">
+          <Card className="p-2 bg-white rounded-[2rem] shadow-sm border border-slate-100">
             <div className="flex overflow-x-auto no-scrollbar gap-2 p-2">
               {[
                 { id: "resumen", label: "Resumen General" },
@@ -403,8 +411,8 @@ export default function AnimalProfileView() {
                   onClick={() => setActiveTab(tab.id)}
                   className={`px-5 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap transition-all cursor-pointer ${
                     activeTab === tab.id
-                      ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/30"
-                      : "text-slate-600 hover:bg-slate-100"
+                      ? "bg-indigo-650 bg-indigo-600 text-white shadow-md shadow-indigo-500/30"
+                      : "text-slate-600 hover:bg-slate-105 hover:bg-slate-100"
                   }`}
                 >
                   {tab.label}

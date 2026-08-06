@@ -9,7 +9,8 @@ import {
   Trash2,
   Droplets,
 } from "lucide-react";
-import Card from "../../components/ui/Card";
+import Card from "@/components/ui/Card";
+import ModuleHeader from "@/components/layout/ModuleHeader";
 import biosecurityProtocols from "./data/biosecurityProtocols.json";
 
 const iconMap = {
@@ -83,39 +84,23 @@ const BiosecurityView = () => {
   };
 
   return (
-    <div className="space-y-8 max-w-5xl mx-auto pb-10">
-      <Card as="header" className="flex flex-col gap-6 rounded-4xl!">
-        <div>
-          <h2 className="text-3xl font-black text-slate-900">
-            Control de Bioseguridad
-          </h2>
-          <p className="text-slate-500 mt-2">
-            Lista de verificación de protocolos estructurales y operativos.
-          </p>
-        </div>
-
-        {/* Barra de Progreso */}
-        <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
-          <div className="flex justify-between items-end mb-3">
-            <span className="font-bold text-slate-700">
-              Cumplimiento Global
-            </span>
-            <span className="text-3xl font-black text-emerald-500">
-              {progress}%
-            </span>
+    <div className="w-full flex flex-col gap-6">
+      {/* Cabecera Estandarizada */}
+      <ModuleHeader
+        category="SANIDAD Y BIOSEGURIDAD"
+        title="Control de Bioseguridad"
+        description="Lista de verificación de protocolos estructurales y operativos de la granja."
+        actions={
+          <div className="flex items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-150 shrink-0">
+            <span className="font-bold text-slate-700 text-sm">Progreso:</span>
+            <span className="text-xl font-black text-emerald-600">{progress}%</span>
           </div>
-          <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
-            <div
-              className="bg-emerald-500 h-3 rounded-full transition-all duration-700 ease-out"
-              style={{ width: `${progress}%` }}
-            ></div>
-          </div>
-        </div>
-      </Card>
+        }
+      />
 
       <div className="grid lg:grid-cols-2 gap-8">
         {/* Protocolos Estructurales */}
-        <Card className="rounded-4xl!">
+        <Card className="rounded-[2rem]! p-6 bg-white border border-slate-100 shadow-sm">
           <h3 className="text-xl font-bold mb-6 text-slate-800 flex items-center gap-3">
             <div className="p-2 bg-slate-100 rounded-lg">
               <ShieldCheck className="text-emerald-500 w-5 h-5" />
@@ -126,7 +111,7 @@ const BiosecurityView = () => {
         </Card>
 
         {/* Protocolos Operativos */}
-        <Card className="rounded-4xl!">
+        <Card className="rounded-[2rem]! p-6 bg-white border border-slate-100 shadow-sm">
           <h3 className="text-xl font-bold mb-6 text-slate-800 flex items-center gap-3">
             <div className="p-2 bg-slate-100 rounded-lg">
               <UserCheck className="text-emerald-500 w-5 h-5" />

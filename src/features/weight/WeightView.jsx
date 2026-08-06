@@ -9,10 +9,11 @@ import {
   Activity,
   Plus,
 } from "lucide-react";
-import Button from "../../components/ui/Button";
-import Card from "../../components/ui/Card";
-import Table from "../../components/ui/Table";
-import Input from "../../components/ui/Input";
+import Button from "@/components/ui/Button";
+import Card from "@/components/ui/Card";
+import Table from "@/components/ui/Table";
+import Input from "@/components/ui/Input";
+import ModuleHeader from "@/components/layout/ModuleHeader";
 import weightStandards from "./data/weightStandards.json";
 
 const initialAnimals = [
@@ -65,7 +66,7 @@ const GrowthChart = () => {
     .join(" ");
 
   return (
-    <div className="bg-white p-6 rounded-4xl shadow-sm mb-8">
+    <Card className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
         <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
           <TrendingUp className="text-blue-500 w-6 h-6" />
@@ -156,7 +157,7 @@ const GrowthChart = () => {
           <span>0kg</span>
         </div>
       </div>
-    </div>
+    </Card>
   );
 };
 
@@ -298,34 +299,23 @@ const WeightView = () => {
   ];
 
   return (
-    <div className="space-y-8 max-w-400 mx-auto pb-10">
-      {/* Cabecera y Acciones Principales */}
-      <Card
-        as="header"
-        className="flex flex-col gap-6 rounded-4xl! lg:flex-row lg:items-center lg:justify-between border-t-4 border-t-sena-blue"
-      >
-        <div>
-          <h2 className="text-3xl font-black text-slate-900 flex items-center gap-3">
-            <div className="p-2 bg-sena-blue rounded-xl">
-              <Scale className="text-gray-200 w-7 h-7" />
-            </div>
-            Registro y Control de Pesajes
-          </h2>
-          <p className="text-slate-500 mt-2 font-medium">
-            Análisis de Ganancia Diaria de Peso (GDP) y conversiones.
-          </p>
-        </div>
-
-        <div className="flex flex-col sm:flex-row gap-4">
+    <div className="w-full flex flex-col gap-6">
+      {/* Cabecera Estandarizada */}
+      <ModuleHeader
+        category="PRODUCCIÓN"
+        title="Registro de peso"
+        description="Análisis de Ganancia Diaria de Peso (GDP) y curvas de crecimiento."
+        actions={
           <Button
             onClick={() => setIsModalOpen(true)}
-            className="flex items-center justify-center gap-2 bg-sena-blue hover:bg-sena-blue/80 hover:-translate-y-1 hover:shadow-xl text-white border-none shadow-lg shadow-sena-blue/30 transition-all duration-200 cursor-pointer font-bold"
+            tone="primary"
+            className="flex items-center justify-center gap-2 font-bold rounded-xl!"
           >
             <Plus size={20} />
             Registrar Pesaje
           </Button>
-        </div>
-      </Card>
+        }
+      />
 
       <GrowthChart />
 
@@ -344,7 +334,7 @@ const WeightView = () => {
               className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-colors whitespace-nowrap cursor-pointer ${
                 filterEtapa === etp.id
                   ? "bg-slate-900 text-white shadow-md"
-                  : "text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+                  : "text-slate-505 hover:bg-slate-100 hover:text-slate-800"
               }`}
             >
               {etp.label}
@@ -352,7 +342,7 @@ const WeightView = () => {
           ))}
         </div>
 
-        <Card className="rounded-4xl! py-4! px-8! border border-slate-100 shadow-sm flex items-center gap-5 w-full md:w-auto">
+        <Card className="rounded-[2rem] py-4 px-8 border border-slate-100 shadow-sm flex items-center gap-5 w-full md:w-auto bg-white">
           <div className="p-3 bg-sena-blue rounded-xl">
             <Activity className="text-gray-200 w-6 h-6" />
           </div>
@@ -369,7 +359,7 @@ const WeightView = () => {
 
       {/* Tabla de Pesajes */}
       <section>
-        <div className="bg-white rounded-4xl shadow-sm overflow-hidden p-2 border border-slate-100">
+        <div className="bg-white rounded-[2rem] shadow-sm overflow-hidden p-2 border border-slate-100">
           <Table columns={columns} rows={filteredAnimals} />
         </div>
       </section>
@@ -380,7 +370,7 @@ const WeightView = () => {
           <Card
             as="form"
             onSubmit={handleAddWeight}
-            className="w-full max-w-md p-8! rounded-4xl! shadow-2xl relative border border-slate-100 bg-white"
+            className="w-full max-w-md p-8! rounded-[2.5rem]! shadow-2xl relative border border-slate-100 bg-white"
           >
             <button
               type="button"
@@ -431,7 +421,8 @@ const WeightView = () => {
               </Button>
               <Button
                 type="submit"
-                className="flex-1 font-black bg-sena-blue hover:bg-sena-blue/80 text-white border-none shadow-md shadow-sena-blue/30 rounded-xl!"
+                tone="secondary"
+                className="flex-1 font-black rounded-xl!"
               >
                 Guardar Peso
               </Button>

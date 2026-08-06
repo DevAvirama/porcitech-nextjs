@@ -2,10 +2,11 @@
 
 import React, { useState } from "react";
 import { UserPlus, Shield, Check, X, Tag } from "lucide-react";
-import Card from "../../components/ui/Card.jsx";
-import Button from "../../components/ui/Button.jsx";
-import Table from "../../components/ui/Table.jsx";
-import Input from "../../components/ui/Input.jsx";
+import Card from "@/components/ui/Card";
+import Button from "@/components/ui/Button";
+import Table from "@/components/ui/Table";
+import Input from "@/components/ui/Input";
+import ModuleHeader from "@/components/layout/ModuleHeader";
 
 const SettingsView = () => {
   // Team data with Email included
@@ -90,7 +91,7 @@ const SettingsView = () => {
       key: "name",
       render: (row) => (
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500 text-sm">
+          <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-505 text-slate-500 text-sm">
             {row.name
               .split(" ")
               .map((n) => n[0])
@@ -128,7 +129,7 @@ const SettingsView = () => {
       render: (row) => (
         <button
           onClick={() => handleToggleStatus(row.id)}
-          className={`w-12 h-6 rounded-full transition-colors relative ${row.status === "Activo" ? "bg-emerald-500" : "bg-slate-200"}`}
+          className={`w-12 h-6 rounded-full transition-colors relative cursor-pointer ${row.status === "Activo" ? "bg-emerald-500" : "bg-slate-200"}`}
         >
           <div
             className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-transform shadow-sm ${row.status === "Activo" ? "translate-x-7" : "translate-x-1"}`}
@@ -148,46 +149,43 @@ const SettingsView = () => {
   ];
 
   return (
-    <div className="space-y-8 max-w-400 mx-auto pb-10">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 bg-white p-6 rounded-4xl shadow-sm border border-slate-100">
-        <div>
-          <h2 className="text-3xl font-black italic text-slate-900 flex items-center gap-3">
-            <Shield className="text-indigo-600 h-8 w-8" />
-            Gestión de Accesos
-          </h2>
-          <p className="text-slate-500 mt-1 font-medium">
-            Controla quién tiene acceso a cada módulo del sistema
-          </p>
-        </div>
-        <Button
-          onClick={handleOpenModal}
-          className="bg-sena-green hover:bg-sena-green hover:-translate-y-1 hover:shadow-xl text-white font-bold rounded-xl shadow-md shadow-sena-green/20 border-none transition-all duration-200"
-        >
-          <UserPlus size={18} /> Crear Nuevo Usuario
-        </Button>
-      </div>
+    <div className="w-full flex flex-col gap-6">
+      {/* Cabecera Estandarizada */}
+      <ModuleHeader
+        category="CONFIGURACIÓN"
+        title="Ajustes del Sistema"
+        description="Administración de usuarios, roles y parámetros generales del sistema."
+        actions={
+          <Button
+            onClick={handleOpenModal}
+            tone="primary"
+            className="flex items-center justify-center gap-2 font-bold rounded-xl!"
+          >
+            <UserPlus size={18} /> Crear Nuevo Usuario
+          </Button>
+        }
+      />
 
       {/* Tabla de Usuarios */}
-      <section>
-        <h3 className="text-xl font-black italic text-slate-800 mb-4 px-2">
+      <section className="flex flex-col gap-4">
+        <h3 className="text-xl font-bold text-slate-800">
           Directorio de Personal
         </h3>
-        <div className="bg-white rounded-4x1 shadow-sm overflow-hidden border border-slate-100 p-2">
+        <div className="bg-white rounded-[2rem] shadow-sm overflow-hidden border border-slate-100 p-2">
           <Table columns={teamCols} rows={teamData} />
         </div>
       </section>
 
       {/* Matriz de Permisos */}
-      <section>
-        <h3 className="text-xl font-black italic text-slate-800 mb-4 px-2">
+      <section className="flex flex-col gap-4">
+        <h3 className="text-xl font-bold text-slate-800">
           Matriz de Permisos Visual
         </h3>
-        <Card className="p-6 border border-slate-100 overflow-x-auto">
+        <Card className="p-6 border border-slate-100 rounded-[2rem] bg-white shadow-sm overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr>
-                <th className="p-4 border-b border-slate-100 font-bold text-slate-600 uppercase tracking-wider text-sm">
+                <th className="p-4 border-b border-slate-100 font-bold text-slate-650 text-slate-600 uppercase tracking-wider text-sm">
                   Módulo
                 </th>
                 <th className="p-4 border-b border-slate-100 font-bold text-indigo-600 uppercase tracking-wider text-sm text-center">
@@ -196,7 +194,7 @@ const SettingsView = () => {
                 <th className="p-4 border-b border-slate-100 font-bold text-emerald-600 uppercase tracking-wider text-sm text-center">
                   Veterinario
                 </th>
-                <th className="p-4 border-b border-slate-100 font-bold text-slate-600 uppercase tracking-wider text-sm text-center">
+                <th className="p-4 border-b border-slate-100 font-bold text-slate-500 uppercase tracking-wider text-sm text-center">
                   Operativo
                 </th>
               </tr>
@@ -241,12 +239,12 @@ const SettingsView = () => {
           <Card
             as="form"
             onSubmit={handleSaveUser}
-            className="w-full max-w-md p-8! rounded-[2.5rem] shadow-2xl relative border border-slate-100"
+            className="w-full max-w-md p-8! rounded-[2.5rem] shadow-2xl relative border border-slate-100 bg-white"
           >
             <button
               type="button"
               onClick={() => setIsModalOpen(false)}
-              className="absolute top-6 right-6 text-slate-400 hover:text-slate-700 font-bold bg-slate-100 w-8 h-8 rounded-full flex items-center justify-center transition-colors"
+              className="absolute top-6 right-6 text-slate-400 hover:text-slate-700 font-bold bg-slate-100 w-8 h-8 rounded-full flex items-center justify-center transition-colors cursor-pointer"
             >
               ✕
             </button>
@@ -281,7 +279,7 @@ const SettingsView = () => {
                   <select
                     value={formRole}
                     onChange={(e) => setFormRole(e.target.value)}
-                    className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 outline-none font-medium text-slate-700 focus:ring-2 focus:ring-indigo-500 appearance-none"
+                    className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 outline-none font-medium text-slate-700 focus:ring-2 focus:ring-indigo-500 appearance-none cursor-pointer"
                   >
                     <option value="Administrador">Administrador</option>
                     <option value="Veterinario">Veterinario</option>
@@ -305,7 +303,8 @@ const SettingsView = () => {
               </Button>
               <Button
                 type="submit"
-                className="flex-1 font-black bg-indigo-600 hover:bg-indigo-700 text-white border-none shadow-md shadow-indigo-500/30 rounded-xl!"
+                tone="secondary"
+                className="flex-1 font-black rounded-xl!"
               >
                 Guardar
               </Button>

@@ -16,9 +16,10 @@ import {
   Download,
   Filter,
 } from "lucide-react";
-import Card from "../../components/ui/Card.jsx";
-import Table from "../../components/ui/Table.jsx";
-import Button from "../../components/ui/Button.jsx";
+import Card from "@/components/ui/Card";
+import Table from "@/components/ui/Table";
+import Button from "@/components/ui/Button";
+import ModuleHeader from "@/components/layout/ModuleHeader";
 
 const ReportsView = () => {
   // Configuración de Reportes
@@ -196,7 +197,7 @@ const ReportsView = () => {
   const kpiCols = [
     { header: "Métrica Clave", key: "metrica", render: (row) => <span className="font-bold text-slate-800">{row.metrica}</span> },
     { header: "Valor Actual", key: "actual", render: (row) => <span className="font-black text-slate-900">{row.actual}</span> },
-    { header: "Objetivo", key: "objetivo", render: (row) => <span className="text-slate-500 font-semibold">{row.objetivo}</span> },
+    { header: "Objetivo", key: "objective", render: (row) => <span className="text-slate-505 text-slate-500 font-semibold">{row.objetivo}</span> },
     {
       header: "Variación",
       key: "variacion",
@@ -222,28 +223,25 @@ const ReportsView = () => {
   ];
 
   return (
-    <div className="space-y-8 max-w-400 mx-auto pb-10">
+    <div className="w-full flex flex-col gap-6">
       
       {/* HEADER DEL MÓDULO */}
       {!activeReport && (
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-6 rounded-4xl shadow-sm border border-slate-100 gap-4">
-          <div>
-            <h2 className="text-3xl font-black italic text-slate-900 flex items-center gap-3">
-              <BarChart2 className="text-indigo-600 h-8 w-8" />
-              Alertas y Reportes
-            </h2>
-            <p className="text-slate-500 mt-1 font-medium">
-              Centro de control y análisis de rendimiento de la granja.
-            </p>
-          </div>
-          <Button
-            onClick={handlePrintPDF}
-            className="bg-sena-green hover:bg-sena-green/80 hover:-translate-y-1 hover:shadow-xl text-white font-bold rounded-xl shadow-md shadow-sena-green/20 border-none transition-all duration-200 cursor-pointer flex items-center gap-2 no-print"
-          >
-            <Download size={18} />
-            Exportar PDF
-          </Button>
-        </div>
+        <ModuleHeader
+          category="REPORTES Y ALERTAS"
+          title="Alertas y Reportes"
+          description="Centro de control y análisis de rendimiento de la granja."
+          actions={
+            <Button
+              onClick={handlePrintPDF}
+              tone="primary"
+              className="flex items-center gap-2 font-bold rounded-xl! no-print"
+            >
+              <Download size={18} />
+              Exportar PDF
+            </Button>
+          }
+        />
       )}
 
       {/* RENDERIZADO DORMANT: CONFIGURADOR Y DASHBOARD */}
@@ -259,7 +257,7 @@ const ReportsView = () => {
 
               {/* 1. Tipo de reporte */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Tipo de Reporte Técnico</label>
+                <label className="text-xs font-bold text-slate-505 text-slate-500 uppercase tracking-wider block">Tipo de Reporte Técnico</label>
                 <div className="relative">
                   <select
                     value={selectedReportType}
@@ -278,7 +276,7 @@ const ReportsView = () => {
 
               {/* 2. Rango de fecha */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Rango de Datos</label>
+                <label className="text-xs font-bold text-slate-505 text-slate-500 uppercase tracking-wider block">Rango de Datos</label>
                 <div className="relative">
                   <select
                     value={dateRange}
@@ -296,7 +294,7 @@ const ReportsView = () => {
 
               {/* 3. Lote */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Foco por Lote</label>
+                <label className="text-xs font-bold text-slate-550 bg-transparent text-slate-500 uppercase tracking-wider block">Foco por Lote</label>
                 <div className="relative">
                   <select
                     value={selectedBatch}
@@ -354,7 +352,7 @@ const ReportsView = () => {
                       <span className="text-[10px] font-bold text-slate-400">{alert.time}</span>
                     </div>
                     <h4 className="font-bold text-slate-900 mt-4">{alert.title}</h4>
-                    <p className="text-xs text-slate-505 text-slate-500 mt-1.5 leading-relaxed">{alert.desc}</p>
+                    <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">{alert.desc}</p>
                   </div>
                 </div>
               ))}
@@ -363,7 +361,7 @@ const ReportsView = () => {
             {/* Graficos Dashboard */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
               {/* Gráfica de Crecimiento */}
-              <Card className="p-6 border border-slate-100 flex flex-col justify-between rounded-3xl bg-white shadow-sm">
+              <Card className="p-6 border border-slate-100 flex flex-col justify-between rounded-[2rem] bg-white shadow-sm">
                 <div>
                   <div className="flex justify-between items-center mb-6">
                     <h3 className="text-xl font-black italic text-slate-800 flex items-center gap-2">
@@ -386,14 +384,14 @@ const ReportsView = () => {
                     </svg>
                   </div>
                 </div>
-                <div className="flex gap-4 mt-4 justify-center text-sm font-bold text-slate-505 text-slate-500">
+                <div className="flex gap-4 mt-4 justify-center text-sm font-bold text-slate-500">
                   <span className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-blue-500"></div> Real</span>
                   <span className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-emerald-500 opacity-50"></div> Ideal</span>
                 </div>
               </Card>
 
               {/* Distribución de Lotes */}
-              <Card className="p-6 border border-slate-100 flex flex-col justify-between rounded-3xl bg-white shadow-sm">
+              <Card className="p-6 border border-slate-100 flex flex-col justify-between rounded-[2rem] bg-white shadow-sm">
                 <div>
                   <div className="flex justify-between items-center mb-6">
                     <h3 className="text-xl font-black italic text-slate-800 flex items-center gap-2">
@@ -410,7 +408,7 @@ const ReportsView = () => {
                         <circle cx="50" cy="50" r="40" fill="transparent" stroke="#8b5cf6" strokeWidth="20" strokeDasharray="251.2" strokeDashoffset="226.08" className="origin-center rotate-324" />
                       </svg>
                       <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <span className="text-3xl font-black text-slate-905 text-slate-900">1.5k</span>
+                        <span className="text-3xl font-black text-slate-900">1.5k</span>
                         <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Cerdos</span>
                       </div>
                     </div>
@@ -428,7 +426,7 @@ const ReportsView = () => {
             {/* KPIs del mes */}
             <div className="mt-8">
               <h3 className="text-lg font-black italic text-slate-800 mb-4">KPIs del Mes</h3>
-              <div className="bg-white rounded-4xl shadow-sm overflow-hidden border border-slate-100 p-2">
+              <div className="bg-white rounded-[2rem] shadow-sm overflow-hidden border border-slate-100 p-2">
                 <Table columns={kpiCols} rows={dbKpiData} />
               </div>
             </div>

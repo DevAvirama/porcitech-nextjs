@@ -11,7 +11,7 @@ export default function BrandMark({ light }) {
         className="h-14 w-auto mb-2"
         priority
       />
-      <h1 className="text-3xl font-black text-sena-blue">
+      <h1 className="text-3xl font-black text-white">
         Porci<span className="text-sena-green">Tech</span>
       </h1>
     </div>

@@ -10,10 +10,11 @@ import {
   Layers,
   Tag,
 } from "lucide-react";
-import Button from "../../components/ui/Button";
-import Card from "../../components/ui/Card";
-import Table from "../../components/ui/Table";
-import Input from "../../components/ui/Input";
+import Button from "@/components/ui/Button";
+import Card from "@/components/ui/Card";
+import Table from "@/components/ui/Table";
+import Input from "@/components/ui/Input";
+import ModuleHeader from "@/components/layout/ModuleHeader";
 import inventoryConstants from "./data/inventoryConstants.json";
 import { useRouter } from "next/navigation";
 
@@ -124,7 +125,7 @@ const InventoryView = () => {
   const getSaludColor = (estado) => {
     switch (estado) {
       case "Óptimo":
-        return "eserald";
+        return "emerald";
       case "En Tratamiento":
         return "orange";
       case "Observación":
@@ -177,7 +178,7 @@ const InventoryView = () => {
       render: (row) => (
         <Button
           tone="soft"
-          className="px-3! py-1.5! text-xs flex items-center gap-1.5 font-bold rounded-lg hover:bg-slate-200 text-slate-600 border border-slate-200 shadow-sm cursor-pointer"
+          className="px-3! py-1.5! text-xs flex items-center gap-1.5 font-bold rounded-lg hover:bg-slate-200 text-slate-650 text-slate-600 border border-slate-250 border-slate-200 shadow-sm cursor-pointer"
           onClick={() =>
             router.push(`/dashboard/inventory/profile?id=${row.id}`)
           }
@@ -189,39 +190,29 @@ const InventoryView = () => {
   ];
 
   return (
-    <div className="space-y-8 max-w-400 mx-auto pb-10">
-      {/* Header */}
-      <Card
-        as="header"
-        className="flex flex-col gap-6 rounded-4xl! lg:flex-row lg:items-center lg:justify-between border-t-4 border-sena-blue"
-      >
-        <div>
-          <h2 className="text-3xl font-black text-slate-900 flex items-center gap-3">
-            <div className="p-2 bg-sena-blue rounded-xl shadow-sm border border-sena-blue/50">
-              <Layers className="text-white w-7 h-7" />
-            </div>
-            Inventario y Activos
-          </h2>
-          <p className="text-slate-500 mt-2 font-medium">
-            Gestión centralizada del plantel porcino.
-          </p>
-        </div>
-        <div className="flex flex-col sm:flex-row gap-4">
+    <div className="w-full flex flex-col gap-6">
+      {/* Cabecera Estandarizada */}
+      <ModuleHeader
+        category="LOGÍSTICA E INVENTARIO"
+        title="Inventario y Activos"
+        description="Gestión centralizada del plantel porcino."
+        actions={
           <Button
             onClick={() => setIsModalOpen(true)}
-            className="flex items-center justify-center gap-2 bg-sena-green hover:bg-sena-green-hover hover:-translate-y-1 hover:shadow-xl text-white border-none shadow-lg shadow-sena-green/30 transition-all duration-200 cursor-pointer font-bold"
+            tone="primary"
+            className="flex items-center justify-center gap-2 font-bold rounded-xl!"
           >
             <Plus size={20} />
             Añadir Animal
           </Button>
-        </div>
-      </Card>
+        }
+      />
 
       {/* Filtros */}
-      <Card className="rounded-2xl! p-5 flex flex-col md:flex-row gap-5 items-end bg-white border border-slate-100 shadow-sm">
+      <Card className="rounded-[2rem]! p-5 flex flex-col md:flex-row gap-5 items-end bg-white border border-slate-100 shadow-sm">
         <div className="w-full md:w-1/3">
           <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-            <Search size={14} className="text-indigo-400" /> Buscar ID
+            <Search size={14} className="text-indigo-450 text-indigo-400" /> Buscar ID
           </label>
           <Input
             placeholder="Ej: L-042..."
@@ -239,7 +230,7 @@ const InventoryView = () => {
             <select
               value={filterEtapa}
               onChange={(e) => setFilterEtapa(e.target.value)}
-              className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all shadow-sm appearance-none cursor-pointer"
+              className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all shadow-sm appearance-none cursor-pointer font-semibold"
             >
               <option value="">Todas las Etapas</option>
               {inventoryConstants.etapas.map((etapa) => (
@@ -262,7 +253,7 @@ const InventoryView = () => {
             <select
               value={filterSalud}
               onChange={(e) => setFilterSalud(e.target.value)}
-              className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all shadow-sm appearance-none cursor-pointer"
+              className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all shadow-sm appearance-none cursor-pointer font-semibold"
             >
               <option value="">Todos los Estados</option>
               {inventoryConstants.estados_salud.map((estado) => (
@@ -279,8 +270,8 @@ const InventoryView = () => {
       </Card>
 
       {/* Tabla Maestra */}
-      <section>
-        <div className="bg-white rounded-4xl shadow-sm overflow-hidden p-2 border border-slate-100">
+      <section className="flex flex-col gap-4">
+        <div className="bg-white rounded-[2rem] shadow-sm overflow-hidden p-2 border border-slate-100">
           <Table columns={columns} rows={filteredInventory} />
 
           {filteredInventory.length === 0 && (
@@ -324,10 +315,10 @@ const InventoryView = () => {
                 <label className="text-sm font-bold text-slate-700">Raza</label>
                 <div className="space-y-3">
                   <div className="relative">
-                    <select
+                     <select
                       value={selectedRaza}
                       onChange={(e) => setSelectedRaza(e.target.value)}
-                      className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50 outline-none font-medium text-slate-700 focus:ring-2 focus:ring-indigo-500 appearance-none cursor-pointer"
+                      className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-55 bg-slate-50 outline-none font-medium text-slate-700 focus:ring-2 focus:ring-indigo-500 appearance-none cursor-pointer"
                     >
                       <option value="">Seleccione una raza</option>
                       {inventoryConstants.razas.map((r) => (
@@ -384,7 +375,8 @@ const InventoryView = () => {
               <Button
                 type="button"
                 onClick={handleAddAnimal}
-                className="flex-1 font-black bg-indigo-600 hover:bg-indigo-700 text-white border-none shadow-md shadow-indigo-500/30 rounded-xl!"
+                tone="secondary"
+                className="flex-1 font-black rounded-xl!"
               >
                 Guardar Registro
               </Button>
