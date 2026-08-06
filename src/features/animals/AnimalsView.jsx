@@ -82,7 +82,7 @@ const AnimalsView = () => {
       <div className="flex flex-col gap-6">
         {/* SECCIÓN PRINCIPAL */}
         <div className="flex flex-col gap-4">
-          <div className="flex justify-between items-center bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100">
+          <div className="flex justify-between items-center bg-white p-6 rounded-4xl shadow-sm border border-slate-100">
             <div className="flex gap-3 w-full max-w-md">
               <input
                 placeholder="Buscar por Lote..."

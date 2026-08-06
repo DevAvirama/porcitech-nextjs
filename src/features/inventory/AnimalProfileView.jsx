@@ -325,7 +325,7 @@ export default function AnimalProfileView() {
           </div>
         </div>
 
-        <div className="border border-slate-100 rounded-[2rem] overflow-hidden">
+        <div className="border border-slate-100 rounded-4xl overflow-hidden">
           <Table columns={cols} rows={partos} />
         </div>
       </div>
@@ -358,7 +358,7 @@ export default function AnimalProfileView() {
       <div className="flex flex-col lg:flex-row gap-6 items-start">
         <div className="flex-1 w-full space-y-6">
           {/* Header de Perfil */}
-          <Card className="p-8! border border-slate-100 bg-white rounded-[2rem] shadow-sm">
+          <Card className="p-8! border border-slate-100 bg-white rounded-4xl shadow-sm">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div className="flex items-center gap-6">
                 <div className="h-24 w-24 rounded-3xl bg-indigo-50 flex items-center justify-center border-2 border-indigo-100">
@@ -398,7 +398,7 @@ export default function AnimalProfileView() {
           </Card>
 
           {/* Navegación por Pestañas */}
-          <Card className="p-2 bg-white rounded-[2rem] shadow-sm border border-slate-100">
+          <Card className="p-2 bg-white rounded-4xl shadow-sm border border-slate-100">
             <div className="flex overflow-x-auto no-scrollbar gap-2 p-2">
               {[
                 { id: "resumen", label: "Resumen General" },

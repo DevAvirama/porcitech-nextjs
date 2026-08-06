@@ -219,16 +219,14 @@ const ReproductionView = () => {
 
       {/* Resumen de Ciclo */}
       <section className="flex flex-col gap-4">
-        <h3 className="text-xl font-bold text-slate-800">
-          Resumen de Ciclo
-        </h3>
+        <h3 className="text-xl font-bold text-slate-800">Resumen de Ciclo</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {summaryStats.map((stat, idx) => {
             const IconComponent = stat.icon;
             return (
               <Card
                 key={idx}
-                className="rounded-[2rem]! flex items-center gap-5 hover:shadow-md hover:shadow-slate-200/50 transition-shadow cursor-default border border-slate-100 shadow-sm bg-white"
+                className="rounded-4xl! flex items-center gap-5 hover:shadow-md hover:shadow-slate-200/50 transition-shadow cursor-default border border-slate-100 shadow-sm bg-white"
               >
                 <div className={`p-4 rounded-2xl ${stat.bg}`}>
                   <IconComponent className={`w-8 h-8 ${stat.tone}`} />
@@ -252,7 +250,7 @@ const ReproductionView = () => {
         <h3 className="text-xl font-bold text-slate-800">
           Eventos Reproductivos Recientes
         </h3>
-        <div className="bg-white rounded-[2rem]! shadow-sm overflow-hidden p-2 border border-slate-100">
+        <div className="bg-white rounded-4xl! shadow-sm overflow-hidden p-2 border border-slate-100">
           <Table columns={columns} rows={reproductionEvents} />
         </div>
       </section>

@@ -204,7 +204,7 @@ const FeedingView = () => {
         <h3 className="text-xl font-bold text-slate-800">
           Historial de Suministros
         </h3>
-        <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-2">
+        <div className="bg-white rounded-4xl shadow-sm border border-slate-100 p-2">
           <Table columns={columns} rows={consumption} />
         </div>
       </section>

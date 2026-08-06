@@ -66,7 +66,7 @@ const GrowthChart = () => {
     .join(" ");
 
   return (
-    <Card className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
+    <Card className="bg-white p-6 rounded-4xl border border-slate-100 shadow-sm">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
         <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
           <TrendingUp className="text-blue-500 w-6 h-6" />
@@ -342,7 +342,7 @@ const WeightView = () => {
           ))}
         </div>
 
-        <Card className="rounded-[2rem] py-4 px-8 border border-slate-100 shadow-sm flex items-center gap-5 w-full md:w-auto bg-white">
+        <Card className="rounded-4xl py-4 px-8 border border-slate-100 shadow-sm flex items-center gap-5 w-full md:w-auto bg-white">
           <div className="p-3 bg-sena-blue rounded-xl">
             <Activity className="text-gray-200 w-6 h-6" />
           </div>
@@ -359,7 +359,7 @@ const WeightView = () => {
 
       {/* Tabla de Pesajes */}
       <section>
-        <div className="bg-white rounded-[2rem] shadow-sm overflow-hidden p-2 border border-slate-100">
+        <div className="bg-white rounded-4xl shadow-sm overflow-hidden p-2 border border-slate-100">
           <Table columns={columns} rows={filteredAnimals} />
         </div>
       </section>

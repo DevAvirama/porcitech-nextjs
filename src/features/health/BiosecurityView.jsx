@@ -93,14 +93,16 @@ const BiosecurityView = () => {
         actions={
           <div className="flex items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-150 shrink-0">
             <span className="font-bold text-slate-700 text-sm">Progreso:</span>
-            <span className="text-xl font-black text-emerald-600">{progress}%</span>
+            <span className="text-xl font-black text-emerald-600">
+              {progress}%
+            </span>
           </div>
         }
       />
 
       <div className="grid lg:grid-cols-2 gap-8">
         {/* Protocolos Estructurales */}
-        <Card className="rounded-[2rem]! p-6 bg-white border border-slate-100 shadow-sm">
+        <Card className="rounded-4xl! p-6 bg-white border border-slate-100 shadow-sm">
           <h3 className="text-xl font-bold mb-6 text-slate-800 flex items-center gap-3">
             <div className="p-2 bg-slate-100 rounded-lg">
               <ShieldCheck className="text-emerald-500 w-5 h-5" />
@@ -111,7 +113,7 @@ const BiosecurityView = () => {
         </Card>
 
         {/* Protocolos Operativos */}
-        <Card className="rounded-[2rem]! p-6 bg-white border border-slate-100 shadow-sm">
+        <Card className="rounded-4xl!p-6 bg-white border border-slate-100 shadow-sm">
           <h3 className="text-xl font-bold mb-6 text-slate-800 flex items-center gap-3">
             <div className="p-2 bg-slate-100 rounded-lg">
               <UserCheck className="text-emerald-500 w-5 h-5" />

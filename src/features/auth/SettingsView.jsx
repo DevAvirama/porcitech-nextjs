@@ -171,7 +171,7 @@ const SettingsView = () => {
         <h3 className="text-xl font-bold text-slate-800">
           Directorio de Personal
         </h3>
-        <div className="bg-white rounded-[2rem] shadow-sm overflow-hidden border border-slate-100 p-2">
+        <div className="bg-white rounded-4xl shadow-sm overflow-hidden border border-slate-100 p-2">
           <Table columns={teamCols} rows={teamData} />
         </div>
       </section>
@@ -181,7 +181,7 @@ const SettingsView = () => {
         <h3 className="text-xl font-bold text-slate-800">
           Matriz de Permisos Visual
         </h3>
-        <Card className="p-6 border border-slate-100 rounded-[2rem] bg-white shadow-sm overflow-x-auto">
+        <Card className="p-6 border border-slate-100 rounded-4xl bg-white shadow-sm overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr>

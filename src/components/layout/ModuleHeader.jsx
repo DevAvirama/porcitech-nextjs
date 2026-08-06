@@ -13,7 +13,7 @@ export default function ModuleHeader({
   return (
     <Card
       as="header"
-      className={`w-full rounded-[2rem] p-6 lg:p-8 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between mb-2 bg-white border border-slate-100 shadow-sm ${className}`}
+      className={`w-full rounded-4xl p-6 lg:p-8 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between mb-2 bg-white border border-slate-100 shadow-sm ${className}`}
     >
       <div className="space-y-1 flex-1">
         {category && (
