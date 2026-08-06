@@ -209,10 +209,11 @@ const InventoryView = () => {
       />
 
       {/* Filtros */}
-      <Card className="rounded-[2rem]! p-5 flex flex-col md:flex-row gap-5 items-end bg-white border border-slate-100 shadow-sm">
+      <Card className="rounded-4xl! p-5 flex flex-col md:flex-row gap-5 items-end bg-white border border-slate-100 shadow-sm">
         <div className="w-full md:w-1/3">
           <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-            <Search size={14} className="text-indigo-450 text-indigo-400" /> Buscar ID
+            <Search size={14} className="text-indigo-450 text-indigo-400" />{" "}
+            Buscar ID
           </label>
           <Input
             placeholder="Ej: L-042..."
@@ -230,7 +231,7 @@ const InventoryView = () => {
             <select
               value={filterEtapa}
               onChange={(e) => setFilterEtapa(e.target.value)}
-              className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all shadow-sm appearance-none cursor-pointer font-semibold"
+              className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-semibold focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all shadow-sm appearance-none cursor-pointer font-semibold"
             >
               <option value="">Todas las Etapas</option>
               {inventoryConstants.etapas.map((etapa) => (
@@ -253,7 +254,7 @@ const InventoryView = () => {
             <select
               value={filterSalud}
               onChange={(e) => setFilterSalud(e.target.value)}
-              className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all shadow-sm appearance-none cursor-pointer font-semibold"
+              className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-semibold focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all shadow-sm appearance-none cursor-pointer font-semibold"
             >
               <option value="">Todos los Estados</option>
               {inventoryConstants.estados_salud.map((estado) => (
@@ -271,7 +272,7 @@ const InventoryView = () => {
 
       {/* Tabla Maestra */}
       <section className="flex flex-col gap-4">
-        <div className="bg-white rounded-[2rem] shadow-sm overflow-hidden p-2 border border-slate-100">
+        <div className="bg-white rounded-4xl shadow-sm overflow-hidden p-2 border border-slate-100">
           <Table columns={columns} rows={filteredInventory} />
 
           {filteredInventory.length === 0 && (
@@ -315,7 +316,7 @@ const InventoryView = () => {
                 <label className="text-sm font-bold text-slate-700">Raza</label>
                 <div className="space-y-3">
                   <div className="relative">
-                     <select
+                    <select
                       value={selectedRaza}
                       onChange={(e) => setSelectedRaza(e.target.value)}
                       className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-55 bg-slate-50 outline-none font-medium text-slate-700 focus:ring-2 focus:ring-indigo-500 appearance-none cursor-pointer"
