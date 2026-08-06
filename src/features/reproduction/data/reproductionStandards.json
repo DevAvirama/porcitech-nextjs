@@ -1,9 +1,45 @@
 {
-  "gestationPeriodDays": 114,
-  "stages": {
-    "monta": "Inseminación o monta natural",
-    "confirmacion": "Diagnóstico de gestación (25-30 días)",
-    "maternidad": "Traslado a sala de maternidad (110 días)",
-    "parto": "Atención del parto (114 días)"
+  "reproduccion_porcina_colombia": {
+    "autoridad": "ICA / Porkcolombia",
+    "parametros_gestacion": {
+      "duracion_promedio_dias": 114,
+      "rango_variacion_dias": 2,
+      "ventana_alerta_maternidad_dias": 7,
+      "inicio_preparacion_paridera": 5
+    },
+    "parametros_lactancia": {
+      "duracion_minima_dias": 21,
+      "duracion_maxima_dias": 28,
+      "edad_destete_recomendada": 21,
+      "peso_objetivo_destete_kg": {
+        "min": 6.0,
+        "max": 7.0
+      }
+    },
+    "intervalo_destete_celo_idc": {
+      "rango_normal_dias": [1, 2],
+      "alerta_atrasada_dias": 8,
+      "umbral_hembra_problema_anestro": 10
+    },
+    "reemplazos_primerizas": {
+      "edad_primer_servicio_dias": {
+        "minimo": 210,
+        "optimo": 240
+      },
+      "peso_primer_servicio_kg": {
+        "minimo": 130,
+        "optimo": 140,
+        "maximo_limite": 150
+      },
+      "madurez_sexual_meses": 7.5
+    },
+    "estados_reproductivos_software": [
+      "Vacia",
+      "Servida",
+      "Gestante",
+      "Lactante",
+      "Destetada",
+      "Descarte"
+    ]
   }
 }

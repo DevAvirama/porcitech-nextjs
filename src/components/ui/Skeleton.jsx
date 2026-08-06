@@ -1,7 +1,7 @@
 export default function Skeleton({ className = "", ...props }) {
   return (
     <div
-      className={`animate-pulse rounded bg-zinc-800/60 ${className}`}
+      className={`animate-pulse bg-slate-200 dark:bg-slate-800 rounded-lg ${className}`}
       {...props}
     />
   );

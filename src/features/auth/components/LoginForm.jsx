@@ -1,82 +1,74 @@
-"use client";
-
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import Input from "@/components/ui/Input";
-import Button from "@/components/ui/Button";
-import authService from "@/services/auth/authService";
 import Link from "next/link";
+import BrandMark from "../../../components/BrandMark.jsx";
+import Button from "../../../components/ui/Button.jsx";
+import Input from "../../../components/ui/Input.jsx";
+import Card from "../../../components/ui/Card.jsx";
 
-export default function LoginForm() {
-  const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
-    try {
-      const success = await authService.login(email, password);
-      if (success) {
-        router.push("/dashboard");
-      } else {
-        setError("Credenciales incorrectas");
-      }
-    } catch (err) {
-      setError("Error en la conexión con el servidor");
-    } finally {
-      setLoading(false);
-    }
-  };
-
+function LoginForm({ fields, onChange, onSubmit }) {
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="space-y-1">
-        <h2 className="text-2xl font-bold text-white tracking-tight">Iniciar Sesión</h2>
-        <p className="text-zinc-400 text-sm">Ingresa tus credenciales para acceder al sistema.</p>
+    <Card className="w-full max-w-md rounded-4xl border border-slate-200 p-8 shadow-2xl shadow-slate-950/10 sm:p-10">
+      <div className="mb-8 flex items-start justify-between">
+        <div>
+          <p className="text-sm font-semibold uppercase tracking-[0.22em] text-emerald-700">
+            Iniciar sesion
+          </p>
+          <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-950">
+            Ingresa a tu cuenta
+          </h2>
+        </div>
+        <div className="lg:hidden">
+          <BrandMark compact />
+        </div>
       </div>
 
-      {error && (
-        <div className="p-3.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-medium">
-          {error}
-        </div>
-      )}
-
-      <div className="space-y-4">
+      <form className="space-y-5" onSubmit={onSubmit}>
         <Input
-          label="Correo Electrónico"
+          label="Usuario"
+          name="email"
           type="email"
-          placeholder="nombre@sena.edu.co"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
+          value={fields.email}
+          onChange={onChange}
         />
-        <div className="space-y-1">
-          <Input
-            label="Contraseña"
-            type="password"
-            placeholder="••••••••"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-          <div className="flex justify-end">
-            <Link
-              href="/forgot-password"
-              className="text-xs text-sena-green hover:opacity-80 font-semibold"
-            >
-              ¿Olvidaste tu contraseña?
-            </Link>
-          </div>
-        </div>
-      </div>
 
-      <Button type="submit" variant="primary" className="w-full" disabled={loading}>
-        {loading ? "Iniciando..." : "Ingresar"}
-      </Button>
-    </form>
+        <Input
+          label="Contrasena"
+          name="password"
+          type="password"
+          value={fields.password}
+          onChange={onChange}
+        />
+
+        <div className="flex items-center justify-between gap-4 text-sm">
+          <Link
+            href="/forgot-password"
+            className="font-medium text-emerald-700 transition hover:text-emerald-800"
+          >
+            ¿Olvidaste tu contrasena?
+          </Link>
+          <span className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-500">
+            Demo
+          </span>
+        </div>
+
+        <Button className="w-full" tone="primary" type="submit">
+          Ingresar al dashboard
+        </Button>
+      </form>
+
+      <div className="mt-8 border-t border-slate-200 pt-6 text-sm text-slate-600">
+        <p>
+          Vista basada en el modulo de inicio de sesion del repositorio
+          original.
+        </p>
+        <Link
+          href="/"
+          className="mt-3 inline-flex font-semibold text-emerald-700 hover:text-emerald-800"
+        >
+          Volver a la landing
+        </Link>
+      </div>
+    </Card>
   );
 }
+
+export default LoginForm;

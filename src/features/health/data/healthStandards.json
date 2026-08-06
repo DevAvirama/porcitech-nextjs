@@ -1,8 +1,24 @@
 {
-  "normalTemperatureRange": { "min": 38.5, "max": 39.5, "unit": "°C" },
-  "criticalSymptons": ["tos", "inapetencia", "diarrea", "manchas púrpuras"],
-  "standardVaccines": [
-    { "name": "Triple Porcina", "ageWeeks": 4 },
-    { "name": "Parvovirus/Erisipela", "ageWeeks": 20 }
+  "vaccinationProtocols": [
+    {
+      "type": "Obligatoria",
+      "disease": "Peste Porcina Clásica (PPC)",
+      "stages": [
+        { "category": "Lechones", "age": "45-60 días", "frequency": "Dosis única" },
+        { "category": "Cerdas Cría", "age": ">90 días gestación", "frequency": "Semestral" }
+      ]
+    },
+    {
+      "type": "Recomendada",
+      "disease": "Mycoplasma / Circovirus",
+      "stages": [{ "category": "Lechones", "age": "7-21 días", "frequency": "Monodosis o Refuerzo" }]
+    }
+  ],
+  "topMedicines": [
+    { "name": "Enrofloxacina", "type": "Antibiótico", "dose": "5 mg/kg", "usage": "Respiratorio/Digestivo" },
+    { "name": "Ceftiofur", "type": "Antibiótico", "dose": "3-5 mg/kg", "usage": "Neumonías (APP)" },
+    { "name": "Toltrazuril", "type": "Coccidiostato", "dose": "20 mg/kg", "usage": "Diarrea Neonatal" },
+    { "name": "Florfenicol", "type": "Antibiótico", "dose": "15 mg/kg", "usage": "Complejo Respiratorio" },
+    { "name": "Ivermectina", "type": "Endectocida", "dose": "300 mcg/kg", "usage": "Parásitos" }
   ]
 }

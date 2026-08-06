@@ -1,7 +1,19 @@
-export default function Card({ children, className = "" }) {
+function Card({ as = 'article', className = '', children, ...props }) {
+  const sharedClassName = `rounded-[1.75rem] bg-white p-6 shadow-sm shadow-slate-200/70 ${className}`
+
+  if (as === 'header') {
+    return (
+      <header className={sharedClassName} {...props}>
+        {children}
+      </header>
+    )
+  }
+
   return (
-    <div className={`bg-zinc-950 border border-zinc-900 rounded-xl p-6 shadow-sm overflow-hidden ${className}`}>
+    <article className={sharedClassName} {...props}>
       {children}
-    </div>
-  );
+    </article>
+  )
 }
+
+export default Card

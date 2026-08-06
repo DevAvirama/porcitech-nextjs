@@ -3,7 +3,7 @@ import ProtectedRoute from "@/components/auth/ProtectedRoute";
 
 export default function ReportsPage() {
   return (
-    <ProtectedRoute allowedRoles={["admin"]}>
+    <ProtectedRoute allowedRoles={["administrador", "veterinario"]}>
       <ReportsView />
     </ProtectedRoute>
   );

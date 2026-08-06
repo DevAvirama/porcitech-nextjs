@@ -1,5 +1,12 @@
-[
-  { "id": 1, "name": "Desinfección de Calzado", "frequency": "Diario en entrada", "required": true },
-  { "id": 2, "name": "Control de Plagas", "frequency": "Mensual", "required": true },
-  { "id": 3, "name": "Limpieza de Parideras", "frequency": "Post-destete", "required": true }
-]
+{
+  "structural": [
+    { "id": "S1", "task": "Cerco Perimetral", "desc": "Malla o barda a 50m de galpones.", "icon": "ShieldCheck" },
+    { "id": "S2", "task": "Filtro Sanitario", "desc": "Ducha obligatoria y cambio de ropa.", "icon": "UserCheck" },
+    { "id": "S3", "task": "Arco de Desinfección", "desc": "Desinfección total de chasis y ruedas.", "icon": "Truck" }
+  ],
+  "operational": [
+    { "id": "O1", "task": "Control de Plagas", "desc": "Plan documentado para roedores e insectos.", "icon": "Bug" },
+    { "id": "O2", "task": "Gestión de Mortalidad", "desc": "Compostaje o fosa técnica en periferia.", "icon": "Trash2" },
+    { "id": "O3", "task": "Potabilización", "desc": "Tratamiento de agua con cloro activo.", "icon": "Droplets" }
+  ]
+}

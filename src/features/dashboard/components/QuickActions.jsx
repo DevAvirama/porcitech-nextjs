@@ -1,28 +1,41 @@
-import Link from "next/link";
-import Card from "@/components/ui/Card";
+"use client";
 
-export default function QuickActions() {
-  const actions = [
-    { label: "Registrar Pesaje", path: "/dashboard/weight" },
-    { label: "Ingreso Veterinario", path: "/dashboard/health" },
-    { label: "Ciclos de Celos/Partos", path: "/dashboard/reproduction" },
-    { label: "Configurar Raciones", path: "/dashboard/feeding" },
-  ];
+import { useRouter } from "next/navigation";
+import Card from "../../../components/ui/Card.jsx";
+import Button from "../../../components/ui/Button.jsx";
 
+function QuickActions({ actions = [] }) {
+  const router = useRouter();
   return (
-    <Card className="space-y-4">
-      <h3 className="text-base font-bold text-white">Accesos Rápidos</h3>
-      <div className="flex flex-col gap-2">
-        {actions.map((act, index) => (
-          <Link
-            key={index}
-            href={act.path}
-            className="w-full px-4 py-2.5 rounded-lg bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-sm font-semibold text-zinc-200 transition-all text-center block"
+    <Card className="mt-6 rounded-4x1">
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-100 text-lg text-slate-800 font-bold">
+          AI
+        </div>
+        <div>
+          <p className="text-sm font-semibold uppercase tracking-[0.22em] text-slate-500">
+            Accesos rapidos
+          </p>
+          <h2 className="text-2xl font-black text-slate-950">
+            Acciones frecuentes
+          </h2>
+        </div>
+      </div>
+
+      <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {actions.map((action) => (
+          <Button
+            key={action.label}
+            tone="soft"
+            className="justify-start text-left hover:scale-[1.02] transition-transform"
+            onClick={() => router.push(action.path)}
           >
-            {act.label}
-          </Link>
+            {action.label}
+          </Button>
         ))}
       </div>
     </Card>
   );
 }
+
+export default QuickActions;

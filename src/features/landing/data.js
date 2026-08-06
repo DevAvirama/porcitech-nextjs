@@ -1,9 +1,21 @@
-export const marketingTexts = {
-  heroTitle: "Gestión Inteligente y Sostenible de la Producción Porcina",
-  heroSubtitle: "El aplicativo definitivo para el registro de pesaje, nutrición, sanidad y reproducción de tus lotes porcinos de forma ágil y digital.",
-  features: [
-    { title: "Control Biológico", description: "Historial completo de vacunas, celos y partos." },
-    { title: "Nutrición Óptima", description: "Raciones de alimento calculadas por lote y etapa biológica." },
-    { title: "Gráficas de Crecimiento", description: "Monitoreo constante de ganancia diaria de peso." },
-  ]
-};
+export const landingStats = [
+  { value: '+500', label: 'GRANJAS CONECTADAS' },
+  { value: '24/7', label: 'MONITOREO ACTIVO' },
+  { value: '35%', label: 'AHORRO EN INSUMOS' },
+  { value: '10k+', label: 'DATOS ANALIZADOS' },
+]
+
+export const landingFeatures = [
+  {
+    title: 'Analisis Predictivo',
+    body: 'Utiliza algoritmos avanzados para predecir el crecimiento y detectar anomalias en la produccion antes de que ocurran.',
+  },
+  {
+    title: 'Salud Animal',
+    body: 'Monitoreo constante de variables ambientales y sanitarias para garantizar el bienestar animal y la calidad del producto.',
+  },
+  {
+    title: 'Alertas Inteligentes',
+    body: 'Sistema de notificaciones en tiempo real directo a tu movil sobre niveles de alimento, temperatura y seguridad.',
+  },
+]
