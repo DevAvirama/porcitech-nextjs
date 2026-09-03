@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { toast } from "sonner";
 import AnimalTable from "./components/AnimalTable";
 import AddAnimalModal from "./components/AddAnimalModal";
+import AnimalQrModal from "./components/AnimalQrModal";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import ModuleHeader from "@/components/layout/ModuleHeader";
@@ -13,6 +14,7 @@ const AnimalsView = () => {
   const [trash, setTrash] = useState([]);
   const [isMounted, setIsMounted] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedAnimalForQr, setSelectedAnimalForQr] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
@@ -123,7 +125,11 @@ const AnimalsView = () => {
               />
             </div>
           </div>
-          <AnimalTable animals={filtered} onDelete={moveToTrash} />
+          <AnimalTable
+            animals={filtered}
+            onDelete={moveToTrash}
+            onOpenQr={(animal) => setSelectedAnimalForQr(animal)}
+          />
         </div>
 
         {/* SECCIÓN PAPELERA (Solo aparece si hay algo) */}
@@ -148,6 +154,13 @@ const AnimalsView = () => {
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           onSave={handleSave}
+        />
+
+        {/* MODAL DE CHAPETA E IMPRESIÓN QR */}
+        <AnimalQrModal
+          animal={selectedAnimalForQr}
+          isOpen={!!selectedAnimalForQr}
+          onClose={() => setSelectedAnimalForQr(null)}
         />
       </div>
     </div>

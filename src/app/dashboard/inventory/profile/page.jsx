@@ -1,10 +1,7 @@
-import { Suspense } from "react";
-import AnimalProfileView from "@/features/inventory/AnimalProfileView";
+import { redirect } from "next/navigation";
 
-export default function AnimalProfilePage() {
-  return (
-    <Suspense fallback={<div className="p-8 text-white">Cargando perfil del animal...</div>}>
-      <AnimalProfileView />
-    </Suspense>
-  );
+export default async function LegacyInventoryProfilePage({ searchParams }) {
+  const sp = await searchParams;
+  const query = new URLSearchParams(sp || {}).toString();
+  redirect(`/dashboard/animals/profile${query ? `?${query}` : ""}`);
 }

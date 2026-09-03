@@ -1,11 +1,20 @@
 {
-  "razas": ["Landrace", "Large White", "Duroc", "Pietrain", "Hampshire", "Cruce"],
-  "etapas": [
-    { "id": "lactancia", "label": "Lactancia", "color": "blue" },
-    { "id": "precebo", "label": "Pre-cebo", "color": "orange" },
-    { "id": "levante", "label": "Levante", "color": "yellow" },
-    { "id": "ceba", "label": "Ceba", "color": "emerald" },
-    { "id": "reproduccion", "label": "Reproducción", "color": "purple" }
+  "categorias": [
+    { "id": "alimento", "label": "Alimento Concentrado", "color": "blue" },
+    { "id": "medicamento", "label": "Medicamentos y Biológicos", "color": "emerald" },
+    { "id": "bioseguridad", "label": "Material e Higiene", "color": "purple" },
+    { "id": "suplemento", "label": "Suplementos y Minerales", "color": "orange" }
   ],
-  "estados_salud": ["Óptimo", "En Tratamiento", "Observación", "Crítico"]
+  "unidades": [
+    "Bultos (40kg)",
+    "Bultos (25kg)",
+    "Kg",
+    "Frascos (100ml)",
+    "Frascos (250ml)",
+    "Frascos (500ml)",
+    "Litros",
+    "Dosis",
+    "Unidades / Cajas"
+  ],
+  "estados_stock": ["Óptimo", "Por Agotarse", "Crítico"]
 }

@@ -1,0 +1,11 @@
+{
+  "razas": ["Landrace", "Large White", "Duroc", "Pietrain", "Hampshire", "Cruce"],
+  "etapas": [
+    { "id": "lactancia", "label": "Lactancia", "color": "blue" },
+    { "id": "precebo", "label": "Pre-cebo", "color": "orange" },
+    { "id": "levante", "label": "Levante", "color": "yellow" },
+    { "id": "ceba", "label": "Ceba", "color": "emerald" },
+    { "id": "reproduccion", "label": "Reproducción", "color": "purple" }
+  ],
+  "estados_salud": ["Óptimo", "En Tratamiento", "Observación", "Crítico"]
+}

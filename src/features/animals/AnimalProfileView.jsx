@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
@@ -18,9 +18,14 @@ import {
   ChevronLeft,
   TrendingUp,
   Baby,
+  QrCode,
+  ArrowRight,
+  ShieldCheck,
+  Award,
 } from "lucide-react";
 
-import inventoryConstants from "./data/inventoryConstants.json";
+import animalConstants from "./data/animalConstants.json";
+import AnimalQrModal from "./components/AnimalQrModal";
 
 const Badge = ({ estado, type = "salud" }) => {
   const themeMap = {
@@ -38,12 +43,14 @@ const Badge = ({ estado, type = "salud" }) => {
   if (type === "salud") {
     switch (estado) {
       case "Óptimo":
+      case "SALUDABLE":
         colorTheme = "emerald";
         break;
       case "En Tratamiento":
         colorTheme = "orange";
         break;
       case "Observación":
+      case "OBSERVACIÓN":
         colorTheme = "yellow";
         break;
       case "Crítico":
@@ -51,7 +58,7 @@ const Badge = ({ estado, type = "salud" }) => {
         break;
     }
   } else if (type === "etapa") {
-    const found = inventoryConstants.etapas.find(
+    const found = animalConstants.etapas.find(
       (e) =>
         e.label.toLowerCase() === estado.toLowerCase() ||
         e.id === estado.toLowerCase(),
@@ -81,10 +88,9 @@ const Badge = ({ estado, type = "salud" }) => {
 export default function AnimalProfileView() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const animalId = searchParams.get("id") || "L-042";
-
-  // Mock de datos del animal
-  const animal = {
+  const animalId = searchParams.get("code") || searchParams.get("id") || "2024-001";
+  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
+  const [animalData, setAnimalData] = useState({
     id: animalId,
     raza: "Landrace x Pietrain",
     sexo: "Hembra",
@@ -95,7 +101,61 @@ export default function AnimalProfileView() {
     ultimoTratamiento: "2024-03-10 (Vacuna Parvovirus)",
     estadoReproductivo: "Confirmada",
     diasGestacion: 45,
-  };
+    lote: "Lote #42",
+  });
+
+  useEffect(() => {
+    // Buscar en sip_animals o sip_inventory si existe
+    try {
+      const storedAnimals = localStorage.getItem("sip_animals");
+      const storedInventory = localStorage.getItem("sip_inventory");
+
+      let found = null;
+      if (storedAnimals) {
+        const parsedAnimals = JSON.parse(storedAnimals);
+        found = parsedAnimals.find(
+          (a) =>
+            (a.id && a.id.toLowerCase() === animalId.toLowerCase()) ||
+            (a.code && a.code.toLowerCase() === animalId.toLowerCase())
+        );
+        if (found) {
+          setAnimalData((prev) => ({
+            ...prev,
+            id: found.id || animalId,
+            raza: found.raza || prev.raza,
+            estadoSalud: found.estado || prev.estadoSalud,
+            lote: found.lote || prev.lote,
+            pesoActual: found.peso || prev.pesoActual,
+          }));
+          return;
+        }
+      }
+
+      if (storedInventory) {
+        const parsed = JSON.parse(storedInventory);
+        found = parsed.find(
+          (a) =>
+            (a.id && a.id.toLowerCase() === animalId.toLowerCase()) ||
+            (a.code && a.code.toLowerCase() === animalId.toLowerCase())
+        );
+        if (found) {
+          setAnimalData((prev) => ({
+            ...prev,
+            id: found.id || animalId,
+            raza: found.raza || prev.raza,
+            sexo: found.sexo || prev.sexo,
+            etapa: found.etapa || prev.etapa,
+            pesoActual: found.ultimoPeso || prev.pesoActual,
+            estadoSalud: found.estadoSalud || prev.estadoSalud,
+          }));
+        }
+      }
+    } catch (e) {
+      console.error("Error loading animal profile:", e);
+    }
+  }, [animalId]);
+
+  const animal = animalData;
 
   const calcularEdad = (fecha) => {
     const hoy = new Date();
@@ -116,7 +176,7 @@ export default function AnimalProfileView() {
         <div className="flex justify-between items-start">
           <div>
             <p className="text-sm font-semibold uppercase tracking-wider text-slate-500">
-              Último Peso
+              Último Peso Registrado
             </p>
             <p className="mt-2 text-3xl font-black text-slate-900">
               {animal.pesoActual}{" "}
@@ -189,13 +249,13 @@ export default function AnimalProfileView() {
     return (
       <div className="space-y-6">
         <h3 className="text-xl font-black text-slate-900">
-          Historial Médico y Manejo
+          Historial Médico y Plan Sanitario
         </h3>
         <div className="relative border-l-2 border-indigo-100 ml-4 space-y-8">
           {timeline.map((item, idx) => (
             <div key={idx} className="relative pl-6">
               <div className="absolute -left-2 top-1.5 h-3.5 w-3.5 rounded-full bg-indigo-500 ring-4 ring-white" />
-              <div className="bg-slate-55 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
                 <div className="flex justify-between items-center mb-2">
                   <span className="font-bold text-slate-900">
                     {item.evento}
@@ -226,8 +286,7 @@ export default function AnimalProfileView() {
     return (
       <div className="space-y-6">
         <h3 className="text-xl font-black text-slate-900 flex items-center gap-2">
-          <TrendingUp className="text-blue-500" /> Crecimiento vs Estándar
-          (Porkcolombia)
+          <TrendingUp className="text-blue-500" /> Curva de Crecimiento vs Estándar (Porkcolombia)
         </h3>
         <Card className="bg-slate-50 border border-slate-100 shadow-none h-64 relative overflow-hidden flex flex-col justify-end p-0 rounded-2xl">
           <svg
@@ -310,7 +369,7 @@ export default function AnimalProfileView() {
         </div>
 
         <div className="mb-8">
-          <div className="flex justify-between text-xs font-bold text-slate-505 text-slate-500 mb-2 uppercase tracking-wider">
+          <div className="flex justify-between text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">
             <span>Servicio (Día 0)</span>
             <span>
               Progreso: {Math.round((animal.diasGestacion / 114) * 100)}%
@@ -334,21 +393,28 @@ export default function AnimalProfileView() {
 
   return (
     <div className="w-full flex flex-col gap-6 text-slate-900">
-      {/* Botón Volver */}
+      {/* Botón Volver a Gestión de Animales */}
       <button
-        onClick={() => router.push("/dashboard/inventory")}
-        className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-indigo-650 hover:text-indigo-600 transition-colors cursor-pointer w-fit no-print"
+        onClick={() => router.push("/dashboard/animals")}
+        className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-indigo-600 transition-colors cursor-pointer w-fit no-print"
       >
-        <ChevronLeft size={16} /> Volver al Inventario
+        <ChevronLeft size={16} /> Volver a Registro de Animales
       </button>
 
       {/* Cabecera Estandarizada */}
       <ModuleHeader
-        category="HOJA DE VIDA"
-        title={`Ficha de Animal #${animal.id}`}
-        description={`${animal.raza} • ${animal.sexo} • Edad: ${calcularEdad(animal.fechaNacimiento)}`}
+        category="EXPEDIENTE BIOLÓGICO"
+        title={`Hoja de Vida Porcina #${animal.id}`}
+        description={`${animal.raza} • ${animal.sexo} • Edad: ${calcularEdad(animal.fechaNacimiento)} • ${animal.lote}`}
         actions={
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
+            <Button
+              tone="soft"
+              onClick={() => setIsQrModalOpen(true)}
+              className="flex items-center gap-1.5 font-bold text-xs px-3 py-1.5 rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 cursor-pointer shadow-xs"
+            >
+              <QrCode size={14} /> Chapeta QR
+            </Button>
             <Badge estado={animal.etapa} type="etapa" />
             <Badge estado={animal.estadoSalud} type="salud" />
           </div>
@@ -368,7 +434,7 @@ export default function AnimalProfileView() {
                 </div>
                 <div>
                   <h3 className="text-2xl font-black text-slate-900 tracking-tight">
-                    Resumen Técnico
+                    Resumen del Ejemplar
                   </h3>
                   <p className="text-sm font-medium text-slate-500 mt-1">
                     Historial reproductivo: {animal.estadoReproductivo}
@@ -381,17 +447,23 @@ export default function AnimalProfileView() {
 
               {/* Acciones Rápidas */}
               <div className="flex flex-col gap-3 min-w-50 w-full md:w-auto">
-                <Button className="w-full justify-start gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl! shadow-md border-none cursor-pointer">
-                  <Scale size={16} /> Registrar Pesaje
-                </Button>
-                <Button className="w-full justify-start gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl! shadow-md border-none cursor-pointer">
-                  <Plus size={16} /> Añadir Tratamiento
+                <Button
+                  onClick={() => setIsQrModalOpen(true)}
+                  className="w-full justify-start gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl! shadow-md border-none cursor-pointer"
+                >
+                  <QrCode size={16} /> Ver / Imprimir Chapeta QR
                 </Button>
                 <Button
-                  tone="soft"
-                  className="w-full justify-start gap-2 font-bold rounded-xl!"
+                  onClick={() => router.push("/dashboard/weight")}
+                  className="w-full justify-start gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl! shadow-md border-none cursor-pointer"
                 >
-                  <Edit2 size={16} /> Editar Datos
+                  <Scale size={16} /> Registrar Pesaje
+                </Button>
+                <Button
+                  onClick={() => router.push("/dashboard/health")}
+                  className="w-full justify-start gap-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl! border border-slate-200 shadow-none cursor-pointer"
+                >
+                  <Plus size={16} /> Añadir Tratamiento
                 </Button>
               </div>
             </div>
@@ -411,8 +483,8 @@ export default function AnimalProfileView() {
                   onClick={() => setActiveTab(tab.id)}
                   className={`px-5 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap transition-all cursor-pointer ${
                     activeTab === tab.id
-                      ? "bg-indigo-650 bg-indigo-600 text-white shadow-md shadow-indigo-500/30"
-                      : "text-slate-600 hover:bg-slate-105 hover:bg-slate-100"
+                      ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/30"
+                      : "text-slate-600 hover:bg-slate-100"
                   }`}
                 >
                   {tab.label}
@@ -429,6 +501,12 @@ export default function AnimalProfileView() {
           </Card>
         </div>
       </div>
+
+      <AnimalQrModal
+        animal={animal}
+        isOpen={isQrModalOpen}
+        onClose={() => setIsQrModalOpen(false)}
+      />
     </div>
   );
 }

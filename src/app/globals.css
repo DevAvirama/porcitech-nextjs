@@ -77,6 +77,28 @@ body {
     color: #0f172a !important;
   }
 
+  /* Dedicated chapeta tag print isolation */
+  body:has(.printable-chapeta-container) *:not(.printable-chapeta-container, .printable-chapeta-container *) {
+    visibility: hidden !important;
+  }
+
+  body:has(.printable-chapeta-container) .printable-chapeta-container {
+    visibility: visible !important;
+    position: fixed !important;
+    left: 50% !important;
+    top: 20px !important;
+    transform: translateX(-50%) !important;
+    width: 380px !important;
+    max-width: 95vw !important;
+    margin: 0 auto !important;
+    box-shadow: none !important;
+    border: 2px solid #000000 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    page-break-inside: avoid !important;
+    z-index: 999999 !important;
+  }
+
   /* Force all elements inside the report to have dark text colors */
   .printable-report *,
   .printable-report span,
@@ -86,9 +108,19 @@ body {
   .printable-report h3,
   .printable-report h4,
   .printable-report td,
-  .printable-report th {
+  .printable-report th,
+  .printable-chapeta-container *,
+  .printable-passport * {
     color: #0f172a !important;
-    background-color: transparent !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .printable-passport {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    box-shadow: none !important;
+    border: 1px solid #cbd5e1 !important;
   }
 
   /* Table styles for print */
