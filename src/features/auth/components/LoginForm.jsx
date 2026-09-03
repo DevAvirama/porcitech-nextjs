@@ -43,11 +43,8 @@ function LoginForm({ fields, onChange, onSubmit }) {
             href="/forgot-password"
             className="font-medium text-emerald-700 transition hover:text-emerald-800"
           >
-            ¿Olvidaste tu contrasena?
+            ¿Olvidaste tu contraseña?
           </Link>
-          <span className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-500">
-            Demo
-          </span>
         </div>
 
         <Button className="w-full" tone="primary" type="submit">
@@ -56,10 +53,6 @@ function LoginForm({ fields, onChange, onSubmit }) {
       </form>
 
       <div className="mt-8 border-t border-slate-200 pt-6 text-sm text-slate-600">
-        <p>
-          Vista basada en el modulo de inicio de sesion del repositorio
-          original.
-        </p>
         <Link
           href="/"
           className="mt-3 inline-flex font-semibold text-emerald-700 hover:text-emerald-800"

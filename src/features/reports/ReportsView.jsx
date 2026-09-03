@@ -11,7 +11,6 @@ import {
   ArrowLeft,
   Calendar,
   FileText,
-  CheckCircle2,
   ShieldCheck,
   Download,
   Filter,
@@ -472,25 +471,30 @@ const ReportsView = () => {
 
       {/* RENDERIZADO DORMANT: CONFIGURADOR Y DASHBOARD */}
       {!activeReport && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Panel de Configuración */}
-          <Card className="lg:col-span-1 border border-slate-100 p-6 flex flex-col justify-between rounded-3xl bg-white shadow-sm no-print">
-            <div className="space-y-6">
-              <h3 className="text-lg font-black italic text-slate-800 flex items-center gap-2 border-b pb-3 border-slate-100">
+        <div className="space-y-8">
+          {/* Panel de Configuración Horizontal */}
+          <Card className="border border-slate-100 p-6 rounded-3xl bg-white shadow-sm no-print space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b pb-3 border-slate-100">
+              <h3 className="text-lg font-black italic text-slate-800 flex items-center gap-2">
                 <Filter size={18} className="text-indigo-500" />
                 Filtros del Reporte
               </h3>
+              <span className="text-xs font-semibold text-slate-400">
+                Configure los parámetros y genere el reporte oficial
+              </span>
+            </div>
 
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end pt-1">
               {/* 1. Tipo de reporte */}
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-505 text-slate-500 uppercase tracking-wider block">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
                   Tipo de Reporte Técnico
                 </label>
                 <div className="relative">
                   <select
                     value={selectedReportType}
                     onChange={(e) => setSelectedReportType(e.target.value)}
-                    className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-semibold focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer appearance-none"
+                    className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-semibold focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer appearance-none text-sm"
                   >
                     <option value="consolidado">Consolidado General</option>
                     <option value="produccion">
@@ -509,15 +513,15 @@ const ReportsView = () => {
               </div>
 
               {/* 2. Rango de fecha */}
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-505 text-slate-500 uppercase tracking-wider block">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
                   Rango de Datos
                 </label>
                 <div className="relative">
                   <select
                     value={dateRange}
                     onChange={(e) => setDateRange(e.target.value)}
-                    className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-semibold focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer appearance-none"
+                    className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-semibold focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer appearance-none text-sm"
                   >
                     <option value="7dias">Últimos 7 días</option>
                     <option value="30dias">Últimos 30 días</option>
@@ -531,15 +535,15 @@ const ReportsView = () => {
               </div>
 
               {/* 3. Lote */}
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-550 bg-transparent text-slate-500 uppercase tracking-wider block">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
                   Foco por Lote
                 </label>
                 <div className="relative">
                   <select
                     value={selectedBatch}
                     onChange={(e) => setSelectedBatch(e.target.value)}
-                    className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-semibold focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer appearance-none"
+                    className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-semibold focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer appearance-none text-sm"
                   >
                     <option value="todos">Todos los Lotes</option>
                     <option value="42">Lote #42 (Ceba)</option>
@@ -551,29 +555,32 @@ const ReportsView = () => {
                   </div>
                 </div>
               </div>
-            </div>
 
-            <Button
-              onClick={handleGenerateReport}
-              disabled={isGenerating}
-              className="mt-8 bg-indigo-600 hover:bg-indigo-700 text-white font-black py-4 rounded-xl border-none shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer w-full text-center"
-            >
-              {isGenerating ? (
-                <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
-                  Procesando Datos...
-                </>
-              ) : (
-                <>
-                  <FileText size={18} />
-                  Generar Reporte Oficial
-                </>
-              )}
-            </Button>
+              {/* Botón Generar Reporte */}
+              <div>
+                <Button
+                  onClick={handleGenerateReport}
+                  disabled={isGenerating}
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-3 rounded-xl border-none shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer text-center text-sm h-[46px]"
+                >
+                  {isGenerating ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                      Procesando...
+                    </>
+                  ) : (
+                    <>
+                      <FileText size={18} />
+                      Generar Reporte Oficial
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
           </Card>
 
           {/* Notificaciones y Dashboard */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="space-y-6">
             <div className="flex items-center gap-2">
               <Bell className="text-slate-400 h-5 w-5" />
               <h3 className="text-lg font-black italic text-slate-800">

@@ -38,8 +38,8 @@ export default function DashboardSidebar({ items = [] }) {
   // Lógica de filtrado basada en el rol
   const filteredItems = menuItems.filter(item => {
     if (userRole === 'veterinario') {
-      // Veterinario no ve Alimentación ni Peso
-      return !['/dashboard/feeding', '/dashboard/weight'].includes(item.path);
+      // Veterinario no ve Alimentación, Peso ni Configuración de usuarios
+      return !['/dashboard/feeding', '/dashboard/weight', '/dashboard/settings'].includes(item.path);
     }
     if (userRole === 'operativo') {
       // Operativo no ve Salud (Vacunación), Reproducción, Reportes ni Configuración
