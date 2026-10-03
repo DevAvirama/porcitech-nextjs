@@ -26,6 +26,7 @@ import {
 
 import animalConstants from "./data/animalConstants.json";
 import AnimalQrModal from "./components/AnimalQrModal";
+import { getAnimalById, getAnimalByQr } from "@/services/animalService";
 
 const Badge = ({ estado, type = "salud" }) => {
   const themeMap = {
@@ -105,53 +106,67 @@ export default function AnimalProfileView() {
   });
 
   useEffect(() => {
-    // Buscar en sip_animals o sip_inventory si existe
-    try {
-      const storedAnimals = localStorage.getItem("sip_animals");
-      const storedInventory = localStorage.getItem("sip_inventory");
-
+    async function loadProfile() {
       let found = null;
-      if (storedAnimals) {
-        const parsedAnimals = JSON.parse(storedAnimals);
-        found = parsedAnimals.find(
-          (a) =>
-            (a.id && a.id.toLowerCase() === animalId.toLowerCase()) ||
-            (a.code && a.code.toLowerCase() === animalId.toLowerCase())
-        );
-        if (found) {
-          setAnimalData((prev) => ({
-            ...prev,
-            id: found.id || animalId,
-            raza: found.raza || prev.raza,
-            estadoSalud: found.estado || prev.estadoSalud,
-            lote: found.lote || prev.lote,
-            pesoActual: found.peso || prev.pesoActual,
-          }));
-          return;
+      try {
+        try {
+          found = await getAnimalById(animalId);
+        } catch {
+          found = await getAnimalByQr(animalId);
         }
+      } catch (err) {
+        console.warn("Animal no encontrado en API remota:", err.message);
       }
 
-      if (storedInventory) {
-        const parsed = JSON.parse(storedInventory);
-        found = parsed.find(
-          (a) =>
-            (a.id && a.id.toLowerCase() === animalId.toLowerCase()) ||
-            (a.code && a.code.toLowerCase() === animalId.toLowerCase())
-        );
-        if (found) {
-          setAnimalData((prev) => ({
-            ...prev,
-            id: found.id || animalId,
-            raza: found.raza || prev.raza,
-            sexo: found.sexo || prev.sexo,
-            etapa: found.etapa || prev.etapa,
-            pesoActual: found.ultimoPeso || prev.pesoActual,
-            estadoSalud: found.estadoSalud || prev.estadoSalud,
-          }));
+      if (found) {
+        setAnimalData({
+          id: found.id || animalId,
+          codigo_arete: found.codigo_arete || found.id,
+          codigo_qr: found.codigo_qr || `QR-${found.codigo_arete || found.id}`,
+          nombre_alias: found.nombre_alias || null,
+          raza: found.raza || "Landrace",
+          sexo: found.sexo === "macho" ? "Macho" : "Hembra",
+          fechaNacimiento: found.fecha_nacimiento || "2023-05-15",
+          etapa: found.estado || "Gestación",
+          estadoSalud: found.estado || "Óptimo",
+          pesoActual: found.peso_actual_kg || 185.5,
+          ultimoTratamiento: "2024-03-10 (Vacuna Parvovirus)",
+          estadoReproductivo: "Confirmada",
+          diasGestacion: 45,
+          lote: found.corral_codigo ? `Corral ${found.corral_codigo}` : "Lote #42",
+          corral_codigo: found.corral_codigo || null,
+        });
+      } else {
+        // Fallback secundario si se consulta en modo offline
+        try {
+          const storedAnimals = localStorage.getItem("sip_animals");
+          if (storedAnimals) {
+            const parsed = JSON.parse(storedAnimals);
+            const local = parsed.find(
+              (a) =>
+                (a.id && a.id.toLowerCase() === animalId.toLowerCase()) ||
+                (a.code && a.code.toLowerCase() === animalId.toLowerCase()) ||
+                (a.codigo_arete && a.codigo_arete.toLowerCase() === animalId.toLowerCase()),
+            );
+            if (local) {
+              setAnimalData((prev) => ({
+                ...prev,
+                id: local.id || animalId,
+                raza: local.raza || prev.raza,
+                estadoSalud: local.estado || prev.estadoSalud,
+                lote: local.lote || prev.lote,
+                pesoActual: local.peso || prev.pesoActual,
+              }));
+            }
+          }
+        } catch (e) {
+          console.error("Error loading fallback animal profile:", e);
         }
       }
-    } catch (e) {
-      console.error("Error loading animal profile:", e);
+    }
+
+    if (animalId) {
+      loadProfile();
     }
   }, [animalId]);
 

@@ -19,15 +19,11 @@ export default function DashboardSidebar({ items = [] }) {
   // Cargamos el usuario en un useEffect para evitar hydration mismatch del lado del servidor
   useEffect(() => {
     setMounted(true);
-    const currentUser =
-      getCurrentUser() ||
-      (typeof window !== "undefined"
-        ? JSON.parse(localStorage.getItem("sigep_user"))
-        : null);
+    const currentUser = getCurrentUser();
     setUser(currentUser);
   }, []);
 
-  const userRole = user?.role || "operativo";
+  const userRole = user?.role || user?.rol || "operario";
 
   // Si no se pasaron items, usamos los predeterminados de la app
   const menuItems =
@@ -55,8 +51,8 @@ export default function DashboardSidebar({ items = [] }) {
         "/dashboard/settings",
       ].includes(item.path);
     }
-    if (userRole === "operativo") {
-      // Operativo no ve Salud (Vacunación), Reproducción, Reportes ni Configuración
+    if (userRole === "operativo" || userRole === "operario") {
+      // Operario no ve Salud (Vacunación), Reproducción, Reportes ni Configuración
       return ![
         "/dashboard/health",
         "/dashboard/reproduction",

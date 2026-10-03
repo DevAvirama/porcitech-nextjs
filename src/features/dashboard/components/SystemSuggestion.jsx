@@ -1,179 +1,180 @@
 "use client";
 
+import React from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Baby, Activity, TrendingDown } from "lucide-react";
+import {
+  AlertTriangle,
+  ShieldCheck,
+  ShieldAlert,
+  Info,
+  ArrowRight,
+} from "lucide-react";
 import Card from "../../../components/ui/Card.jsx";
 import Button from "../../../components/ui/Button.jsx";
-import biosecurityProtocols from "../../health/data/biosecurityProtocols.json";
-import reproductionStandards from "../../reproduction/data/reproductionStandards.json";
-import weightStandards from "../../weight/data/weightStandards.json";
-import { ShieldCheck } from "lucide-react";
 
-function SystemSuggestion() {
+const MODULE_ROUTES = {
+  sanidad: { path: "/dashboard/health", label: "Ver Sanidad" },
+  inventario: { path: "/dashboard/inventory", label: "Ver Inventario" },
+  manejo: { path: "/dashboard/animals", label: "Ver Animales" },
+  pesaje: { path: "/dashboard/weight", label: "Ver Pesaje" },
+  alimentacion: { path: "/dashboard/feeding", label: "Ver Alimentación" },
+};
+
+function SystemSuggestion({ alerts = [], isLoading = false }) {
   const router = useRouter();
 
-  // Mocks de estados para probar las prioridades del sistema
-  const compliance = 95; // Si es menor a 90 dispara alerta de bioseguridad
-  const loteCrecimiento = { id: "L-042", gdpReal: 680, gdpIdeal: 800 }; // Desviación de crecimiento
-  const hembraPartoInminente = { id: "H-045", diasGestacion: 100 }; // Cambiar a 110 para ver alerta
-  const hembraAnestro = { id: "H-089", diasPostDestete: 8 }; // Cambiar a 12 para ver alerta
-
-  // 1. Alerta de Bioseguridad (Prioridad Crítica)
-  if (compliance < 90) {
-    const protocol = biosecurityProtocols.structural.find(
-      (p) => p.task === "Arco de Desinfección",
-    );
-
+  if (isLoading) {
     return (
-      <Card className="bg-rose-950! text-white shadow-xl shadow-rose-900/20">
-        <div className="flex items-center gap-2 text-rose-400">
-          <AlertTriangle className="h-5 w-5" />
-          <p className="text-sm font-semibold uppercase tracking-[0.22em]">
-            Prioridad Crítica
-          </p>
-        </div>
-        <h3 className="mt-4 text-3xl font-black">Revisar Protocolo ICA</h3>
-        <p className="mt-4 leading-7 text-rose-200/80">
-          El cumplimiento sanitario ha caído al {compliance}%. Es urgente
-          revisar los protocolos de{" "}
-          <strong>{protocol?.task || "Arco de Desinfección"}</strong> (
-          {protocol?.desc}) para cumplir con la normativa ICA.
-        </p>
-        <Button
-          className="mt-8 border-none bg-rose-500 hover:bg-rose-600 shadow-md shadow-rose-500/30 text-white"
-          onClick={() => router.push("/dashboard/health")}
-        >
-          Ver Protocolos
-        </Button>
+      <Card className="animate-pulse bg-slate-900 text-white">
+        <div className="h-4 w-32 rounded bg-slate-800" />
+        <div className="mt-4 h-8 w-3/4 rounded bg-slate-800" />
+        <div className="mt-4 h-16 w-full rounded bg-slate-800" />
+        <div className="mt-6 h-10 w-36 rounded-xl bg-slate-800" />
       </Card>
     );
   }
 
-  // 2. Alerta de Desviación de Crecimiento (Prioridad Alta)
-  const desviacionGDP =
-    (loteCrecimiento.gdpIdeal - loteCrecimiento.gdpReal) /
-    loteCrecimiento.gdpIdeal;
-  const gdpCritica =
-    weightStandards.configuracion_crecimiento_colombia.alertas_rendimiento
-      .gdp_critica_bajo_rendimiento;
-
-  if (desviacionGDP > 0.1) {
-    const isCritical = loteCrecimiento.gdpReal < gdpCritica;
-    const bgCard = isCritical ? "!bg-rose-950" : "!bg-orange-950";
-    const shadowCard = isCritical
-      ? "shadow-rose-900/20"
-      : "shadow-orange-900/20";
-    const textAlert = isCritical ? "text-rose-400" : "text-orange-400";
-    const textDesc = isCritical ? "text-rose-200/80" : "text-orange-200/80";
-    const btnClass = isCritical
-      ? "bg-rose-500 hover:bg-rose-600 shadow-rose-500/30"
-      : "bg-orange-500 hover:bg-orange-600 shadow-orange-500/30";
-
+  // Estado Óptimo cuando no hay alertas
+  if (!alerts || alerts.length === 0) {
     return (
-      <Card className={`${bgCard} text-white shadow-xl ${shadowCard}`}>
-        <div className={`flex items-center gap-2 ${textAlert}`}>
-          <TrendingDown className="h-5 w-5" />
-          <p className="text-sm font-semibold uppercase tracking-[0.22em]">
-            Prioridad Alta
+      <Card className="bg-emerald-950 text-white shadow-xl shadow-emerald-900/20 border-emerald-800/40">
+        <div className="flex items-center gap-2 text-emerald-400">
+          <ShieldCheck className="h-5 w-5" />
+          <p className="text-xs font-semibold uppercase tracking-[0.22em]">
+            Estado del Sistema
           </p>
         </div>
-        <h3 className="mt-4 text-3xl font-black">Alerta de Rendimiento</h3>
-        <p className={`mt-4 leading-7 ${textDesc}`}>
-          📉 El Lote <strong>{loteCrecimiento.id}</strong> presenta un
-          crecimiento por debajo del estándar de Porkcolombia (
-          {loteCrecimiento.gdpReal} g/día vs esperado de{" "}
-          {loteCrecimiento.gdpIdeal} g/día). Revisar conversión alimenticia.
+        <h3 className="mt-4 text-3xl font-black text-white">Operación Estable</h3>
+        <p className="mt-3 text-sm leading-relaxed text-emerald-200/80">
+          Bioseguridad e inventarios al día. No se registran alertas críticas de
+          retiro farmacológico, desabastecimiento de alimento ni retrasos en la
+          ganancia de peso en los lotes activos.
         </p>
-        <Button
-          className={`mt-8 border-none text-white shadow-md ${btnClass}`}
-          onClick={() => router.push("/dashboard/weight")}
-        >
-          Ver Análisis
-        </Button>
+        <div className="mt-6 inline-flex items-center gap-2 rounded-xl bg-emerald-900/50 px-3.5 py-2 text-xs font-semibold text-emerald-300 border border-emerald-700/50">
+          <ShieldCheck className="h-4 w-4" />
+          Monitoreo analítico activo con TimescaleDB
+        </div>
       </Card>
     );
   }
 
-  // Parámetros dinámicos de Reproducción
-  const duracionPromedio =
-    reproductionStandards.reproduccion_porcina_colombia.parametros_gestacion
-      .duracion_promedio_dias;
-  const preparacionDias =
-    reproductionStandards.reproduccion_porcina_colombia.parametros_gestacion
-      .inicio_preparacion_paridera;
-  const umbralAnestro =
-    reproductionStandards.reproduccion_porcina_colombia
-      .intervalo_destete_celo_idc.umbral_hembra_problema_anestro;
+  // Ordenar por severidad: danger > warning > info
+  const priorityOrder = { danger: 1, warning: 2, info: 3 };
+  const sortedAlerts = [...alerts].sort(
+    (a, b) =>
+      (priorityOrder[a.nivel] || 99) - (priorityOrder[b.nivel] || 99)
+  );
 
-  // 3. Alerta de Parto Inminente (Prioridad Media)
-  if (
-    duracionPromedio - hembraPartoInminente.diasGestacion <=
-    preparacionDias
-  ) {
-    return (
-      <Card className="bg-fuchsia-950! text-white shadow-xl shadow-fuchsia-900/20">
-        <div className="flex items-center gap-2 text-fuchsia-400">
-          <Baby className="h-5 w-5" />
-          <p className="text-sm font-semibold uppercase tracking-[0.22em]">
-            Prioridad Media
-          </p>
-        </div>
-        <h3 className="mt-4 text-3xl font-black">Parto Inminente</h3>
-        <p className="mt-4 leading-7 text-fuchsia-200/80">
-          Trasladar Hembra <strong>{hembraPartoInminente.id}</strong> a paridera
-          para aclimatación. Ha entrado en la ventana de los {preparacionDias}{" "}
-          días previos al parto estimado.
-        </p>
-        <Button
-          className="mt-8 border-none bg-fuchsia-500 hover:bg-fuchsia-600 shadow-md shadow-fuchsia-500/30 text-white"
-          onClick={() => router.push("/dashboard/reproduction")}
-        >
-          Ver detalles
-        </Button>
-      </Card>
-    );
-  }
+  const mainAlert = sortedAlerts[0];
+  const secondaryAlerts = sortedAlerts.slice(1);
 
-  // 4. Alerta de Anestro (Prioridad Media)
-  if (hembraAnestro.diasPostDestete > umbralAnestro) {
-    return (
-      <Card className="bg-violet-950! text-white shadow-xl shadow-violet-900/20">
-        <div className="flex items-center gap-2 text-violet-400">
-          <Activity className="h-5 w-5" />
-          <p className="text-sm font-semibold uppercase tracking-[0.22em]">
-            Prioridad Media
-          </p>
-        </div>
-        <h3 className="mt-4 text-3xl font-black">Alerta de Anestro</h3>
-        <p className="mt-4 leading-7 text-violet-200/80">
-          La Hembra <strong>{hembraAnestro.id}</strong> supera los{" "}
-          {umbralAnestro} días post-destete sin reportar celo. Verificar
-          alimentación y estimulación con macho recajo.
-        </p>
-        <Button
-          className="mt-8 border-none bg-violet-500 hover:bg-violet-600 shadow-md shadow-violet-500/30 text-white"
-          onClick={() => router.push("/dashboard/reproduction")}
-        >
-          Ver Ficha
-        </Button>
-      </Card>
-    );
-  }
+  // Configuración de estilo según nivel
+  const isDanger = mainAlert.nivel === "danger";
+  const isWarning = mainAlert.nivel === "warning";
 
-  // 5. Estado Óptimo (Sin alertas)
+  const bgCard = isDanger
+    ? "bg-rose-950 shadow-rose-900/20 border-rose-800/40"
+    : isWarning
+    ? "bg-amber-950 shadow-amber-900/20 border-amber-800/40"
+    : "bg-sky-950 shadow-sky-900/20 border-sky-800/40";
+
+  const textBadge = isDanger
+    ? "text-rose-400"
+    : isWarning
+    ? "text-amber-400"
+    : "text-sky-400";
+
+  const textDesc = isDanger
+    ? "text-rose-200/90"
+    : isWarning
+    ? "text-amber-200/90"
+    : "text-sky-200/90";
+
+  const btnClass = isDanger
+    ? "bg-rose-500 hover:bg-rose-600 shadow-rose-500/30 text-white"
+    : isWarning
+    ? "bg-amber-500 hover:bg-amber-600 shadow-amber-500/30 text-slate-950"
+    : "bg-sky-500 hover:bg-sky-600 shadow-sky-500/30 text-white";
+
+  const HeaderIcon = isDanger ? ShieldAlert : isWarning ? AlertTriangle : Info;
+  const headerLabel = isDanger
+    ? "Prioridad Crítica"
+    : isWarning
+    ? "Atención Requerida"
+    : "Sugerencia Operativa";
+
+  const routeConfig =
+    MODULE_ROUTES[mainAlert.modulo?.toLowerCase()] || {
+      path: "/dashboard",
+      label: "Gestionar Módulo",
+    };
+
   return (
-    <Card className="bg-emerald-950! text-white shadow-xl shadow-emerald-900/20">
-      <div className="flex items-center gap-2 text-emerald-400">
-        <ShieldCheck className="h-5 w-5" />
-        <p className="text-sm font-semibold uppercase tracking-[0.22em]">
-          Estado del Sistema
+    <Card className={`${bgCard} text-white shadow-xl flex flex-col justify-between`}>
+      <div>
+        <div className={`flex items-center justify-between ${textBadge}`}>
+          <div className="flex items-center gap-2">
+            <HeaderIcon className="h-5 w-5" />
+            <p className="text-xs font-semibold uppercase tracking-[0.22em]">
+              {headerLabel}
+            </p>
+          </div>
+          {alerts.length > 1 && (
+            <span className="rounded-full bg-white/10 px-2.5 py-0.5 text-xs font-bold text-white">
+              +{secondaryAlerts.length} pendientes
+            </span>
+          )}
+        </div>
+
+        <h3 className="mt-4 text-2xl font-black capitalize text-white">
+          {mainAlert.modulo ? `Alerta en ${mainAlert.modulo}` : "Alerta de Sistema"}
+        </h3>
+
+        <p className={`mt-3 text-sm leading-relaxed ${textDesc}`}>
+          {mainAlert.mensaje}
         </p>
+
+        {mainAlert.accion_sugerida && (
+          <div className="mt-4 rounded-xl bg-black/25 p-3 border border-white/10">
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-300">
+              Acción sugerida:
+            </p>
+            <p className="mt-1 text-xs text-white/90 leading-relaxed">
+              {mainAlert.accion_sugerida}
+            </p>
+          </div>
+        )}
+
+        {/* Alertas secundarias condensadas si existen */}
+        {secondaryAlerts.length > 0 && (
+          <div className="mt-4 space-y-2 border-t border-white/10 pt-3">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+              Otras notificaciones activas:
+            </p>
+            {secondaryAlerts.map((alert) => (
+              <div
+                key={alert.id || alert.mensaje}
+                className="flex items-start gap-2 text-xs text-slate-300 bg-white/5 p-2 rounded-lg"
+              >
+                <span className="font-semibold text-white capitalize">
+                  {alert.modulo}:
+                </span>
+                <span className="line-clamp-1">{alert.mensaje}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
-      <h3 className="mt-4 text-3xl font-black">Operación Estable</h3>
-      <p className="mt-4 leading-7 text-emerald-200/80">
-        No se registran anomalías críticas ni retrasos de crecimiento. Los
-        parámetros biológicos se encuentran dentro de las metas de Porkcolombia.
-      </p>
+
+      <div className="mt-6">
+        <Button
+          className={`w-full justify-center border-none shadow-md ${btnClass}`}
+          onClick={() => router.push(routeConfig.path)}
+        >
+          {routeConfig.label}
+          <ArrowRight className="ml-1.5 h-4 w-4" />
+        </Button>
+      </div>
     </Card>
   );
 }

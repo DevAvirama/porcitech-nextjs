@@ -1,41 +1,131 @@
-const MOCK_USERS = [
-  { email: 'admin@sigep.com', password: 'admin123', role: 'administrador', name: 'Julian Barco' },
-  { email: 'vet@sigep.com', password: 'vet123', role: 'veterinario', name: 'Dra. Maria Lopez' },
-  { email: 'operario@sigep.com', password: 'ope123', role: 'operativo', name: 'Juan Perez' },
-];
+import { apiFetch } from '../apiClient.js';
 
+/**
+ * Inicia sesión autenticando al usuario contra la API backend de FastAPI.
+ * Endpoint: POST /api/v1/auth/login
+ * 
+ * @param {string | { email: string, password: string }} emailOrCredentials - Correo o payload de credenciales.
+ * @param {string} [maybePassword] - Contraseña si el primer argumento es un string.
+ * @returns {Promise<{ access_token: string, token_type: string, usuario: object }>}
+ */
+export async function login(emailOrCredentials, maybePassword) {
+  let email;
+  let password;
+
+  if (typeof emailOrCredentials === 'object' && emailOrCredentials !== null) {
+    email = emailOrCredentials.email;
+    password = emailOrCredentials.password;
+  } else {
+    email = emailOrCredentials;
+    password = maybePassword;
+  }
+
+  const response = await apiFetch('/auth/login', {
+    method: 'POST',
+    body: { email, password },
+  });
+
+  if (typeof window !== 'undefined') {
+    if (response?.access_token) {
+      localStorage.setItem('porcitech_token', response.access_token);
+    }
+    if (response?.usuario) {
+      localStorage.setItem('porcitech_user', JSON.stringify(response.usuario));
+    }
+  }
+
+  return response;
+}
+
+// Alias de conveniencia y compatibilidad con código existente
+export const signIn = login;
+
+/**
+ * Cierra la sesión activa del usuario, limpia el almacenamiento local y redirecciona al login.
+ */
+export function logout() {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('porcitech_token');
+    localStorage.removeItem('porcitech_user');
+    // Limpieza de claves previas por retrocompatibilidad
+    localStorage.removeItem('sigep_token');
+    localStorage.removeItem('sigep_user');
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+    window.location.href = '/login';
+  }
+}
+
+/**
+ * Obtiene y parsea el usuario actualmente autenticado desde localStorage.
+ * Solo se ejecuta en el entorno del cliente.
+ * 
+ * @returns {object | null}
+ */
+export function getCurrentUser() {
+  if (typeof window === 'undefined') return null;
+
+  const userStr =
+    localStorage.getItem('porcitech_user') || localStorage.getItem('sigep_user');
+  if (!userStr) return null;
+
+  try {
+    const user = JSON.parse(userStr);
+    if (!user) return null;
+
+    // Normalización de propiedades para asegurar compatibilidad total en toda la UI
+    const fullName = [user.nombre, user.apellido].filter(Boolean).join(' ').trim();
+
+    return {
+      ...user,
+      name: user.name || fullName || user.email,
+      role: user.role || user.rol,
+      rol: user.rol || user.role,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Comprueba si el usuario tiene una sesión activa mediante el token JWT en localStorage.
+ * 
+ * @returns {boolean}
+ */
+export function isAuthenticated() {
+  if (typeof window === 'undefined') return false;
+  const token = localStorage.getItem('porcitech_token');
+  return Boolean(token && token.trim() !== '');
+}
+
+/**
+ * Helper para actualizar la información del perfil del usuario localmente.
+ */
+export function updateCurrentUser(newData) {
+  if (typeof window === 'undefined') return null;
+  const currentUser = getCurrentUser() || {};
+  const updatedUser = { ...currentUser, ...newData };
+
+  localStorage.setItem('porcitech_user', JSON.stringify(updatedUser));
+
+  const users = getUsers();
+  const userIndex = users.findIndex((u) => u.email === currentUser.email);
+  if (userIndex !== -1) {
+    users[userIndex] = { ...users[userIndex], ...newData };
+    localStorage.setItem('sip_users_list', JSON.stringify(users));
+  }
+
+  return updatedUser;
+}
+
+/**
+ * Funciones de gestión de usuarios locales (utilizadas en SettingsView).
+ */
 export function getUsers() {
   if (typeof window === 'undefined') return [];
   const usersStr = localStorage.getItem('sip_users_list');
-  if (!usersStr) {
-    const initialUsers = MOCK_USERS.map((u, index) => ({
-      id: String(index + 1),
-      name: u.name,
-      email: u.email,
-      password: u.password,
-      role: u.role,
-      estado: 'activo'
-    }));
-    localStorage.setItem('sip_users_list', JSON.stringify(initialUsers));
-    return initialUsers;
-  }
+  if (!usersStr) return [];
   try {
-    let users = JSON.parse(usersStr);
-    
-    // Migración automática para reemplazar los nombres genéricos antiguos
-    let modified = false;
-    users = users.map(u => {
-      if (u.email === 'admin@sigep.com' && u.name === 'Administrador') { modified = true; return { ...u, name: 'Julian Barco' }; }
-      if (u.email === 'vet@sigep.com' && u.name === 'Veterinario') { modified = true; return { ...u, name: 'Dra. Maria Lopez' }; }
-      if (u.email === 'operario@sigep.com' && u.name === 'Operario') { modified = true; return { ...u, name: 'Juan Perez' }; }
-      return u;
-    });
-    
-    if (modified) {
-      localStorage.setItem('sip_users_list', JSON.stringify(users));
-    }
-    
-    return users;
+    return JSON.parse(usersStr);
   } catch {
     return [];
   }
@@ -46,7 +136,7 @@ export function createUser(userData) {
   const newUser = {
     id: String(Date.now()),
     estado: 'activo',
-    ...userData
+    ...userData,
   };
   users.push(newUser);
   if (typeof window !== 'undefined') {
@@ -57,93 +147,18 @@ export function createUser(userData) {
 
 export function updateUser(id, userData) {
   const users = getUsers();
-  const updatedUsers = users.map(u => u.id === id ? { ...u, ...userData } : u);
+  const updatedUsers = users.map((u) => (u.id === id ? { ...u, ...userData } : u));
   if (typeof window !== 'undefined') {
     localStorage.setItem('sip_users_list', JSON.stringify(updatedUsers));
   }
-  return updatedUsers.find(u => u.id === id);
+  return updatedUsers.find((u) => u.id === id);
 }
 
 export function deleteUser(id) {
   const users = getUsers();
-  const filteredUsers = users.filter(u => u.id !== id);
+  const filteredUsers = users.filter((u) => u.id !== id);
   if (typeof window !== 'undefined') {
     localStorage.setItem('sip_users_list', JSON.stringify(filteredUsers));
   }
   return true;
-}
-
-export async function signIn(credentials) {
-  const users = getUsers();
-  const user = users.find(u => u.email === credentials.email && u.password === credentials.password);
-  
-  if (user) {
-    const userInfo = { email: user.email, role: user.role, name: user.name };
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('sigep_token', 'mock-jwt-token');
-      localStorage.setItem('sigep_user', JSON.stringify(userInfo));
-    }
-    
-    return Promise.resolve({
-      ok: true,
-      user: userInfo,
-    });
-  } else {
-    return Promise.resolve({
-      ok: false,
-      error: 'Credenciales inválidas'
-    });
-  }
-}
-
-export function getCurrentUser() {
-  if (typeof window === 'undefined') return null;
-  const userStr = localStorage.getItem('sigep_user');
-  if (!userStr) return null;
-  try {
-    const user = JSON.parse(userStr);
-    let modified = false;
-    if (user.email === 'admin@sigep.com' && user.name === 'Administrador') { user.name = 'Julian Barco'; modified = true; }
-    if (user.email === 'vet@sigep.com' && user.name === 'Veterinario') { user.name = 'Dra. Maria Lopez'; modified = true; }
-    if (user.email === 'operario@sigep.com' && user.name === 'Operario') { user.name = 'Juan Perez'; modified = true; }
-    
-    if (modified) {
-      localStorage.setItem('sigep_user', JSON.stringify(user));
-    }
-    
-    return user;
-  } catch {
-    return null;
-  }
-}
-
-export function logout() {
-  if (typeof window !== 'undefined') {
-    localStorage.removeItem('sigep_token');
-    localStorage.removeItem('sigep_user');
-  }
-}
-
-export function updateCurrentUser(newData) {
-  if (typeof window === 'undefined') return null;
-  const userStr = localStorage.getItem('sigep_user');
-  let currentUser = {};
-  if (userStr) {
-    try {
-      currentUser = JSON.parse(userStr);
-    } catch {
-      currentUser = {};
-    }
-  }
-  const updatedUser = { ...currentUser, ...newData };
-  localStorage.setItem('sigep_user', JSON.stringify(updatedUser));
-  
-  const users = getUsers();
-  const userIndex = users.findIndex(u => u.email === currentUser.email);
-  if (userIndex !== -1) {
-    users[userIndex] = { ...users[userIndex], ...newData };
-    localStorage.setItem('sip_users_list', JSON.stringify(users));
-  }
-  
-  return updatedUser;
 }

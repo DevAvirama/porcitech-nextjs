@@ -18,62 +18,30 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import Button from "@/components/ui/Button";
+import { getAnimales, getAnimalByQr, getAnimalById } from "@/services/animalService";
 
 export default function QrQuickSearchModal({ isOpen, onClose }) {
   const router = useRouter();
   const [activeMode, setActiveMode] = useState("manual"); // 'manual' | 'camera'
   const [searchCode, setSearchCode] = useState("");
   const [isScanning, setIsScanning] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const [matchedAnimal, setMatchedAnimal] = useState(null);
   const [knownAnimals, setKnownAnimals] = useState([]);
   const inputRef = useRef(null);
 
   useEffect(() => {
     if (isOpen) {
-      // Cargar lista de animales conocidos desde localStorage
-      try {
-        const storedInv = localStorage.getItem("sip_inventory");
-        const storedAni = localStorage.getItem("sip_animals");
-        let list = [];
-        if (storedInv) {
-          list = [...list, ...JSON.parse(storedInv)];
-        }
-        if (storedAni) {
-          list = [...list, ...JSON.parse(storedAni)];
-        }
-        // Fallback si no hay nada
-        if (list.length === 0) {
-          list = [
-            {
-              id: "PT-2026-001",
-              raza: "Landrace x Duroc",
-              estadoSalud: "Óptimo",
-              lote: "Lote #42",
-            },
-            {
-              id: "L-042",
-              raza: "Large White",
-              estadoSalud: "Óptimo",
-              lote: "Corral C-01",
-            },
-            {
-              id: "2024-001",
-              raza: "Duroc",
-              estadoSalud: "Óptimo",
-              lote: "Lote #42",
-            },
-            {
-              id: "C-089",
-              raza: "Duroc",
-              estadoSalud: "En Tratamiento",
-              lote: "Lote #10",
-            },
-          ];
-        }
-        setKnownAnimals(list);
-      } catch (err) {
-        console.error("Error reading animals for search:", err);
-      }
+      // Cargar lista de animales reales desde la API de FastAPI
+      getAnimales()
+        .then((list) => {
+          if (Array.isArray(list) && list.length > 0) {
+            setKnownAnimals(list);
+          }
+        })
+        .catch((err) => {
+          console.warn("Aviso al consultar animales para búsqueda rápida:", err.message);
+        });
 
       setSearchCode("");
       setMatchedAnimal(null);
@@ -93,35 +61,61 @@ export default function QrQuickSearchModal({ isOpen, onClose }) {
     }
     const found = knownAnimals.find(
       (a) =>
+        (a.codigo_arete && a.codigo_arete.toLowerCase() === cleaned) ||
+        (a.codigo_qr && a.codigo_qr.toLowerCase() === cleaned) ||
         (a.id && a.id.toLowerCase() === cleaned) ||
-        (a.code && a.code.toLowerCase() === cleaned),
+        (a.nombre_alias && a.nombre_alias.toLowerCase().includes(cleaned))
     );
     setMatchedAnimal(found || null);
   };
 
-  const handleExecuteSearch = (targetCode) => {
+  const handleExecuteSearch = async (targetCode) => {
     const codeToSearch = (targetCode || searchCode).trim();
     if (!codeToSearch) {
       toast.error("Por favor ingresa un código de arete o chapeta");
       return;
     }
 
-    const found = knownAnimals.find(
+    setIsSearching(true);
+
+    // 1. Verificar si ya está en knownAnimals
+    let found = knownAnimals.find(
       (a) =>
-        (a.id && a.id.toLowerCase() === codeToSearch.toLowerCase()) ||
-        (a.code && a.code.toLowerCase() === codeToSearch.toLowerCase()),
+        (a.codigo_arete && a.codigo_arete.toLowerCase() === codeToSearch.toLowerCase()) ||
+        (a.codigo_qr && a.codigo_qr.toLowerCase() === codeToSearch.toLowerCase()) ||
+        (a.id && a.id.toLowerCase() === codeToSearch.toLowerCase())
     );
 
+    // 2. Si no está en cache local, buscar directamente en el backend
+    if (!found) {
+      try {
+        try {
+          found = await getAnimalByQr(codeToSearch);
+        } catch {
+          found = await getAnimalById(codeToSearch);
+        }
+      } catch {
+        try {
+          const searchResults = await getAnimales({ search: codeToSearch });
+          if (Array.isArray(searchResults) && searchResults.length > 0) {
+            found = searchResults[0];
+          }
+        } catch {
+          found = null;
+        }
+      }
+    }
+
+    setIsSearching(false);
+
     if (found) {
-      toast.success(`Animal #${found.id || codeToSearch} localizado con éxito`);
+      const targetId = found.id || found.codigo_arete || codeToSearch;
+      toast.success(`Animal #${found.codigo_arete || found.id} localizado`);
       onClose();
-      router.push(
-        `/dashboard/animals/profile?code=${encodeURIComponent(found.id || codeToSearch)}`,
-      );
+      router.push(`/dashboard/animals/profile?id=${encodeURIComponent(targetId)}`);
     } else {
-      // Si no está registrado en inventario, consultar si desea ir de todos modos
       toast.error(
-        `El arete "${codeToSearch}" no figura en el inventario local`,
+        `El arete "${codeToSearch}" no figura en el inventario activo`,
         {
           action: {
             label: "Ver Pasaporte",
@@ -277,15 +271,20 @@ export default function QrQuickSearchModal({ isOpen, onClose }) {
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-mono font-black text-slate-900 text-base">
-                          #{matchedAnimal.id}
+                          #{matchedAnimal.codigo_arete || matchedAnimal.id}
                         </span>
+                        {matchedAnimal.nombre_alias && (
+                          <span className="text-xs font-semibold text-slate-500 italic">
+                            ({matchedAnimal.nombre_alias})
+                          </span>
+                        )}
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-200 text-emerald-800 uppercase">
                           Registrado
                         </span>
                       </div>
                       <p className="text-xs text-slate-600 font-semibold mt-0.5">
                         {matchedAnimal.raza || "Raza Mixta"} •{" "}
-                        {matchedAnimal.lote || "Galpón Central"}
+                        {matchedAnimal.corral_codigo ? `Corral ${matchedAnimal.corral_codigo}` : matchedAnimal.lote || "Corral Central"}
                       </p>
                     </div>
                   </div>
@@ -296,7 +295,7 @@ export default function QrQuickSearchModal({ isOpen, onClose }) {
                       onClick={() => {
                         onClose();
                         router.push(
-                          `/dashboard/animals/profile?code=${encodeURIComponent(matchedAnimal.id)}`,
+                          `/dashboard/animals/profile?id=${encodeURIComponent(matchedAnimal.id || matchedAnimal.codigo_arete)}`,
                         );
                       }}
                       className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-sm cursor-pointer"
@@ -304,7 +303,7 @@ export default function QrQuickSearchModal({ isOpen, onClose }) {
                       Ver Ficha <ArrowRight size={14} />
                     </button>
                     <a
-                      href={`/trace/${encodeURIComponent(matchedAnimal.id)}`}
+                      href={`/trace/${encodeURIComponent(matchedAnimal.codigo_qr || matchedAnimal.codigo_arete || matchedAnimal.id)}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="p-2 rounded-xl bg-white border border-emerald-300 text-emerald-700 hover:bg-emerald-100 transition-colors"

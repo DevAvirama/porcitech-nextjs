@@ -17,3 +17,19 @@ export function formatCount(value) {
   if (value === undefined || value === null) return "0";
   return new Intl.NumberFormat("es-CO").format(value);
 }
+
+export function formatDateTime(dateString) {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return String(dateString);
+  return date.toLocaleString("es-CO", {
+    timeZone: "America/Bogota",
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
+

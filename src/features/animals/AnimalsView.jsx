@@ -1,165 +1,334 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
+import {
+  Search,
+  Filter,
+  Plus,
+  RefreshCw,
+  AlertTriangle,
+  Layers,
+  Inbox,
+} from "lucide-react";
 import AnimalTable from "./components/AnimalTable";
 import AddAnimalModal from "./components/AddAnimalModal";
 import AnimalQrModal from "./components/AnimalQrModal";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
+import EmptyState from "@/components/ui/EmptyState";
 import ModuleHeader from "@/components/layout/ModuleHeader";
+import { getAnimales, deleteAnimal } from "@/services/animalService";
+import { getCorrales } from "@/services/corralService";
 
 const AnimalsView = () => {
   const [animals, setAnimals] = useState([]);
+  const [corrales, setCorrales] = useState([]);
   const [trash, setTrash] = useState([]);
-  const [isMounted, setIsMounted] = useState(false);
+
+  // Estados de control y filtros
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCorral, setSelectedCorral] = useState("all");
+  const [selectedEstado, setSelectedEstado] = useState("all");
+
+  // Modales
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedAnimalForQr, setSelectedAnimalForQr] = useState(null);
-  const [searchTerm, setSearchTerm] = useState("");
 
+  // Cargar Corrales activos desde FastAPI
+  const loadCorrales = useCallback(async () => {
+    try {
+      const data = await getCorrales(true);
+      setCorrales(data || []);
+    } catch (err) {
+      console.warn("No se pudieron cargar los corrales:", err.message);
+    }
+  }, []);
+
+  // Cargar lista de Animales aplicando filtros en FastAPI
+  const loadAnimals = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const params = {};
+      if (searchTerm.trim()) params.search = searchTerm.trim();
+      if (selectedCorral && selectedCorral !== "all") params.corral_id = selectedCorral;
+      if (selectedEstado && selectedEstado !== "all") params.estado = selectedEstado;
+
+      const data = await getAnimales(params);
+      setAnimals(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Error al obtener animales de la API:", err);
+      setError(
+        err.message || "No se pudo conectar con el servidor para obtener los animales.",
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }, [searchTerm, selectedCorral, selectedEstado]);
+
+  // Cargar datos al montar
   useEffect(() => {
-    const storedAnimals = localStorage.getItem("sip_animals");
+    loadCorrales();
+  }, [loadCorrales]);
+
+  // Recargar animales cuando cambien los filtros (con debounce para búsqueda)
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      loadAnimals();
+    }, 250);
+
+    return () => clearTimeout(handler);
+  }, [loadAnimals]);
+
+  // Cargar y persistir papelera local secundaria
+  useEffect(() => {
     const storedTrash = localStorage.getItem("sip_animals_trash");
-    if (storedAnimals) {
-      setAnimals(JSON.parse(storedAnimals));
-    } else {
-      const defaultAnimals = [
-        {
-          id: "2024-001",
-          raza: "Duroc",
-          edad: 5,
-          lote: "Lote #42",
-          estado: "SALUDABLE",
-        },
-        {
-          id: "2024-042",
-          raza: "Landrace",
-          edad: 6,
-          lote: "Lote #15",
-          estado: "OBSERVACIÓN",
-        },
-      ];
-      setAnimals(defaultAnimals);
-      localStorage.setItem("sip_animals", JSON.stringify(defaultAnimals));
-    }
     if (storedTrash) {
-      setTrash(JSON.parse(storedTrash));
+      try {
+        setTrash(JSON.parse(storedTrash));
+      } catch {
+        setTrash([]);
+      }
     }
-    setIsMounted(true);
   }, []);
 
   useEffect(() => {
-    if (isMounted) {
-      localStorage.setItem("sip_animals", JSON.stringify(animals));
-      localStorage.setItem("sip_animals_trash", JSON.stringify(trash));
-    }
-  }, [animals, trash, isMounted]);
+    localStorage.setItem("sip_animals_trash", JSON.stringify(trash));
+  }, [trash]);
 
-  const handleSave = (newAnimal) => {
-    setAnimals([...animals, { ...newAnimal }]);
-  };
-
-  // Mover a papelera
+  // Mover animal a papelera local
   const moveToTrash = (id) => {
     const animal = animals.find((a) => a.id === id);
     if (animal) {
-      setTrash([...trash, animal]);
-      setAnimals(animals.filter((a) => a.id !== id));
-      toast.success("Animal movido a la papelera");
+      setTrash((prev) => [animal, ...prev]);
+      setAnimals((prev) => prev.filter((a) => a.id !== id));
+      toast.success(`Animal #${animal.codigo_arete || animal.id} movido a la papelera`);
     }
   };
 
-  // Recuperar de papelera
-  const recover = (id) => {
+  // Recuperar animal de papelera
+  const recoverFromTrash = (id) => {
     const animal = trash.find((a) => a.id === id);
     if (animal) {
-      setAnimals([...animals, animal]);
-      setTrash(trash.filter((a) => a.id !== id));
-      toast.success("Animal recuperado con éxito");
+      setAnimals((prev) => [animal, ...prev]);
+      setTrash((prev) => prev.filter((a) => a.id !== id));
+      toast.success("Animal restaurado a la lista activa");
     }
   };
 
-  // Borrar PARA SIEMPRE
-  const permanentDelete = (id) => {
+  // Eliminar definitivamente
+  const permanentDelete = async (id) => {
     if (
       window.confirm(
-        "¿Eliminar permanentemente? Esta acción no se puede deshacer.",
+        "¿Eliminar permanentemente este registro? Esta acción intentará removerlo de la base de datos.",
       )
     ) {
-      setTrash(trash.filter((a) => a.id !== id));
+      try {
+        await deleteAnimal(id);
+      } catch (err) {
+        console.warn("Aviso al eliminar en backend:", err.message);
+      }
+      setTrash((prev) => prev.filter((a) => a.id !== id));
       toast.success("Animal eliminado de forma permanente");
     }
   };
 
-  const filtered = animals.filter((a) =>
-    a.lote.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
-
   return (
     <div className="w-full flex flex-col gap-6">
-      {/* Cabecera Estandarizada */}
+      {/* Cabecera del Módulo */}
       <ModuleHeader
         category="GESTIÓN DE HATO"
         title="Registro de animales"
-        description="Gestión y control del inventario porcino."
+        description="Gestión y control del inventario porcino sincronizado con la base de datos."
         actions={
           <Button
             onClick={() => setIsModalOpen(true)}
             tone="primary"
-            className="rounded-xl! shadow-md hover:shadow-xl transition-all duration-200"
+            className="rounded-xl! shadow-md hover:shadow-xl transition-all duration-200 cursor-pointer"
           >
-            + Añadir Cerdo
+            <Plus size={18} className="mr-1.5" />
+            Añadir Cerdo
           </Button>
         }
       />
 
       <div className="flex flex-col gap-6">
-        {/* SECCIÓN PRINCIPAL */}
-        <div className="flex flex-col gap-4">
-          <div className="flex justify-between items-center bg-white p-6 rounded-4xl shadow-sm border border-slate-100">
-            <div className="flex gap-3 w-full max-w-md">
-              <input
-                placeholder="Buscar por Lote..."
-                className="w-full border rounded-xl px-4 py-2.5 text-sm outline-none focus:border-emerald-450 text-slate-900 bg-slate-50 border-slate-200 font-semibold"
-                onChange={(e) => setSearchTerm(e.target.value)}
+        {/* BARRA DE BÚSQUEDA Y FILTROS REALES */}
+        <div className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 flex flex-col lg:flex-row items-center justify-between gap-4">
+          {/* Buscador */}
+          <div className="relative w-full lg:max-w-md">
+            <Search
+              size={18}
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+            />
+            <input
+              type="text"
+              placeholder="Buscar por arete, alias o raza..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 outline-none focus:border-emerald-500 transition-colors"
+            />
+          </div>
+
+          {/* Filtros por Corral y Estado */}
+          <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+            {/* Filtro de Corrales */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider hidden sm:inline">
+                Corral:
+              </span>
+              <select
+                value={selectedCorral}
+                onChange={(e) => setSelectedCorral(e.target.value)}
+                className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-emerald-500 cursor-pointer"
+              >
+                <option value="all">Todos los corrales</option>
+                {corrales.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.codigo} ({c.fase})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Filtro de Estado */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider hidden sm:inline">
+                Fase:
+              </span>
+              <select
+                value={selectedEstado}
+                onChange={(e) => setSelectedEstado(e.target.value)}
+                className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-emerald-500 cursor-pointer"
+              >
+                <option value="all">Todas las fases</option>
+                <option value="activo">Activo</option>
+                <option value="precebo">Precebo</option>
+                <option value="levante">Levante</option>
+                <option value="engorde">Engorde / Ceba</option>
+                <option value="maternidad">Maternidad</option>
+                <option value="gestacion">Gestación</option>
+                <option value="cuarentena">Cuarentena</option>
+              </select>
+            </div>
+
+            {/* Botón Refrescar */}
+            <button
+              type="button"
+              onClick={loadAnimals}
+              title="Recargar datos desde la base de datos"
+              disabled={isLoading}
+              className="p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
+            >
+              <RefreshCw
+                size={16}
+                className={isLoading ? "animate-spin text-emerald-600" : ""}
               />
+            </button>
+          </div>
+        </div>
+
+        {/* ALERTA DE ERROR DE CONEXIÓN */}
+        {error && (
+          <div className="flex items-start justify-between gap-4 p-5 rounded-3xl bg-amber-50 border border-amber-200 text-amber-900">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="shrink-0 text-amber-600 mt-0.5" size={20} />
+              <div>
+                <p className="font-bold text-sm">Problema al comunicar con la API</p>
+                <p className="text-xs text-amber-700 mt-1">{error}</p>
+                <p className="text-xs text-slate-500 mt-2">
+                  Verifica que el servicio backend FastAPI esté en ejecución en{" "}
+                  <code>http://localhost:8000</code>.
+                </p>
+              </div>
+            </div>
+            <Button
+              onClick={loadAnimals}
+              tone="soft"
+              className="text-xs py-2 px-3 shrink-0"
+            >
+              Reintentar
+            </Button>
+          </div>
+        )}
+
+        {/* TABLA PRINCIPAL DE ANIMALES O ESTADOS */}
+        {isLoading ? (
+          <div className="bg-white rounded-3xl border border-slate-100 p-8 shadow-sm">
+            <div className="flex flex-col items-center justify-center py-12 gap-3 text-slate-400">
+              <RefreshCw size={28} className="animate-spin text-emerald-500" />
+              <p className="text-sm font-bold text-slate-600">
+                Consultando inventario en PostgreSQL...
+              </p>
             </div>
           </div>
+        ) : animals.length === 0 ? (
+          <EmptyState
+            icon={Inbox}
+            title="No se encontraron animales registrados"
+            description={
+              searchTerm || selectedCorral !== "all" || selectedEstado !== "all"
+                ? "No hay resultados para los filtros seleccionados. Intenta restablecer los filtros."
+                : "Aún no hay cerdos registrados en la base de datos. Haz clic en 'Añadir Cerdo' para registrar el primero."
+            }
+            actionLabel={
+              searchTerm || selectedCorral !== "all" || selectedEstado !== "all"
+                ? "Restablecer Filtros"
+                : "+ Registrar Cerdo"
+            }
+            onAction={
+              searchTerm || selectedCorral !== "all" || selectedEstado !== "all"
+                ? () => {
+                    setSearchTerm("");
+                    setSelectedCorral("all");
+                    setSelectedEstado("all");
+                  }
+                : () => setIsModalOpen(true)
+            }
+          />
+        ) : (
           <AnimalTable
-            animals={filtered}
+            animals={animals}
             onDelete={moveToTrash}
             onOpenQr={(animal) => setSelectedAnimalForQr(animal)}
           />
-        </div>
+        )}
 
-        {/* SECCIÓN PAPELERA (Solo aparece si hay algo) */}
+        {/* SECCIÓN PAPELERA (Solo si hay animales movidos a la papelera) */}
         {trash.length > 0 && (
           <div className="flex flex-col gap-4 opacity-80 mt-4">
-            <div className="flex items-center gap-4 bg-slate-200/50 p-4 rounded-2xl">
+            <div className="flex items-center gap-3 bg-slate-200/60 p-4 rounded-2xl">
               <span className="text-xl">🗑️</span>
-              <h3 className="font-bold text-slate-600 uppercase tracking-widest text-sm">
+              <h3 className="font-bold text-slate-700 uppercase tracking-widest text-xs">
                 Papelera de Reciclaje ({trash.length})
               </h3>
             </div>
             <AnimalTable
               animals={trash}
               isTrash={true}
-              onRecover={recover}
+              onRecover={recoverFromTrash}
               onPermanentDelete={permanentDelete}
             />
           </div>
         )}
 
+        {/* MODAL REGISTRAR ANIMAL */}
         <AddAnimalModal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
-          onSave={handleSave}
+          onSuccess={() => {
+            loadAnimals();
+          }}
+          corrales={corrales}
         />
 
         {/* MODAL DE CHAPETA E IMPRESIÓN QR */}
         <AnimalQrModal
           animal={selectedAnimalForQr}
-          isOpen={!!selectedAnimalForQr}
+          isOpen={Boolean(selectedAnimalForQr)}
           onClose={() => setSelectedAnimalForQr(null)}
         />
       </div>

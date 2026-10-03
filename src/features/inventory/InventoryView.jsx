@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import {
   Package,
   Search,
@@ -9,323 +10,364 @@ import {
   AlertTriangle,
   Clock,
   DollarSign,
-  TrendingDown,
   Layers,
-  ArrowUpRight,
-  ShieldCheck,
-  CheckCircle2,
-  Trash2,
-  Edit3,
-  Archive,
   RefreshCw,
+  ArrowDownLeft,
+  ArrowUpRight,
+  TrendingDown,
+  Warehouse,
+  ExternalLink,
+  ClipboardList,
 } from "lucide-react";
 import { toast } from "sonner";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import Table from "@/components/ui/Table";
 import Input from "@/components/ui/Input";
+import EmptyState from "@/components/ui/EmptyState";
 import ModuleHeader from "@/components/layout/ModuleHeader";
-import inventoryConstants from "./data/inventoryConstants.json";
+import { formatDateTime } from "@/utils/formatters";
+import {
+  getCategories,
+  getItems,
+  createItem,
+  getMovements,
+  registerMovement,
+} from "@/services/inventoryService";
 
-const initialSupplies = [
-  {
-    id: "INS-001",
-    nombre: "Iniciación Lechones Precebo 1",
-    categoria: "alimento",
-    stock: 85,
-    unidad: "Bultos (40kg)",
-    stockMinimo: 20,
-    lote: "LOT-AL-2026-08",
-    fechaVencimiento: "2026-11-30",
-    valorUnitario: 98000,
+const CATEGORY_COLORS = {
+  blue: "bg-blue-100 text-blue-700 border-blue-200",
+  emerald: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  purple: "bg-purple-100 text-purple-700 border-purple-200",
+  orange: "bg-amber-100 text-amber-700 border-amber-200",
+  amber: "bg-amber-100 text-amber-700 border-amber-200",
+  slate: "bg-slate-100 text-slate-700 border-slate-200",
+};
+
+const MOVEMENT_CONFIG = {
+  entrada_compra: {
+    label: "Entrada Compra",
+    badgeClass: "bg-emerald-100 text-emerald-700 border-emerald-200",
+    icon: ArrowDownLeft,
+    sign: "+",
+    signColor: "text-emerald-600",
   },
-  {
-    id: "INS-002",
-    nombre: "Ceba Finalización Harina Forte",
-    categoria: "alimento",
-    stock: 120,
-    unidad: "Bultos (40kg)",
-    stockMinimo: 30,
-    lote: "LOT-AL-2026-12",
-    fechaVencimiento: "2026-12-15",
-    valorUnitario: 89000,
+  salida_consumo: {
+    label: "Salida Consumo",
+    badgeClass: "bg-blue-100 text-blue-700 border-blue-200",
+    icon: ArrowUpRight,
+    sign: "-",
+    signColor: "text-blue-600",
   },
-  {
-    id: "INS-003",
-    nombre: "Lactancia Cerda Reproductora",
-    categoria: "alimento",
-    stock: 40,
-    unidad: "Bultos (40kg)",
-    stockMinimo: 15,
-    lote: "LOT-AL-2026-05",
-    fechaVencimiento: "2026-10-20",
-    valorUnitario: 105000,
+  ajuste_merma: {
+    label: "Ajuste Merma",
+    badgeClass: "bg-rose-100 text-rose-700 border-rose-200",
+    icon: TrendingDown,
+    sign: "-",
+    signColor: "text-rose-600",
   },
-  {
-    id: "INS-004",
-    nombre: "Ivermectina 1% Antiparasitario",
-    categoria: "medicamento",
-    stock: 6,
-    unidad: "Frascos (250ml)",
-    stockMinimo: 10,
-    lote: "FAR-IV-889",
-    fechaVencimiento: "2026-09-15",
-    valorUnitario: 45000,
+  devolucion: {
+    label: "Devolución",
+    badgeClass: "bg-amber-100 text-amber-700 border-amber-200",
+    icon: ArrowDownLeft,
+    sign: "+",
+    signColor: "text-amber-600",
   },
-  {
-    id: "INS-005",
-    nombre: "Vacuna Peste Porcina Clásica (PPC)",
-    categoria: "medicamento",
-    stock: 25,
-    unidad: "Frascos (100ml)",
-    stockMinimo: 15,
-    lote: "VAC-PPC-202",
-    fechaVencimiento: "2027-03-30",
-    valorUnitario: 135000,
-  },
-  {
-    id: "INS-006",
-    nombre: "Oxitetraciclina L.A. 200mg",
-    categoria: "medicamento",
-    stock: 14,
-    unidad: "Frascos (250ml)",
-    stockMinimo: 8,
-    lote: "FAR-OXI-774",
-    fechaVencimiento: "2027-01-10",
-    valorUnitario: 62000,
-  },
-  {
-    id: "INS-007",
-    nombre: "Hierro Dextrano 200mg + B12",
-    categoria: "medicamento",
-    stock: 18,
-    unidad: "Frascos (100ml)",
-    stockMinimo: 10,
-    lote: "FAR-HD-109",
-    fechaVencimiento: "2026-12-05",
-    valorUnitario: 38000,
-  },
-  {
-    id: "INS-008",
-    nombre: "Desinfectante Glutaraldehído 50%",
-    categoria: "bioseguridad",
-    stock: 8,
-    unidad: "Litros",
-    stockMinimo: 12,
-    lote: "BIO-GL-334",
-    fechaVencimiento: "2027-06-20",
-    valorUnitario: 55000,
-  },
-  {
-    id: "INS-009",
-    nombre: "Cal Viva Especial Desinfección",
-    categoria: "bioseguridad",
-    stock: 50,
-    unidad: "Bultos (25kg)",
-    stockMinimo: 20,
-    lote: "BIO-CAL-04",
-    fechaVencimiento: "2028-01-01",
-    valorUnitario: 22000,
-  },
-  {
-    id: "INS-010",
-    nombre: "Electrolitos y Vitaminas Solubles",
-    categoria: "suplemento",
-    stock: 35,
-    unidad: "Kg",
-    stockMinimo: 15,
-    lote: "SUP-VIT-901",
-    fechaVencimiento: "2026-10-15",
-    valorUnitario: 42000,
-  },
+};
+
+const STANDARD_UNITS = [
+  "Bultos (40kg)",
+  "Bultos (25kg)",
+  "Kg",
+  "Frascos (250ml)",
+  "Frascos (100ml)",
+  "Frascos (500ml)",
+  "Litros",
+  "Dosis",
+  "Unidades / Cajas",
 ];
 
 export default function InventoryView() {
-  const [supplies, setSupplies] = useState([]);
-  const [isMounted, setIsMounted] = useState(false);
+  const router = useRouter();
+
+  // Estados de datos API
+  const [categories, setCategories] = useState([]);
+  const [items, setItems] = useState([]);
+  const [movements, setMovements] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Pestaña activa: 'items' | 'movements'
+  const [activeTab, setActiveTab] = useState("items");
 
   // Filtros
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
-  const [filterStockStatus, setFilterStockStatus] = useState("");
+  const [filterLowStockOnly, setFilterLowStockOnly] = useState(false);
 
   // Modales
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [adjustingItem, setAdjustingItem] = useState(null);
-  const [adjustQty, setAdjustQty] = useState("");
+  const [isMovementModalOpen, setIsMovementModalOpen] = useState(false);
+  const [selectedItemForMovement, setSelectedItemForMovement] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Formulario nuevo insumo
   const [newSupply, setNewSupply] = useState({
+    categoria_id: "",
+    codigo_sku: "",
     nombre: "",
-    categoria: "alimento",
-    stock: "",
-    unidad: "Bultos (40kg)",
-    stockMinimo: "",
-    lote: "",
-    fechaVencimiento: "",
-    valorUnitario: "",
+    unidad_medida: "Bultos (40kg)",
+    stock_minimo: "",
+    costo_unitario: "",
+    ubicacion_bodega: "",
   });
 
-  useEffect(() => {
-    const stored = localStorage.getItem("sip_warehouse_supplies");
-    if (stored) {
-      setSupplies(JSON.parse(stored));
-    } else {
-      setSupplies(initialSupplies);
-      localStorage.setItem(
-        "sip_warehouse_supplies",
-        JSON.stringify(initialSupplies),
+  // Formulario movimiento Kardex
+  const [movementForm, setMovementForm] = useState({
+    item_id: "",
+    tipo_movimiento: "entrada_compra",
+    cantidad: "",
+    costo_unitario: "",
+    motivo: "",
+  });
+
+  // Carga inicial y concurrente de datos
+  const loadData = useCallback(async (showFullLoader = true) => {
+    if (showFullLoader) setIsLoading(true);
+    else setIsRefreshing(true);
+    setError(null);
+
+    try {
+      const [categoriesData, itemsData, movementsData] = await Promise.all([
+        getCategories(),
+        getItems(),
+        getMovements({ limite: 20 }),
+      ]);
+
+      const cats = Array.isArray(categoriesData) ? categoriesData : [];
+      setCategories(cats);
+      setItems(Array.isArray(itemsData) ? itemsData : []);
+      setMovements(Array.isArray(movementsData) ? movementsData : []);
+
+      // Si el form de nuevo insumo no tiene categoría asignada por defecto, usar la primera
+      if (cats.length > 0 && !newSupply.categoria_id) {
+        setNewSupply((prev) => ({
+          ...prev,
+          categoria_id: prev.categoria_id || cats[0].id,
+        }));
+      }
+    } catch (err) {
+      console.error("Error al cargar inventario:", err);
+      setError(
+        err.message ||
+          "No se pudo sincronizar el inventario con el backend de FastAPI."
       );
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
     }
-    setIsMounted(true);
-  }, []);
+  }, [newSupply.categoria_id]);
 
   useEffect(() => {
-    if (isMounted) {
-      localStorage.setItem(
-        "sip_warehouse_supplies",
-        JSON.stringify(supplies),
-      );
+    loadData(true);
+  }, [loadData]);
+
+  // Recarga filtrada de items al cambiar filtros
+  const handleApplyFilters = useCallback(async () => {
+    try {
+      const params = {};
+      if (filterCategory) params.categoria_id = filterCategory;
+      if (searchTerm.trim()) params.search = searchTerm.trim();
+      if (filterLowStockOnly) params.bajo_stock = true;
+
+      const filtered = await getItems(params);
+      setItems(Array.isArray(filtered) ? filtered : []);
+    } catch (err) {
+      console.error("Error al aplicar filtros:", err);
+      toast.error("Error al aplicar filtros de inventario");
     }
-  }, [supplies, isMounted]);
+  }, [filterCategory, searchTerm, filterLowStockOnly]);
 
-  // Cálculos de estado y vencimiento
-  const getItemStatus = (item) => {
-    if (item.stock <= 0) return { label: "Agotado", tone: "critical" };
-    if (item.stock <= item.stockMinimo * 0.5)
-      return { label: "Crítico", tone: "critical" };
-    if (item.stock <= item.stockMinimo)
-      return { label: "Por Agotarse", tone: "warning" };
-    return { label: "Óptimo", tone: "optimal" };
-  };
+  useEffect(() => {
+    // Debounce leve para búsqueda de texto
+    const timer = setTimeout(() => {
+      handleApplyFilters();
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [handleApplyFilters]);
 
-  const isExpiringSoon = (dateStr) => {
-    if (!dateStr) return false;
-    const now = new Date("2026-09-03"); // Fecha de referencia del sistema
-    const exp = new Date(dateStr);
-    const diffDays = Math.ceil((exp - now) / (1000 * 60 * 60 * 24));
-    return diffDays <= 15 && diffDays >= 0;
-  };
-
-  const isExpired = (dateStr) => {
-    if (!dateStr) return false;
-    const now = new Date("2026-09-03");
-    const exp = new Date(dateStr);
-    return exp < now;
-  };
-
-  // KPIs
+  // KPIs reactivos calculados
   const totalValue = useMemo(() => {
-    return supplies.reduce(
-      (acc, curr) => acc + (curr.stock || 0) * (curr.valorUnitario || 0),
-      0,
+    return items.reduce(
+      (acc, curr) =>
+        acc +
+        (Number(curr.stock_actual) || 0) * (Number(curr.costo_unitario) || 0),
+      0
     );
-  }, [supplies]);
+  }, [items]);
 
   const lowStockCount = useMemo(() => {
-    return supplies.filter((s) => s.stock <= s.stockMinimo).length;
-  }, [supplies]);
+    return items.filter(
+      (s) => Number(s.stock_actual) <= Number(s.stock_minimo)
+    ).length;
+  }, [items]);
 
-  const expiringCount = useMemo(() => {
-    return supplies.filter((s) => isExpiringSoon(s.fechaVencimiento) || isExpired(s.fechaVencimiento)).length;
-  }, [supplies]);
+  const totalStockUnits = useMemo(() => {
+    return items.reduce((acc, curr) => acc + (Number(curr.stock_actual) || 0), 0);
+  }, [items]);
 
-  // Filtrado de la tabla
-  const filteredSupplies = supplies.filter((item) => {
-    const matchesSearch =
-      item.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.lote.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCat = filterCategory ? item.categoria === filterCategory : true;
-    const status = getItemStatus(item);
-    const matchesStatus = filterStockStatus
-      ? status.label.toLowerCase() === filterStockStatus.toLowerCase()
-      : true;
-    return matchesSearch && matchesCat && matchesStatus;
-  });
+  // Mapeo auxiliar de categorías por id y por codigo
+  const categoryMap = useMemo(() => {
+    const map = new Map();
+    categories.forEach((cat) => {
+      map.set(cat.id, cat);
+      if (cat.codigo) map.set(cat.codigo, cat);
+    });
+    return map;
+  }, [categories]);
 
-  // Manejo de nuevo insumo
-  const handleAddSupply = (e) => {
+  // Manejo de registro de nuevo insumo
+  const handleCreateSupply = async (e) => {
     e.preventDefault();
+
     if (!newSupply.nombre.trim()) {
       toast.error("El nombre del insumo es obligatorio");
       return;
     }
-    const stockNum = parseFloat(newSupply.stock);
-    const minNum = parseFloat(newSupply.stockMinimo);
-    const valNum = parseFloat(newSupply.valorUnitario) || 0;
-
-    if (isNaN(stockNum) || stockNum < 0) {
-      toast.error("El stock debe ser un número mayor o igual a 0");
+    if (!newSupply.categoria_id) {
+      toast.error("Seleccione una categoría válida");
+      return;
+    }
+    const minStock = parseFloat(newSupply.stock_minimo);
+    if (isNaN(minStock) || minStock < 0) {
+      toast.error("El stock mínimo debe ser un número positivo");
+      return;
+    }
+    const unitCost = parseFloat(newSupply.costo_unitario);
+    if (isNaN(unitCost) || unitCost < 0) {
+      toast.error("El costo unitario debe ser mayor o igual a 0");
       return;
     }
 
-    const created = {
-      id: `INS-${Math.floor(100 + Math.random() * 900)}`,
-      nombre: newSupply.nombre.trim(),
-      categoria: newSupply.categoria,
-      stock: stockNum,
-      unidad: newSupply.unidad,
-      stockMinimo: isNaN(minNum) ? 10 : minNum,
-      lote: newSupply.lote.trim() || `LOT-${new Date().getFullYear()}-01`,
-      fechaVencimiento: newSupply.fechaVencimiento || "2027-12-31",
-      valorUnitario: valNum,
-    };
+    setIsSubmitting(true);
+    try {
+      await createItem({
+        categoria_id: newSupply.categoria_id,
+        codigo_sku: newSupply.codigo_sku.trim() || `INS-${Math.floor(100 + Math.random() * 900)}`,
+        nombre: newSupply.nombre.trim(),
+        unidad_medida: newSupply.unidad_medida,
+        stock_minimo: minStock,
+        costo_unitario: unitCost,
+        ubicacion_bodega: newSupply.ubicacion_bodega.trim() || "Bodega General",
+      });
 
-    setSupplies([created, ...supplies]);
-    setIsAddModalOpen(false);
-    setNewSupply({
-      nombre: "",
-      categoria: "alimento",
-      stock: "",
-      unidad: "Bultos (40kg)",
-      stockMinimo: "",
-      lote: "",
-      fechaVencimiento: "",
-      valorUnitario: "",
-    });
-    toast.success("Insumo registrado en bodega con éxito");
+      toast.success("Insumo registrado exitosamente en PostgreSQL");
+      setIsAddModalOpen(false);
+      setNewSupply({
+        categoria_id: categories[0]?.id || "",
+        codigo_sku: "",
+        nombre: "",
+        unidad_medida: "Bultos (40kg)",
+        stock_minimo: "",
+        costo_unitario: "",
+        ubicacion_bodega: "",
+      });
+      await loadData(false);
+    } catch (err) {
+      console.error("Error al crear insumo:", err);
+      toast.error(err.message || "No se pudo registrar el insumo");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  // Ajuste rápido de stock
-  const handleAdjustStock = (e) => {
+  // Manejo de registro de movimiento en Kardex
+  const handleRegisterMovementSubmit = async (e) => {
     e.preventDefault();
-    const qty = parseFloat(adjustQty);
-    if (isNaN(qty)) {
-      toast.error("Ingresa una cantidad válida");
+
+    if (!movementForm.item_id) {
+      toast.error("Seleccione un insumo para el movimiento");
+      return;
+    }
+    const qty = parseFloat(movementForm.cantidad);
+    if (isNaN(qty) || qty <= 0) {
+      toast.error("La cantidad debe ser un número positivo mayor a 0");
+      return;
+    }
+    if (!movementForm.motivo.trim()) {
+      toast.error("Debe ingresar un motivo o justificación");
       return;
     }
 
-    setSupplies((prev) =>
-      prev.map((item) => {
-        if (item.id === adjustingItem.id) {
-          const updated = Math.max(0, item.stock + qty);
-          return { ...item, stock: updated };
-        }
-        return item;
-      }),
-    );
+    setIsSubmitting(true);
+    try {
+      const payload = {
+        item_id: movementForm.item_id,
+        tipo_movimiento: movementForm.tipo_movimiento,
+        cantidad: qty,
+        motivo: movementForm.motivo.trim(),
+      };
+      if (movementForm.costo_unitario) {
+        payload.costo_unitario = parseFloat(movementForm.costo_unitario);
+      }
 
-    toast.success(`Stock de ${adjustingItem.nombre} actualizado`);
-    setAdjustingItem(null);
-    setAdjustQty("");
-  };
-
-  const handleDeleteSupply = (id) => {
-    if (window.confirm("¿Seguro de retirar este insumo del inventario?")) {
-      setSupplies(supplies.filter((s) => s.id !== id));
-      toast.success("Insumo eliminado de bodega");
+      await registerMovement(payload);
+      toast.success("Movimiento registrado en Kardex correctamente");
+      setIsMovementModalOpen(false);
+      setSelectedItemForMovement(null);
+      setMovementForm({
+        item_id: "",
+        tipo_movimiento: "entrada_compra",
+        cantidad: "",
+        costo_unitario: "",
+        motivo: "",
+      });
+      await loadData(false);
+    } catch (err) {
+      console.error("Error al registrar movimiento:", err);
+      toast.error(err.message || "Fallo al registrar el movimiento en Kardex");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  // Columnas para componente Table
-  const columns = [
+  // Abrir modal de movimiento preseleccionando un item
+  const openMovementForSupply = (item) => {
+    setSelectedItemForMovement(item);
+    setMovementForm({
+      item_id: item.id,
+      tipo_movimiento: "salida_consumo",
+      cantidad: "",
+      costo_unitario: item.costo_unitario ? String(item.costo_unitario) : "",
+      motivo: "",
+    });
+    setIsMovementModalOpen(true);
+  };
+
+  // Columnas para componente Table (Artículos)
+  const itemColumns = [
+    {
+      key: "sku",
+      header: "SKU / Código",
+      render: (row) => (
+        <span className="font-mono text-xs font-bold text-slate-700 bg-slate-100 px-2 py-1 rounded-lg">
+          {row.codigo_sku || "N/A"}
+        </span>
+      ),
+    },
     {
       key: "nombre",
       header: "Insumo / Referencia",
       render: (row) => (
         <div>
-          <span className="font-bold text-slate-900 block">{row.nombre}</span>
-          <span className="text-[11px] font-mono text-slate-400">ID: #{row.id}</span>
+          <span className="font-bold text-slate-900 block text-sm">
+            {row.nombre}
+          </span>
+          <span className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
+            <Warehouse className="h-3 w-3" />
+            {row.ubicacion_bodega || "Bodega Central"}
+          </span>
         </div>
       ),
     },
@@ -333,71 +375,50 @@ export default function InventoryView() {
       key: "categoria",
       header: "Categoría",
       render: (row) => {
-        const cat = inventoryConstants.categorias.find((c) => c.id === row.categoria);
-        const label = cat?.label || row.categoria;
-        const color = cat?.color || "slate";
-
-        const badgeColors = {
-          blue: "bg-blue-100 text-blue-700 border-blue-200",
-          emerald: "bg-emerald-100 text-emerald-700 border-emerald-200",
-          purple: "bg-purple-100 text-purple-700 border-purple-200",
-          orange: "bg-amber-100 text-amber-700 border-amber-200",
-          slate: "bg-slate-100 text-slate-700 border-slate-200",
-        };
+        const cat =
+          categoryMap.get(row.categoria_id) ||
+          categoryMap.get(row.categoria_codigo) || {
+            nombre: row.categoria_codigo || "General",
+            color: "slate",
+          };
+        const colorClass = CATEGORY_COLORS[cat.color] || CATEGORY_COLORS.slate;
 
         return (
           <span
-            className={`px-3 py-1 rounded-full text-xs font-bold border ${badgeColors[color] || badgeColors.slate}`}
+            className={`px-3 py-1 rounded-full text-xs font-bold border ${colorClass}`}
           >
-            {label}
+            {cat.nombre}
           </span>
         );
       },
     },
     {
       key: "stock",
-      header: "Stock Actual",
-      render: (row) => (
-        <div>
-          <span className="text-base font-black text-slate-900">
-            {row.stock}{" "}
-          </span>
-          <span className="text-xs font-semibold text-slate-500">
-            {row.unidad}
-          </span>
-          <div className="text-[10px] text-slate-400 mt-0.5">
-            Mínimo: {row.stockMinimo} {row.unidad}
-          </div>
-        </div>
-      ),
-    },
-    {
-      key: "loteVence",
-      header: "Lote / Vencimiento",
+      header: "Stock Actual vs Mínimo",
       render: (row) => {
-        const expiring = isExpiringSoon(row.fechaVencimiento);
-        const expired = isExpired(row.fechaVencimiento);
+        const actual = Number(row.stock_actual) || 0;
+        const minimo = Number(row.stock_minimo) || 0;
+        const isCritical = actual <= minimo;
 
         return (
           <div>
-            <span className="font-mono text-xs font-bold text-slate-700 block">
-              {row.lote}
-            </span>
-            <div className="flex items-center gap-1 mt-0.5">
+            <div className="flex items-baseline gap-1.5">
               <span
-                className={`text-xs font-semibold ${
-                  expired
-                    ? "text-red-600 font-black"
-                    : expiring
-                      ? "text-amber-600 font-bold"
-                      : "text-slate-500"
+                className={`text-base font-black ${
+                  isCritical ? "text-rose-600" : "text-slate-900"
                 }`}
               >
-                {row.fechaVencimiento}
+                {actual.toLocaleString("es-CO")}
               </span>
-              {expiring && (
-                <span className="text-[10px] font-black px-1.5 py-0.2 rounded bg-amber-100 text-amber-700">
-                  ¡Por Vencer!
+              <span className="text-xs font-semibold text-slate-500">
+                {row.unidad_medida}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 mt-0.5 text-[11px] text-slate-500">
+              <span>Mínimo: {minimo}</span>
+              {isCritical && (
+                <span className="rounded bg-rose-100 px-1.5 py-0.2 text-[10px] font-black text-rose-700">
+                  ¡Bajo Stock!
                 </span>
               )}
             </div>
@@ -406,24 +427,21 @@ export default function InventoryView() {
       },
     },
     {
-      key: "estado",
-      header: "Estado",
-      render: (row) => {
-        const status = getItemStatus(row);
-        const toneStyles = {
-          optimal: "bg-emerald-100 text-emerald-700 border-emerald-200",
-          warning: "bg-amber-100 text-amber-700 border-amber-200",
-          critical: "bg-red-100 text-red-700 border-red-200 animate-pulse",
-        };
-
-        return (
-          <span
-            className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider border ${toneStyles[status.tone]}`}
-          >
-            {status.label}
+      key: "costo",
+      header: "Costo Unitario",
+      render: (row) => (
+        <div>
+          <span className="font-bold text-slate-900 text-sm">
+            ${Number(row.costo_unitario || 0).toLocaleString("es-CO")}
           </span>
-        );
-      },
+          <span className="block text-[11px] text-slate-400">
+            Total: $
+            {(
+              (Number(row.stock_actual) || 0) * (Number(row.costo_unitario) || 0)
+            ).toLocaleString("es-CO")}
+          </span>
+        </div>
+      ),
     },
     {
       key: "acciones",
@@ -432,25 +450,102 @@ export default function InventoryView() {
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => {
-              setAdjustingItem(row);
-              setAdjustQty("");
-            }}
-            className="px-2.5 py-1.5 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all text-xs font-bold flex items-center gap-1 shadow-xs cursor-pointer"
-            title="Ajustar existencia"
+            onClick={() => openMovementForSupply(row)}
+            className="px-2.5 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white transition-all text-xs font-bold flex items-center gap-1 shadow-xs cursor-pointer"
+            title="Registrar entrada o salida"
           >
             <RefreshCw size={13} />
-            <span>Entrada / Ajuste</span>
+            <span>Kardex</span>
           </button>
           <button
             type="button"
-            onClick={() => handleDeleteSupply(row.id)}
-            className="p-1.5 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all cursor-pointer"
-            title="Eliminar insumo"
+            onClick={() => router.push(`/dashboard/inventory/profile?id=${row.id}`)}
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-all cursor-pointer"
+            title="Ver ficha técnica del insumo"
           >
-            <Trash2 size={16} />
+            <ExternalLink size={16} />
           </button>
         </div>
+      ),
+    },
+  ];
+
+  // Columnas para componente Table (Movimientos Kardex)
+  const movementColumns = [
+    {
+      key: "fecha",
+      header: "Fecha / Momento (COT)",
+      render: (row) => (
+        <span className="text-xs text-slate-600 font-medium whitespace-nowrap">
+          {formatDateTime(row.fecha_movimiento)}
+        </span>
+      ),
+    },
+    {
+      key: "tipo",
+      header: "Operación",
+      render: (row) => {
+        const config =
+          MOVEMENT_CONFIG[row.tipo_movimiento] || {
+            label: row.tipo_movimiento || "Movimiento",
+            badgeClass: "bg-slate-100 text-slate-700 border-slate-200",
+            icon: RefreshCw,
+            sign: "",
+            signColor: "text-slate-600",
+          };
+        const Icon = config.icon;
+
+        return (
+          <span
+            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold border ${config.badgeClass}`}
+          >
+            <Icon className="h-3.5 w-3.5" />
+            {config.label}
+          </span>
+        );
+      },
+    },
+    {
+      key: "item",
+      header: "Insumo Afectado",
+      render: (row) => (
+        <span className="font-bold text-slate-900 text-sm">
+          {row.item_nombre || "Insumo"}
+        </span>
+      ),
+    },
+    {
+      key: "cantidad",
+      header: "Cantidad",
+      render: (row) => {
+        const config = MOVEMENT_CONFIG[row.tipo_movimiento] || {
+          sign: "",
+          signColor: "text-slate-900",
+        };
+        return (
+          <span className={`font-black text-sm ${config.signColor}`}>
+            {config.sign}
+            {Number(row.cantidad).toLocaleString("es-CO")}
+          </span>
+        );
+      },
+    },
+    {
+      key: "motivo",
+      header: "Motivo / Justificación",
+      render: (row) => (
+        <span className="text-xs text-slate-600 line-clamp-2">
+          {row.motivo || "Sin justificación"}
+        </span>
+      ),
+    },
+    {
+      key: "usuario",
+      header: "Responsable",
+      render: (row) => (
+        <span className="text-xs font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full">
+          {row.usuario_nombre || "Sistema"}
+        </span>
       ),
     },
   ];
@@ -461,18 +556,63 @@ export default function InventoryView() {
       <ModuleHeader
         category="BODEGA Y LOGÍSTICA"
         title="Inventario de Insumos y Almacén"
-        description="Control físico de existencias de alimentos balanceados, medicamentos, vacunas y material sanitario."
+        description="Gestión física y analítica de existencias de alimentos balanceados, medicamentos, vacunas y material sanitario en PostgreSQL."
         actions={
-          <Button
-            onClick={() => setIsAddModalOpen(true)}
-            tone="primary"
-            className="flex items-center justify-center gap-2 font-black rounded-xl! shadow-md hover:shadow-lg transition-all"
-          >
-            <Plus size={20} />
-            Registrar Entrada de Insumo
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              onClick={() => {
+                setSelectedItemForMovement(null);
+                setMovementForm({
+                  item_id: items[0]?.id || "",
+                  tipo_movimiento: "entrada_compra",
+                  cantidad: "",
+                  costo_unitario: "",
+                  motivo: "",
+                });
+                setIsMovementModalOpen(true);
+              }}
+              tone="soft"
+              className="flex items-center gap-2 font-bold rounded-xl! shadow-xs border border-slate-200 hover:bg-slate-100"
+            >
+              <RefreshCw size={16} />
+              Movimiento Kardex
+            </Button>
+            <Button
+              onClick={() => setIsAddModalOpen(true)}
+              tone="primary"
+              className="flex items-center gap-2 font-black rounded-xl! shadow-md hover:shadow-lg transition-all"
+            >
+              <Plus size={18} />
+              Nuevo Insumo
+            </Button>
+          </div>
         }
       />
+
+      {/* Banner de Error en caso de falla de sincronización */}
+      {error && (
+        <div className="rounded-3xl border border-rose-200 bg-rose-50 p-5 text-rose-900 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className="rounded-xl bg-rose-100 p-2 text-rose-600 shrink-0">
+              <AlertTriangle className="h-5 w-5" />
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-rose-900">
+                Fallo de sincronización de inventario
+              </h4>
+              <p className="text-xs text-rose-700 mt-0.5">{error}</p>
+            </div>
+          </div>
+          <Button
+            onClick={() => loadData(true)}
+            tone="danger"
+            className="text-xs shrink-0 self-start sm:self-center"
+          >
+            <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+            Reintentar
+          </Button>
+        </div>
+      )}
 
       {/* TARJETAS DE KPI SUPERIORES */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -483,9 +623,13 @@ export default function InventoryView() {
               <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
                 Valor Total en Bodega
               </p>
-              <h4 className="text-2xl font-black text-slate-900 mt-2">
-                ${totalValue.toLocaleString("es-CO")}
-              </h4>
+              {isLoading ? (
+                <div className="h-8 w-32 bg-slate-200 rounded animate-pulse mt-2" />
+              ) : (
+                <h4 className="text-2xl font-black text-slate-900 mt-2">
+                  ${totalValue.toLocaleString("es-CO")}
+                </h4>
+              )}
               <p className="text-[11px] text-slate-500 font-semibold mt-1">
                 Estimado en inventario físico
               </p>
@@ -503,11 +647,15 @@ export default function InventoryView() {
               <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
                 Total de Referencias
               </p>
-              <h4 className="text-2xl font-black text-slate-900 mt-2">
-                {supplies.length} Insumos
-              </h4>
+              {isLoading ? (
+                <div className="h-8 w-24 bg-slate-200 rounded animate-pulse mt-2" />
+              ) : (
+                <h4 className="text-2xl font-black text-slate-900 mt-2">
+                  {items.length} Insumos
+                </h4>
+              )}
               <p className="text-[11px] text-slate-500 font-semibold mt-1">
-                4 categorías activas
+                {categories.length} categorías activas
               </p>
             </div>
             <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
@@ -523,127 +671,258 @@ export default function InventoryView() {
               <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
                 Stock Bajo / Crítico
               </p>
-              <h4 className="text-2xl font-black text-rose-600 mt-2">
-                {lowStockCount} Insumos
-              </h4>
+              {isLoading ? (
+                <div className="h-8 w-24 bg-slate-200 rounded animate-pulse mt-2" />
+              ) : (
+                <h4
+                  className={`text-2xl font-black mt-2 ${
+                    lowStockCount > 0 ? "text-rose-600" : "text-emerald-600"
+                  }`}
+                >
+                  {lowStockCount} Insumos
+                </h4>
+              )}
               <p className="text-[11px] text-slate-500 font-semibold mt-1">
-                Requieren orden de compra
+                {lowStockCount > 0
+                  ? "Requieren orden de compra"
+                  : "Nivel óptimo en bodega"}
               </p>
             </div>
-            <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center">
+            <div
+              className={`w-12 h-12 rounded-2xl flex items-center justify-center ${
+                lowStockCount > 0
+                  ? "bg-rose-50 text-rose-600"
+                  : "bg-emerald-50 text-emerald-600"
+              }`}
+            >
               <AlertTriangle size={24} />
             </div>
           </div>
         </Card>
 
-        {/* Insumos por Vencer */}
+        {/* Movimientos Kardex */}
         <Card className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                Próximos a Vencer
+                Movimientos Kardex
               </p>
-              <h4 className="text-2xl font-black text-amber-600 mt-2">
-                {expiringCount} Lotes
-              </h4>
+              {isLoading ? (
+                <div className="h-8 w-24 bg-slate-200 rounded animate-pulse mt-2" />
+              ) : (
+                <h4 className="text-2xl font-black text-purple-600 mt-2">
+                  {movements.length} Registros
+                </h4>
+              )}
               <p className="text-[11px] text-slate-500 font-semibold mt-1">
-                Alerta &lt; 15 días o vencidos
+                Entradas, consumos y mermas
               </p>
             </div>
-            <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center">
               <Clock size={24} />
             </div>
           </div>
         </Card>
       </div>
 
-      {/* BARRA DE FILTROS */}
-      <Card className="rounded-3xl p-5 flex flex-col md:flex-row gap-4 items-end bg-white border border-slate-100 shadow-sm">
-        <div className="w-full md:w-1/3">
-          <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-            <Search size={14} className="text-indigo-400" />
-            Buscar Insumo o Lote
-          </label>
-          <Input
-            placeholder="Ej: Iniciación, Ivermectina, LOT-2026..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full shadow-sm text-sm"
+      {/* CONTROL DE PESTAÑAS */}
+      <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setActiveTab("items")}
+            className={`px-4 py-2 rounded-xl text-sm font-black transition-all flex items-center gap-2 cursor-pointer ${
+              activeTab === "items"
+                ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/20"
+                : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+            }`}
+          >
+            <Package size={16} />
+            <span>Artículos en Stock ({items.length})</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("movements")}
+            className={`px-4 py-2 rounded-xl text-sm font-black transition-all flex items-center gap-2 cursor-pointer ${
+              activeTab === "movements"
+                ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/20"
+                : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+            }`}
+          >
+            <ClipboardList size={16} />
+            <span>Historial Kardex ({movements.length})</span>
+          </button>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => loadData(false)}
+          disabled={isRefreshing}
+          className="text-xs font-semibold text-slate-500 hover:text-indigo-600 flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-all cursor-pointer"
+        >
+          <RefreshCw
+            size={13}
+            className={isRefreshing ? "animate-spin text-indigo-600" : ""}
           />
-        </div>
+          <span>Actualizar</span>
+        </button>
+      </div>
 
-        <div className="w-full md:w-1/3">
-          <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-            <Filter size={14} className="text-indigo-400" />
-            Categoría de Insumo
-          </label>
-          <div className="relative">
-            <select
-              value={filterCategory}
-              onChange={(e) => setFilterCategory(e.target.value)}
-              className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-semibold focus:ring-2 focus:ring-indigo-500 outline-none transition-all shadow-sm appearance-none cursor-pointer text-sm"
-            >
-              <option value="">Todas las Categorías</option>
-              {inventoryConstants.categorias.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.label}
-                </option>
-              ))}
-            </select>
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-xs">
-              ▼
+      {/* SECCIÓN 1: ARTÍCULOS EN STOCK */}
+      {activeTab === "items" && (
+        <div className="space-y-6">
+          {/* BARRA DE FILTROS */}
+          <Card className="rounded-3xl p-5 flex flex-col md:flex-row gap-4 items-end bg-white border border-slate-100 shadow-sm">
+            <div className="w-full md:w-1/2">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                <Search size={14} className="text-indigo-500" />
+                Buscar por Nombre o SKU
+              </label>
+              <Input
+                placeholder="Ej: Iniciación, Ivermectina, INS-001..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full shadow-sm text-sm"
+              />
             </div>
-          </div>
-        </div>
 
-        <div className="w-full md:w-1/3">
-          <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-            <Layers size={14} className="text-indigo-400" />
-            Estado de Existencias
-          </label>
-          <div className="relative">
-            <select
-              value={filterStockStatus}
-              onChange={(e) => setFilterStockStatus(e.target.value)}
-              className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-semibold focus:ring-2 focus:ring-indigo-500 outline-none transition-all shadow-sm appearance-none cursor-pointer text-sm"
-            >
-              <option value="">Todos los Estados</option>
-              {inventoryConstants.estados_stock.map((est) => (
-                <option key={est} value={est}>
-                  {est}
-                </option>
-              ))}
-            </select>
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-xs">
-              ▼
+            <div className="w-full md:w-1/3">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                <Filter size={14} className="text-indigo-500" />
+                Categoría
+              </label>
+              <div className="relative">
+                <select
+                  value={filterCategory}
+                  onChange={(e) => setFilterCategory(e.target.value)}
+                  className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-semibold focus:ring-2 focus:ring-indigo-500 outline-none transition-all shadow-sm appearance-none cursor-pointer text-sm"
+                >
+                  <option value="">Todas las Categorías</option>
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.nombre}
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-xs">
+                  ▼
+                </div>
+              </div>
             </div>
-          </div>
+
+            <div className="w-full md:w-auto">
+              <button
+                type="button"
+                onClick={() => setFilterLowStockOnly(!filterLowStockOnly)}
+                className={`w-full md:w-auto px-4 py-2.5 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                  filterLowStockOnly
+                    ? "bg-rose-50 border-rose-300 text-rose-700 shadow-sm"
+                    : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
+                }`}
+              >
+                <AlertTriangle
+                  size={14}
+                  className={filterLowStockOnly ? "text-rose-600" : "text-slate-400"}
+                />
+                <span>Solo Bajo Stock</span>
+              </button>
+            </div>
+          </Card>
+
+          {/* TABLA MAESTRA DE EXISTENCIAS DE BODEGA */}
+          <section className="bg-white rounded-3xl shadow-sm overflow-hidden p-2 border border-slate-100">
+            {isLoading ? (
+              <div className="p-6 space-y-3">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div
+                    key={i}
+                    className="h-14 rounded-2xl bg-slate-100 animate-pulse"
+                  />
+                ))}
+              </div>
+            ) : items.length === 0 ? (
+              <EmptyState
+                icon={Package}
+                title="No se encontraron insumos en bodega"
+                description={
+                  searchTerm || filterCategory || filterLowStockOnly
+                    ? "No existen artículos que coincidan con los filtros aplicados. Intenta restablecer los filtros."
+                    : "Aún no se han registrado insumos en la base de datos de PostgreSQL."
+                }
+                actionLabel="Registrar Nuevo Insumo"
+                onAction={() => setIsAddModalOpen(true)}
+              />
+            ) : (
+              <Table columns={itemColumns} rows={items} />
+            )}
+          </section>
         </div>
-      </Card>
+      )}
 
-      {/* TABLA MAESTRA DE EXISTENCIAS DE BODEGA */}
-      <section className="bg-white rounded-3xl shadow-sm overflow-hidden p-2 border border-slate-100">
-        <Table columns={columns} rows={filteredSupplies} />
-
-        {filteredSupplies.length === 0 && (
-          <div className="text-center py-16">
-            <Archive className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-            <h3 className="text-lg font-bold text-slate-700">
-              No se encontraron insumos
-            </h3>
-            <p className="text-slate-500 text-sm mt-1">
-              Ajusta los filtros o añade un nuevo insumo a la bodega.
-            </p>
+      {/* SECCIÓN 2: HISTORIAL KARDEX */}
+      {activeTab === "movements" && (
+        <section className="bg-white rounded-3xl shadow-sm overflow-hidden p-2 border border-slate-100">
+          <div className="p-4 flex items-center justify-between border-b border-slate-100">
+            <div>
+              <h3 className="text-lg font-black text-slate-900">
+                Auditoría de Movimientos Físicos (Kardex)
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Trazabilidad inmutable de entradas por compra, consumos de lotes y ajustes por merma
+              </p>
+            </div>
+            <Button
+              onClick={() => {
+                setSelectedItemForMovement(null);
+                setMovementForm({
+                  item_id: items[0]?.id || "",
+                  tipo_movimiento: "entrada_compra",
+                  cantidad: "",
+                  costo_unitario: "",
+                  motivo: "",
+                });
+                setIsMovementModalOpen(true);
+              }}
+              tone="primary"
+              className="text-xs font-bold py-2 px-3 rounded-xl!"
+            >
+              <Plus size={14} className="mr-1" />
+              Nuevo Movimiento
+            </Button>
           </div>
-        )}
-      </section>
 
-      {/* MODAL REGISTRO DE NUEVO INSUMO */}
+          {isLoading ? (
+            <div className="p-6 space-y-3">
+              {[1, 2, 3, 4].map((i) => (
+                <div
+                  key={i}
+                  className="h-12 rounded-2xl bg-slate-100 animate-pulse"
+                />
+              ))}
+            </div>
+          ) : movements.length === 0 ? (
+            <EmptyState
+              icon={ClipboardList}
+              title="Sin movimientos registrados"
+              description="No hay entradas o salidas físicas registradas en el Kardex de inventario."
+              actionLabel="Registrar Primer Movimiento"
+              onAction={() => {
+                setSelectedItemForMovement(null);
+                setIsMovementModalOpen(true);
+              }}
+            />
+          ) : (
+            <Table columns={movementColumns} rows={movements} />
+          )}
+        </section>
+      )}
+
+      {/* MODAL 1: REGISTRO DE NUEVO INSUMO */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-100 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 text-slate-900">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 text-slate-900">
           <Card
             as="form"
-            onSubmit={handleAddSupply}
+            onSubmit={handleCreateSupply}
             className="w-full max-w-xl p-8! rounded-[2.5rem]! shadow-2xl relative border border-slate-100 bg-white"
           >
             <button
@@ -658,13 +937,50 @@ export default function InventoryView() {
               <div className="p-2 bg-indigo-100 rounded-xl text-indigo-600">
                 <Package className="w-6 h-6" />
               </div>
-              Registrar Entrada de Insumo
+              Registrar Nuevo Insumo
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="col-span-2">
+              <div>
+                <label className="text-xs font-bold text-slate-700 uppercase block mb-1.5">
+                  Código SKU *
+                </label>
                 <Input
-                  label="Nombre del Insumo / Producto"
+                  placeholder="Ej: INS-011"
+                  required
+                  value={newSupply.codigo_sku}
+                  onChange={(e) =>
+                    setNewSupply({ ...newSupply, codigo_sku: e.target.value })
+                  }
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 uppercase block mb-1.5">
+                  Categoría *
+                </label>
+                <select
+                  value={newSupply.categoria_id}
+                  onChange={(e) =>
+                    setNewSupply({ ...newSupply, categoria_id: e.target.value })
+                  }
+                  className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-semibold focus:ring-2 focus:ring-indigo-500 outline-none text-sm cursor-pointer"
+                  required
+                >
+                  <option value="">Seleccione Categoría</option>
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.nombre}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="col-span-2">
+                <label className="text-xs font-bold text-slate-700 uppercase block mb-1.5">
+                  Nombre del Insumo / Producto *
+                </label>
+                <Input
                   placeholder="Ej: Iniciación Lechones Precebo 1"
                   required
                   value={newSupply.nombre}
@@ -676,35 +992,16 @@ export default function InventoryView() {
 
               <div>
                 <label className="text-xs font-bold text-slate-700 uppercase block mb-1.5">
-                  Categoría
+                  Unidad de Medida *
                 </label>
                 <select
-                  value={newSupply.categoria}
+                  value={newSupply.unidad_medida}
                   onChange={(e) =>
-                    setNewSupply({ ...newSupply, categoria: e.target.value })
+                    setNewSupply({ ...newSupply, unidad_medida: e.target.value })
                   }
-                  className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-semibold focus:ring-2 focus:ring-indigo-500 outline-none text-sm cursor-pointer"
+                  className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-semibold focus:ring-2 focus:ring-indigo-500 outline-none text-sm cursor-pointer"
                 >
-                  {inventoryConstants.categorias.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="text-xs font-bold text-slate-700 uppercase block mb-1.5">
-                  Unidad de Medida
-                </label>
-                <select
-                  value={newSupply.unidad}
-                  onChange={(e) =>
-                    setNewSupply({ ...newSupply, unidad: e.target.value })
-                  }
-                  className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-semibold focus:ring-2 focus:ring-indigo-500 outline-none text-sm cursor-pointer"
-                >
-                  {inventoryConstants.unidades.map((u) => (
+                  {STANDARD_UNITS.map((u) => (
                     <option key={u} value={u}>
                       {u}
                     </option>
@@ -712,62 +1009,54 @@ export default function InventoryView() {
                 </select>
               </div>
 
-              <Input
-                label="Cantidad / Stock Inicial"
-                type="number"
-                step="0.5"
-                placeholder="Ej: 50"
-                required
-                value={newSupply.stock}
-                onChange={(e) =>
-                  setNewSupply({ ...newSupply, stock: e.target.value })
-                }
-              />
-
-              <Input
-                label="Stock Mínimo de Seguridad"
-                type="number"
-                step="0.5"
-                placeholder="Ej: 15"
-                required
-                value={newSupply.stockMinimo}
-                onChange={(e) =>
-                  setNewSupply({ ...newSupply, stockMinimo: e.target.value })
-                }
-              />
-
-              <Input
-                label="Lote de Fabricación"
-                placeholder="Ej: LOT-AL-2026"
-                value={newSupply.lote}
-                onChange={(e) =>
-                  setNewSupply({ ...newSupply, lote: e.target.value })
-                }
-              />
-
-              <Input
-                label="Fecha de Vencimiento"
-                type="date"
-                required
-                value={newSupply.fechaVencimiento}
-                onChange={(e) =>
-                  setNewSupply({
-                    ...newSupply,
-                    fechaVencimiento: e.target.value,
-                  })
-                }
-              />
-
-              <div className="col-span-2">
+              <div>
+                <label className="text-xs font-bold text-slate-700 uppercase block mb-1.5">
+                  Stock Mínimo de Seguridad *
+                </label>
                 <Input
-                  label="Valor Unitario Estimado ($ COP)"
                   type="number"
-                  placeholder="Ej: 95000"
-                  value={newSupply.valorUnitario}
+                  step="0.01"
+                  min="0"
+                  placeholder="Ej: 15"
+                  required
+                  value={newSupply.stock_minimo}
+                  onChange={(e) =>
+                    setNewSupply({ ...newSupply, stock_minimo: e.target.value })
+                  }
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 uppercase block mb-1.5">
+                  Costo Unitario ($ COP) *
+                </label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="Ej: 98000"
+                  required
+                  value={newSupply.costo_unitario}
                   onChange={(e) =>
                     setNewSupply({
                       ...newSupply,
-                      valorUnitario: e.target.value,
+                      costo_unitario: e.target.value,
+                    })
+                  }
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 uppercase block mb-1.5">
+                  Ubicación en Bodega
+                </label>
+                <Input
+                  placeholder="Ej: Silo 1, Estante B"
+                  value={newSupply.ubicacion_bodega}
+                  onChange={(e) =>
+                    setNewSupply({
+                      ...newSupply,
+                      ubicacion_bodega: e.target.value,
                     })
                   }
                 />
@@ -780,6 +1069,7 @@ export default function InventoryView() {
                 tone="soft"
                 onClick={() => setIsAddModalOpen(false)}
                 className="flex-1 font-bold rounded-xl!"
+                disabled={isSubmitting}
               >
                 Cancelar
               </Button>
@@ -787,76 +1077,165 @@ export default function InventoryView() {
                 type="submit"
                 tone="primary"
                 className="flex-1 font-black rounded-xl!"
+                disabled={isSubmitting}
               >
-                Guardar en Bodega
+                {isSubmitting ? "Guardando..." : "Guardar en Bodega"}
               </Button>
             </div>
           </Card>
         </div>
       )}
 
-      {/* MODAL AJUSTE RÁPIDO DE STOCK */}
-      {adjustingItem && (
-        <div className="fixed inset-0 z-100 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 text-slate-900">
+      {/* MODAL 2: REGISTRO DE MOVIMIENTO KARDEX */}
+      {isMovementModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 text-slate-900">
           <Card
             as="form"
-            onSubmit={handleAdjustStock}
-            className="w-full max-w-md p-8! rounded-[2.5rem]! shadow-2xl relative border border-slate-100 bg-white"
+            onSubmit={handleRegisterMovementSubmit}
+            className="w-full max-w-lg p-8! rounded-[2.5rem]! shadow-2xl relative border border-slate-100 bg-white"
           >
             <button
               type="button"
-              onClick={() => setAdjustingItem(null)}
+              onClick={() => {
+                setIsMovementModalOpen(false);
+                setSelectedItemForMovement(null);
+              }}
               className="absolute top-6 right-6 text-slate-400 hover:text-slate-700 font-bold bg-slate-100 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer"
             >
               ✕
             </button>
 
-            <h3 className="text-xl font-black text-slate-900 mb-1">
-              Entrada / Ajuste de Stock
+            <h3 className="text-xl font-black text-slate-900 mb-1 flex items-center gap-2">
+              <div className="p-2 bg-indigo-100 rounded-xl text-indigo-600">
+                <RefreshCw className="w-5 h-5" />
+              </div>
+              Registrar Movimiento de Kardex
             </h3>
             <p className="text-xs text-slate-500 font-semibold mb-6">
-              {adjustingItem.nombre} ({adjustingItem.unidad})
+              Afectación física de stock en almacén con auditoría inmutable
             </p>
 
-            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 mb-6 flex justify-between items-center">
+            <div className="space-y-4">
               <div>
-                <span className="text-xs font-bold text-slate-400 block uppercase">
-                  Stock Actual
-                </span>
-                <span className="text-2xl font-black text-slate-900">
-                  {adjustingItem.stock} {adjustingItem.unidad}
-                </span>
+                <label className="text-xs font-bold text-slate-700 uppercase block mb-1.5">
+                  Insumo Afectado *
+                </label>
+                <select
+                  value={movementForm.item_id}
+                  onChange={(e) => {
+                    const found = items.find((i) => i.id === e.target.value);
+                    setMovementForm({
+                      ...movementForm,
+                      item_id: e.target.value,
+                      costo_unitario: found?.costo_unitario
+                        ? String(found.costo_unitario)
+                        : movementForm.costo_unitario,
+                    });
+                  }}
+                  className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-semibold focus:ring-2 focus:ring-indigo-500 outline-none text-sm cursor-pointer"
+                  required
+                >
+                  <option value="">Seleccione Insumo</option>
+                  {items.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      [{item.codigo_sku}] {item.nombre} (Stock actual:{" "}
+                      {item.stock_actual} {item.unidad_medida})
+                    </option>
+                  ))}
+                </select>
               </div>
-              <span className="text-xs font-mono font-bold px-2 py-1 rounded bg-white border border-slate-300 text-slate-600">
-                {adjustingItem.lote}
-              </span>
-            </div>
 
-            <div className="space-y-3">
-              <label className="text-xs font-bold text-slate-700 uppercase block">
-                Cantidad a Ingresar o Ajustar (+ / -)
-              </label>
-              <input
-                type="number"
-                step="0.5"
-                required
-                placeholder="Ej: +10 para entrada, -5 para salida o merma"
-                value={adjustQty}
-                onChange={(e) => setAdjustQty(e.target.value)}
-                className="w-full p-3 bg-slate-50 border-2 border-slate-200 focus:border-indigo-500 rounded-xl outline-none font-black text-slate-900 text-base"
-                autoFocus
-              />
-              <p className="text-[11px] text-slate-400">
-                Usa números positivos para registrar compras/entradas y negativos para consumos o descartes.
-              </p>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-bold text-slate-700 uppercase block mb-1.5">
+                    Tipo de Movimiento *
+                  </label>
+                  <select
+                    value={movementForm.tipo_movimiento}
+                    onChange={(e) =>
+                      setMovementForm({
+                        ...movementForm,
+                        tipo_movimiento: e.target.value,
+                      })
+                    }
+                    className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-semibold focus:ring-2 focus:ring-indigo-500 outline-none text-sm cursor-pointer"
+                    required
+                  >
+                    <option value="entrada_compra">Entrada Compra</option>
+                    <option value="salida_consumo">Salida Consumo</option>
+                    <option value="ajuste_merma">Ajuste por Merma</option>
+                    <option value="devolucion">Devolución</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-slate-700 uppercase block mb-1.5">
+                    Cantidad *
+                  </label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    required
+                    placeholder="Ej: 10.00"
+                    value={movementForm.cantidad}
+                    onChange={(e) =>
+                      setMovementForm({
+                        ...movementForm,
+                        cantidad: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 uppercase block mb-1.5">
+                  Costo Unitario ($ COP - Opcional)
+                </label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="Ej: 98000"
+                  value={movementForm.costo_unitario}
+                  onChange={(e) =>
+                    setMovementForm({
+                      ...movementForm,
+                      costo_unitario: e.target.value,
+                    })
+                  }
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 uppercase block mb-1.5">
+                  Motivo / Justificación *
+                </label>
+                <Input
+                  placeholder="Ej: Compra mensual proveedor / Dieta precebo lote 4"
+                  required
+                  value={movementForm.motivo}
+                  onChange={(e) =>
+                    setMovementForm({
+                      ...movementForm,
+                      motivo: e.target.value,
+                    })
+                  }
+                />
+              </div>
             </div>
 
             <div className="flex gap-4 mt-8">
               <Button
                 type="button"
                 tone="soft"
-                onClick={() => setAdjustingItem(null)}
+                onClick={() => {
+                  setIsMovementModalOpen(false);
+                  setSelectedItemForMovement(null);
+                }}
                 className="flex-1 font-bold rounded-xl!"
+                disabled={isSubmitting}
               >
                 Cancelar
               </Button>
@@ -864,8 +1243,9 @@ export default function InventoryView() {
                 type="submit"
                 tone="primary"
                 className="flex-1 font-black rounded-xl!"
+                disabled={isSubmitting}
               >
-                Actualizar Stock
+                {isSubmitting ? "Procesando..." : "Confirmar Movimiento"}
               </Button>
             </div>
           </Card>

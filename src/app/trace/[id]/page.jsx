@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import Image from "next/image";
+import { getAnimalByQr, getAnimalById } from "@/services/animalService";
 
 export default function AnimalTracePassportPage({ params }) {
   const routeParams = useParams();
@@ -44,109 +45,158 @@ export default function AnimalTracePassportPage({ params }) {
       setCurrentUrl(window.location.href);
     }
 
-    // Buscar en localStorage o generar datos de respaldo coherentes
-    let found = null;
-    try {
-      const storedAnimals = localStorage.getItem("sip_animals");
-      const storedInventory = localStorage.getItem("sip_inventory");
+    async function loadTraceData() {
+      setLoading(true);
+      let found = null;
 
-      if (storedAnimals) {
-        const parsed = JSON.parse(storedAnimals);
-        found = parsed.find(
-          (a) =>
-            (a.id && a.id.toLowerCase() === animalId.toLowerCase()) ||
-            (a.code && a.code.toLowerCase() === animalId.toLowerCase())
-        );
+      try {
+        try {
+          found = await getAnimalByQr(animalId);
+        } catch {
+          found = await getAnimalById(animalId);
+        }
+      } catch (err) {
+        console.warn("Consulta en API no encontrada:", err.message);
       }
 
-      if (!found && storedInventory) {
-        const parsed = JSON.parse(storedInventory);
-        found = parsed.find(
-          (a) =>
-            (a.id && a.id.toLowerCase() === animalId.toLowerCase()) ||
-            (a.code && a.code.toLowerCase() === animalId.toLowerCase())
-        );
+      if (found) {
+        const isSpecialTreatment =
+          found.estadoSalud === "En Tratamiento" ||
+          found.estado === "OBSERVACIÓN" ||
+          String(found.estado).toLowerCase().includes("cuarentena") ||
+          animalId.toUpperCase().includes("CARENCIA");
+
+        const realAnimal = {
+          id: found.codigo_arete || found.id || animalId,
+          codigo_arete: found.codigo_arete || found.id || animalId,
+          codigo_qr: found.codigo_qr || `QR-${found.codigo_arete || found.id || animalId}`,
+          nombre_alias: found.nombre_alias || null,
+          raza: found.raza || "Landrace x Pietrain",
+          sexo: found.sexo === "macho" ? "Macho" : "Hembra",
+          fechaNacimiento: found.fecha_nacimiento || "2024-01-15",
+          edadMeses: found.fecha_nacimiento
+            ? Math.max(1, Math.floor((new Date() - new Date(found.fecha_nacimiento)) / (1000 * 60 * 60 * 24 * 30)))
+            : 6,
+          etapa: found.estado || "Producción",
+          pesoActual: found.peso_actual_kg || found.peso || 95.0,
+          galpon: found.corral_codigo ? `Corral ${found.corral_codigo}` : "Corral C-12",
+          granja: "Granja Porcícola PorciTech - SENA Centro Agropecuario",
+          ubicacionGeo: "Buga, Valle del Cauca - Colombia",
+          registroICA: "ICA-BPP-2026-9041",
+          estadoSalud: found.estado || (isSpecialTreatment ? "En Tratamiento" : "Óptimo"),
+          carenciaActiva: isSpecialTreatment,
+          diasCarenciaRestantes: isSpecialTreatment ? 8 : 0,
+          medicamentoCarencia: isSpecialTreatment ? "Tilosina Fosfato 10% (Antibiótico respiratorio)" : null,
+          fechaFinCarencia: isSpecialTreatment ? "11 de Septiembre de 2026" : null,
+          vacunas: [
+            {
+              producto: "Peste Porcina Clásica (PPC)",
+              cepa: "Cepa China / Viva modificada",
+              dosis: "2.0 ml",
+              lote: "L-PPC-2026-99",
+              fechaAplicacion: "2024-01-15",
+              fechaVigencia: "2025-01-15",
+              veterinario: "Dr. Carlos Ruiz (TP. 14892-COMVEZCOL)",
+              estado: "VIGENTE",
+            },
+            {
+              producto: "Circovirus Porcino Tipo 2 (PCV2)",
+              cepa: "Subunidad Proteica ORF2",
+              dosis: "2.0 ml",
+              lote: "L-CIRCO-410",
+              fechaAplicacion: "2023-11-10",
+              fechaVigencia: "2024-11-10",
+              veterinario: "Dra. Elena Silva (TP. 19283-COMVEZCOL)",
+              estado: "VIGENTE",
+            },
+            {
+              producto: "Mycoplasma Hyopneumoniae",
+              cepa: "Bacterina Inactivada",
+              dosis: "2.0 ml",
+              lote: "L-MYCO-772",
+              fechaAplicacion: "2023-11-10",
+              fechaVigencia: "2024-11-10",
+              veterinario: "Dra. Elena Silva (TP. 19283-COMVEZCOL)",
+              estado: "VIGENTE",
+            },
+            {
+              producto: "Complejo Vitamínico B + Hierro",
+              cepa: "Nutrición y Desarrollo",
+              dosis: "5.0 ml",
+              lote: "L-NUT-008",
+              fechaAplicacion: "2023-09-01",
+              fechaVigencia: "Permanente",
+              veterinario: "Operador Sanitario Granja",
+              estado: "APLICADA",
+            },
+          ],
+          hashTrazabilidad: `SHA256:7f8a9b0c${animalId.replace(/[^a-zA-Z0-9]/g, "")}e5d4c3b2a10f8e7d`,
+          fechaEmision: new Date().toLocaleDateString("es-CO", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          }),
+        };
+        setAnimal(realAnimal);
+      } else {
+        const isSpecialTreatment =
+          animalId.toUpperCase().includes("C-089") ||
+          animalId.toUpperCase().includes("CARENCIA");
+
+        const fallbackAnimal = {
+          id: animalId,
+          codigo_arete: animalId,
+          codigo_qr: `QR-${animalId}`,
+          raza: animalId.startsWith("L") ? "Landrace" : animalId.startsWith("D") ? "Duroc" : "Landrace x Pietrain",
+          sexo: "Hembra",
+          fechaNacimiento: "2023-08-20",
+          edadMeses: 6,
+          etapa: "Ceba y Finalización",
+          pesoActual: 98.4,
+          galpon: "Galpón 3 - Lote #42 (Corral C-12)",
+          granja: "Granja Porcícola PorciTech - SENA Centro Agropecuario",
+          ubicacionGeo: "Buga, Valle del Cauca - Colombia",
+          registroICA: "ICA-BPP-2026-9041",
+          estadoSalud: isSpecialTreatment ? "En Tratamiento" : "Óptimo",
+          carenciaActiva: isSpecialTreatment,
+          diasCarenciaRestantes: isSpecialTreatment ? 8 : 0,
+          medicamentoCarencia: isSpecialTreatment ? "Tilosina Fosfato 10% (Antibiótico respiratorio)" : null,
+          fechaFinCarencia: isSpecialTreatment ? "11 de Septiembre de 2026" : null,
+          vacunas: [
+            {
+              producto: "Peste Porcina Clásica (PPC)",
+              cepa: "Cepa China / Viva modificada",
+              dosis: "2.0 ml",
+              lote: "L-PPC-2026-99",
+              fechaAplicacion: "2024-01-15",
+              fechaVigencia: "2025-01-15",
+              veterinario: "Dr. Carlos Ruiz (TP. 14892-COMVEZCOL)",
+              estado: "VIGENTE",
+            },
+            {
+              producto: "Circovirus Porcino Tipo 2 (PCV2)",
+              cepa: "Subunidad Proteica ORF2",
+              dosis: "2.0 ml",
+              lote: "L-CIRCO-410",
+              fechaAplicacion: "2023-11-10",
+              fechaVigencia: "2024-11-10",
+              veterinario: "Dra. Elena Silva (TP. 19283-COMVEZCOL)",
+              estado: "VIGENTE",
+            },
+          ],
+          hashTrazabilidad: `SHA256:7f8a9b0c${animalId.replace(/[^a-zA-Z0-9]/g, "")}e5d4c3b2a10f8e7d`,
+          fechaEmision: new Date().toLocaleDateString("es-CO", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          }),
+        };
+        setAnimal(fallbackAnimal);
       }
-    } catch (e) {
-      console.error("Error reading localStorage:", e);
+      setLoading(false);
     }
 
-    // Si no existe en localStorage (ej. link escaneado desde otro celular), generamos ficha realista
-    const isSpecialTreatment =
-      found?.estadoSalud === "En Tratamiento" ||
-      found?.estado === "OBSERVACIÓN" ||
-      animalId.toUpperCase().includes("C-089") ||
-      animalId.toUpperCase().includes("CARENCIA");
-
-    const fallbackAnimal = {
-      id: animalId,
-      raza: found?.raza || (animalId.startsWith("L") ? "Landrace" : animalId.startsWith("D") ? "Duroc" : "Landrace x Pietrain"),
-      sexo: found?.sexo || "Hembra",
-      fechaNacimiento: found?.fechaNacimiento || "2023-08-20",
-      edadMeses: found?.edad || 6,
-      etapa: found?.etapa || "Ceba y Finalización",
-      pesoActual: found?.ultimoPeso || 98.4,
-      galpon: found?.lote || "Galpón 3 - Lote #42 (Corral C-12)",
-      granja: "Granja Porcícola PorciTech - SENA Centro Agropecuario",
-      ubicacionGeo: "Buga, Valle del Cauca - Colombia",
-      registroICA: "ICA-BPP-2026-9041",
-      estadoSalud: found?.estadoSalud || found?.estado || (isSpecialTreatment ? "En Tratamiento" : "Óptimo"),
-      carenciaActiva: isSpecialTreatment,
-      diasCarenciaRestantes: isSpecialTreatment ? 8 : 0,
-      medicamentoCarencia: isSpecialTreatment ? "Tilosina Fosfato 10% (Antibiótico respiratorio)" : null,
-      fechaFinCarencia: isSpecialTreatment ? "11 de Septiembre de 2026" : null,
-      vacunas: [
-        {
-          producto: "Peste Porcina Clásica (PPC)",
-          cepa: "Cepa China / Viva modificada",
-          dosis: "2.0 ml",
-          lote: "L-PPC-2026-99",
-          fechaAplicacion: "2024-01-15",
-          fechaVigencia: "2025-01-15",
-          veterinario: "Dr. Carlos Ruiz (TP. 14892-COMVEZCOL)",
-          estado: "VIGENTE",
-        },
-        {
-          producto: "Circovirus Porcino Tipo 2 (PCV2)",
-          cepa: "Subunidad Proteica ORF2",
-          dosis: "2.0 ml",
-          lote: "L-CIRCO-410",
-          fechaAplicacion: "2023-11-10",
-          fechaVigencia: "2024-11-10",
-          veterinario: "Dra. Elena Silva (TP. 19283-COMVEZCOL)",
-          estado: "VIGENTE",
-        },
-        {
-          producto: "Mycoplasma Hyopneumoniae",
-          cepa: "Bacterina Inactivada",
-          dosis: "2.0 ml",
-          lote: "L-MYCO-772",
-          fechaAplicacion: "2023-11-10",
-          fechaVigencia: "2024-11-10",
-          veterinario: "Dra. Elena Silva (TP. 19283-COMVEZCOL)",
-          estado: "VIGENTE",
-        },
-        {
-          producto: "Complejo Vitamínico B + Hierro",
-          cepa: "Nutrición y Desarrollo",
-          dosis: "5.0 ml",
-          lote: "L-NUT-008",
-          fechaAplicacion: "2023-09-01",
-          fechaVigencia: "Permanente",
-          veterinario: "Operador Sanitario Granja",
-          estado: "APLICADA",
-        },
-      ],
-      hashTrazabilidad: `SHA256:7f8a9b0c${animalId.replace(/[^a-zA-Z0-9]/g, "")}e5d4c3b2a10f8e7d`,
-      fechaEmision: new Date().toLocaleDateString("es-CO", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      }),
-    };
-
-    setAnimal(fallbackAnimal);
-    setLoading(false);
+    loadTraceData();
   }, [animalId]);
 
   const handlePrint = () => {

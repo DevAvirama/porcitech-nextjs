@@ -15,7 +15,16 @@ export default function ProtectedRoute({ children, allowedRoles }) {
       return;
     }
 
-    if (allowedRoles && !allowedRoles.includes(user.role)) {
+    const currentRole = user.rol || user.role;
+    const isAllowed =
+      !allowedRoles ||
+      allowedRoles.includes(currentRole) ||
+      (currentRole === "operario" && allowedRoles.includes("operativo")) ||
+      (currentRole === "operativo" && allowedRoles.includes("operario")) ||
+      (currentRole === "administrador" && allowedRoles.includes("admin")) ||
+      (currentRole === "admin" && allowedRoles.includes("administrador"));
+
+    if (!isAllowed) {
       alert(
         "Acceso Denegado: Tu rol no tiene permisos para acceder a esta área.",
       );

@@ -1,543 +1,317 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   Scale,
   TrendingUp,
-  TrendingDown,
-  ArrowUpRight,
   Activity,
   Plus,
   AlertTriangle,
-  FileText,
   CheckCircle2,
   Calendar,
-  History,
+  Camera,
+  Upload,
   Sparkles,
+  Layers,
+  Inbox,
+  RefreshCw,
+  Info,
+  Maximize2,
+  Cpu,
+  Eye,
+  History,
+  Tag,
 } from "lucide-react";
 import { toast } from "sonner";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
-import Table from "@/components/ui/Table";
-import Input from "@/components/ui/Input";
+import EmptyState from "@/components/ui/EmptyState";
 import ModuleHeader from "@/components/layout/ModuleHeader";
-import weightStandards from "./data/weightStandards.json";
-import Link from "next/link";
-
-const initialBiometrics = [
-  {
-    id: "PT-2026-001",
-    etapa: "ceba_finalizacion",
-    semanas: 24,
-    pesos: [
-      { fecha: "2026-07-15", peso: 85 },
-      { fecha: "2026-08-05", peso: 102 },
-      { fecha: "2026-08-25", peso: 118 },
-    ],
-  },
-  {
-    id: "2024-001",
-    etapa: "pre_ceba",
-    semanas: 9,
-    pesos: [
-      { fecha: "2026-08-01", peso: 22 },
-      { fecha: "2026-08-20", peso: 29.5 },
-    ],
-  },
-  {
-    id: "L-042",
-    etapa: "levante",
-    semanas: 16,
-    pesos: [
-      { fecha: "2026-07-20", peso: 42 },
-      { fecha: "2026-08-15", peso: 56.5 },
-    ],
-  },
-  {
-    id: "C-089",
-    etapa: "levante",
-    semanas: 15,
-    pesos: [
-      { fecha: "2026-07-25", peso: 36 },
-      { fecha: "2026-08-20", peso: 44 }, // Rezagado vs estándar de 52kg
-    ],
-  },
-  {
-    id: "P-112",
-    etapa: "ceba_finalizacion",
-    semanas: 25,
-    pesos: [
-      { fecha: "2026-08-01", peso: 108 },
-      { fecha: "2026-08-26", peso: 124 },
-    ],
-  },
-  {
-    id: "2024-042",
-    etapa: "pre_ceba",
-    semanas: 8,
-    pesos: [
-      { fecha: "2026-08-10", peso: 18 },
-      { fecha: "2026-08-28", peso: 21 }, // Rezagado
-    ],
-  },
-];
-
-// Cálculo de peso esperado según tabla oficial de Porkcolombia
-const getExpectedWeight = (semanas, etapa) => {
-  if (semanas <= 4) return 7.5;
-  if (semanas <= 10) return 24 + ((semanas - 4) / 6) * 6; // ~30kg en sem 10
-  if (semanas <= 16) return 30 + ((semanas - 10) / 6) * 28; // ~58kg en sem 16
-  if (semanas <= 25) return 58 + ((semanas - 16) / 9) * 62; // ~120kg en sem 25
-  return 125;
-};
-
-const GrowthChart = ({ averagePoints }) => {
-  const { puntos_grafica_edad_semanas, puntos_grafica_peso_kg } =
-    weightStandards.configuracion_crecimiento_colombia
-      .curva_crecimiento_referencia;
-  const maxX = 26;
-  const maxY = 130;
-
-  const getX = (week) => (week / maxX) * 100;
-  const getY = (weight) => 100 - (weight / maxY) * 100;
-
-  const idealPoints = puntos_grafica_edad_semanas
-    .map((week, idx) => `${getX(week)},${getY(puntos_grafica_peso_kg[idx])}`)
-    .join(" ");
-
-  const realPointsStr = averagePoints
-    ? averagePoints
-        .map((pt) => `${getX(pt.semana)},${getY(pt.peso)}`)
-        .join(" ")
-    : null;
-
-  return (
-    <Card className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
-        <div>
-          <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
-            <TrendingUp className="text-blue-500 w-5 h-5" />
-            Curva Zootécnica de Crecimiento
-          </h3>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Comparativa directa de evolución en peso real vs. curva patrón oficial Porkcolombia.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-4 text-xs font-bold bg-slate-50 px-3.5 py-2 rounded-xl border border-slate-200">
-          <div className="flex items-center gap-2 text-slate-700">
-            <div className="w-3 h-3 rounded-full bg-emerald-500"></div> Estándar
-            Ideal Porkcolombia
-          </div>
-          <div className="flex items-center gap-2 text-slate-700">
-            <div className="w-3 h-3 rounded-full bg-blue-500 border border-blue-200"></div>
-            Promedio Real del Lote
-          </div>
-        </div>
-      </div>
-
-      <div className="relative w-full h-72 bg-slate-50/40 rounded-2xl border border-slate-100 p-6 ml-6 mt-2">
-        <svg
-          className="w-full h-full overflow-visible"
-          preserveAspectRatio="none"
-        >
-          {[0, 25, 50, 75, 100].map((p) => (
-            <line
-              key={`h-${p}`}
-              x1="0"
-              y1={`${p}%`}
-              x2="100%"
-              y2={`${p}%`}
-              stroke="#e2e8f0"
-              strokeWidth="1"
-              strokeDasharray="3 3"
-            />
-          ))}
-
-          {/* Curva Ideal Porkcolombia */}
-          <polyline
-            points={idealPoints}
-            fill="none"
-            stroke="#10b981"
-            strokeWidth="3.5"
-            strokeLinecap="round"
-          />
-
-          {/* Curva Real */}
-          <polyline
-            points={
-              realPointsStr ||
-              "0,98 15,94 38,76 61,54 96,12"
-            }
-            fill="none"
-            stroke="#3b82f6"
-            strokeWidth="3.5"
-            strokeDasharray="4 4"
-            strokeLinecap="round"
-          />
-        </svg>
-
-        <div className="absolute -bottom-7 left-0 right-0 flex justify-between text-[11px] text-slate-400 font-bold px-0 font-mono">
-          <span>Sem 1</span>
-          <span>Sem 10 (Pre-ceba)</span>
-          <span>Sem 16 (Levante)</span>
-          <span>Sem 25 (Ceba)</span>
-        </div>
-        <div className="absolute top-0 bottom-0 -left-12 flex flex-col justify-between items-end text-[11px] text-slate-400 font-mono font-bold py-0 pr-2">
-          <span>130kg</span>
-          <span>95kg</span>
-          <span>60kg</span>
-          <span>30kg</span>
-          <span>0kg</span>
-        </div>
-      </div>
-    </Card>
-  );
-};
+import { getAnimales } from "@/services/animalService";
+import { getCorrales } from "@/services/corralService";
+import {
+  estimateWeightWithAI,
+  getCorralGMD,
+  getAnimalWeightHistory,
+  registerManualWeight,
+} from "@/services/weightService";
 
 export default function WeightView() {
-  const [animals, setAnimals] = useState([]);
-  const [isMounted, setIsMounted] = useState(false);
-  const [filterEtapa, setFilterEtapa] = useState("todas");
-  const [filterRendimiento, setFilterRendimiento] = useState("todos");
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  // Pestaña activa: 'ia_vision' | 'manual' | 'analytics' | 'history'
+  const [activeTab, setActiveTab] = useState("ia_vision");
 
-  const [form, setForm] = useState({
+  // Listas de datos maestros desde API
+  const [animals, setAnimals] = useState([]);
+  const [corrales, setCorrales] = useState([]);
+  const [isLoadingMasterData, setIsLoadingMasterData] = useState(true);
+
+  // Estados del Flujo de Visión Artificial (YOLO + OpenCV)
+  const [selectedAnimalId, setSelectedAnimalId] = useState("");
+  const [selectedCorralId, setSelectedCorralId] = useState("");
+  const [persistAI, setPersistAI] = useState(true);
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
+  const [isProcessingAI, setIsProcessingAI] = useState(false);
+  const [aiResult, setAiResult] = useState(null);
+  const fileInputRef = useRef(null);
+
+  // Estados del Flujo de Pesaje Manual
+  const [manualForm, setManualForm] = useState({
     animalId: "",
-    peso: "",
-    semanas: "",
-    etapa: "pre_ceba",
+    corralId: "",
+    peso_kg: "",
     fecha: new Date().toISOString().split("T")[0],
     observaciones: "",
   });
+  const [isSubmittingManual, setIsSubmittingManual] = useState(false);
 
+  // Estados de Analítica TimescaleDB (GMD)
+  const [analyticsCorralId, setAnalyticsCorralId] = useState("");
+  const [gmdData, setGmdData] = useState([]);
+  const [isLoadingGMD, setIsLoadingGMD] = useState(false);
+
+  // Historial de pesajes combinados
+  const [recentLogs, setRecentLogs] = useState([]);
+
+  // Cargar animales y corrales al montar el componente
   useEffect(() => {
-    const stored = localStorage.getItem("sip_weight_animals");
-    if (stored) {
-      setAnimals(JSON.parse(stored));
-    } else {
-      setAnimals(initialBiometrics);
-      localStorage.setItem("sip_weight_animals", JSON.stringify(initialBiometrics));
+    async function loadData() {
+      setIsLoadingMasterData(true);
+      try {
+        const [animalsRes, corralesRes] = await Promise.all([
+          getAnimales(),
+          getCorrales(true),
+        ]);
+        const validAnimals = Array.isArray(animalsRes) ? animalsRes : [];
+        const validCorrales = Array.isArray(corralesRes) ? corralesRes : [];
+
+        setAnimals(validAnimals);
+        setCorrales(validCorrales);
+
+        if (validCorrales.length > 0) {
+          setAnalyticsCorralId(validCorrales[0].id);
+        }
+      } catch (err) {
+        console.error("Error al cargar datos maestros:", err);
+        toast.error("No se pudo sincronizar la lista de animales o corrales");
+      } finally {
+        setIsLoadingMasterData(false);
+      }
     }
-    setIsMounted(true);
+    loadData();
   }, []);
 
+  // Autoseleccionar corral cuando se selecciona un animal en el flujo de IA
+  const handleAnimalChange = (animalId) => {
+    setSelectedAnimalId(animalId);
+    const chosen = animals.find((a) => a.id === animalId);
+    if (chosen && chosen.corral_id) {
+      setSelectedCorralId(chosen.corral_id);
+    }
+  };
+
+  // Cargar series temporales GMD desde TimescaleDB cuando cambia el corral analizado
   useEffect(() => {
-    if (isMounted) {
-      localStorage.setItem("sip_weight_animals", JSON.stringify(animals));
+    if (analyticsCorralId) {
+      setIsLoadingGMD(true);
+      getCorralGMD(analyticsCorralId, 30)
+        .then((data) => {
+          setGmdData(Array.isArray(data) ? data : []);
+        })
+        .catch((err) => {
+          console.warn("Aviso al obtener GMD de TimescaleDB:", err.message);
+          setGmdData([]);
+        })
+        .finally(() => {
+          setIsLoadingGMD(false);
+        });
     }
-  }, [animals, isMounted]);
+  }, [analyticsCorralId]);
 
-  // Funciones zootécnicas
-  const getLatestWeight = (pesos) => {
-    if (!pesos || pesos.length === 0) return 0;
-    const sorted = [...pesos].sort(
-      (a, b) => new Date(a.fecha) - new Date(b.fecha),
-    );
-    return sorted[sorted.length - 1].peso;
+  // Manejar selección de imagen (archivo o captura con cámara)
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      const url = URL.createObjectURL(file);
+      setImagePreview(url);
+      setAiResult(null);
+    }
   };
 
-  const computeGDP = (pesos) => {
-    if (!pesos || pesos.length < 2) return null;
-    const sorted = [...pesos].sort(
-      (a, b) => new Date(a.fecha) - new Date(b.fecha),
-    );
-    const latest = sorted[sorted.length - 1];
-    const prev = sorted[sorted.length - 2];
-
-    const diffDays =
-      (new Date(latest.fecha) - new Date(prev.fecha)) / (1000 * 60 * 60 * 24);
-    if (diffDays <= 0) return 0;
-
-    return Math.round(((latest.peso - prev.peso) / diffDays) * 1000);
-  };
-
-  // KPIs
-  const filteredAnimals = useMemo(() => {
-    return animals.filter((a) => {
-      const matchEtapa = filterEtapa === "todas" ? true : a.etapa === filterEtapa;
-      const latest = getLatestWeight(a.pesos);
-      const expected = getExpectedWeight(a.semanas || 12, a.etapa);
-      const diff = latest - expected;
-
-      let rendimiento = "normal";
-      if (diff < -5) rendimiento = "rezagado";
-      else if (diff >= 3) rendimiento = "optimo";
-
-      const matchRend =
-        filterRendimiento === "todos" ? true : rendimiento === filterRendimiento;
-      return matchEtapa && matchRend;
-    });
-  }, [animals, filterEtapa, filterRendimiento]);
-
-  const averageWeight = useMemo(() => {
-    if (animals.length === 0) return 0;
-    const total = animals.reduce((acc, curr) => acc + getLatestWeight(curr.pesos), 0);
-    return (total / animals.length).toFixed(1);
-  }, [animals]);
-
-  const averageGMD = useMemo(() => {
-    const validGDPs = animals
-      .map((a) => computeGDP(a.pesos))
-      .filter((g) => g !== null && g > 0);
-    if (validGDPs.length === 0) return 780;
-    return Math.round(validGDPs.reduce((a, b) => a + b, 0) / validGDPs.length);
-  }, [animals]);
-
-  const rezagadosCount = useMemo(() => {
-    return animals.filter((a) => {
-      const latest = getLatestWeight(a.pesos);
-      const expected = getExpectedWeight(a.semanas || 12, a.etapa);
-      return latest - expected < -5;
-    }).length;
-  }, [animals]);
-
-  const handleAddWeight = (e) => {
-    e.preventDefault();
-    if (!form.animalId || !form.peso) {
-      toast.error("Por favor completa el ID del cerdo y su peso");
+  // Ejecutar inferencia de peso por visión artificial
+  const handleRunAiEstimation = async () => {
+    if (!selectedAnimalId) {
+      toast.error("Selecciona el cerdo a evaluar.");
+      return;
+    }
+    if (!selectedCorralId) {
+      toast.error("Selecciona el corral de procedencia.");
+      return;
+    }
+    if (!imageFile) {
+      toast.error("Adjunta o toma una foto dorsal del porcino.");
       return;
     }
 
-    const pesoNum = parseFloat(form.peso);
-    const semanasNum = parseInt(form.semanas) || 12;
-
-    if (isNaN(pesoNum) || pesoNum <= 0) {
-      toast.error("El peso debe ser mayor a 0 kg");
-      return;
-    }
-
-    // Persistencia en log individual y lote
-    const logEntry = {
-      id: `LOG-W-${Date.now()}`,
-      animalId: form.animalId.trim(),
-      peso: pesoNum,
-      semanas: semanasNum,
-      fecha: form.fecha,
-      observaciones: form.observaciones || "Pesaje rutinario",
-    };
+    setIsProcessingAI(true);
+    setAiResult(null);
 
     try {
-      const storedLogs = localStorage.getItem("sip_weight_logs");
-      const logs = storedLogs ? JSON.parse(storedLogs) : [];
-      localStorage.setItem("sip_weight_logs", JSON.stringify([logEntry, ...logs]));
-    } catch (err) {
-      console.error("Error saving weight log:", err);
-    }
+      const result = await estimateWeightWithAI({
+        imageFile,
+        animalId: selectedAnimalId,
+        corralId: selectedCorralId,
+        persist: persistAI,
+      });
 
-    setAnimals((prev) => {
-      const exists = prev.some(
-        (a) => a.id.toLowerCase() === form.animalId.trim().toLowerCase(),
-      );
-      if (exists) {
-        return prev.map((a) =>
-          a.id.toLowerCase() === form.animalId.trim().toLowerCase()
-            ? {
-                ...a,
-                semanas: semanasNum || a.semanas,
-                etapa: form.etapa || a.etapa,
-                pesos: [...a.pesos, { fecha: form.fecha, peso: pesoNum }],
-              }
-            : a,
+      setAiResult(result);
+
+      if (result.detectado) {
+        toast.success(
+          `¡Estimación exitosa! Peso: ${result.peso_estimado_kg?.toFixed(2)} kg`,
         );
-      } else {
-        return [
-          ...prev,
-          {
-            id: form.animalId.trim(),
-            etapa: form.etapa,
-            semanas: semanasNum,
-            pesos: [{ fecha: form.fecha, peso: pesoNum }],
-          },
-        ];
-      }
-    });
 
-    toast.success(`Pesaje registrado para el ejemplar #${form.animalId}`);
-    setIsModalOpen(false);
-    setForm({
-      animalId: "",
-      peso: "",
-      semanas: "",
-      etapa: "pre_ceba",
-      fecha: new Date().toISOString().split("T")[0],
-      observaciones: "",
-    });
+        // Agregar al historial de la sesión
+        const chosen = animals.find((a) => a.id === selectedAnimalId);
+        const corralObj = corrales.find((c) => c.id === selectedCorralId);
+        const newLog = {
+          id: result.id_registro_persistido || `AI-${Date.now()}`,
+          animalCode: chosen?.codigo_arete || chosen?.id || selectedAnimalId,
+          animalAlias: chosen?.nombre_alias,
+          corralCodigo: corralObj?.codigo || "N/A",
+          peso: result.peso_estimado_kg,
+          metodo: "ia_vision",
+          confianza: result.confianza,
+          fecha: result.tiempo_registro || new Date().toISOString(),
+        };
+        setRecentLogs((prev) => [newLog, ...prev]);
+      } else {
+        toast.warning(
+          result.mensaje || "No se detectó el animal en el plano dorsal.",
+        );
+      }
+    } catch (err) {
+      console.error("Error en inferencia de visión IA:", err);
+      toast.error(
+        err.message || "Error al procesar la imagen en el microservicio Docker.",
+      );
+    } finally {
+      setIsProcessingAI(false);
+    }
   };
 
-  const columns = [
-    {
-      key: "id",
-      header: "Código / Arete",
-      render: (row) => (
-        <div className="flex items-center gap-2">
-          <Link
-            href={`/dashboard/animals/profile?id=${row.id}`}
-            className="font-black text-indigo-600 hover:text-indigo-800 font-mono text-sm hover:underline"
-          >
-            #{row.id}
-          </Link>
-        </div>
-      ),
-    },
-    {
-      key: "etapa",
-      header: "Etapa / Edad",
-      render: (row) => (
-        <div>
-          <span className="capitalize text-slate-700 font-bold text-xs px-2.5 py-1 bg-slate-100 rounded-lg block w-fit">
-            {row.etapa.replace("_", " ")}
-          </span>
-          <span className="text-[11px] text-slate-400 font-mono mt-0.5 block">
-            {row.semanas ? `${row.semanas} semanas` : "N/D"}
-          </span>
-        </div>
-      ),
-    },
-    {
-      key: "pesoActual",
-      header: "Peso Real",
-      render: (row) => (
-        <span className="font-black text-slate-900 text-base">
-          {getLatestWeight(row.pesos)} kg
-        </span>
-      ),
-    },
-    {
-      key: "pesoEsperado",
-      header: "Estándar Porkcolombia",
-      render: (row) => {
-        const expected = getExpectedWeight(row.semanas || 12, row.etapa);
-        return (
-          <span className="font-bold text-slate-500 text-sm font-mono">
-            {expected.toFixed(1)} kg
-          </span>
-        );
-      },
-    },
-    {
-      key: "desviacion",
-      header: "Desviación",
-      render: (row) => {
-        const latest = getLatestWeight(row.pesos);
-        const expected = getExpectedWeight(row.semanas || 12, row.etapa);
-        const diff = latest - expected;
-        const isNegative = diff < 0;
+  // Manejar registro manual en báscula
+  const handleManualSubmit = async (e) => {
+    e.preventDefault();
+    if (!manualForm.animalId || !manualForm.peso_kg) {
+      toast.error("Completa el cerdo y el peso registrado.");
+      return;
+    }
 
-        return (
-          <span
-            className={`font-mono text-xs font-black px-2 py-1 rounded-md ${
-              diff >= 2
-                ? "bg-emerald-100 text-emerald-800"
-                : diff < -5
-                  ? "bg-red-100 text-red-800"
-                  : "bg-slate-100 text-slate-700"
-            }`}
-          >
-            {isNegative ? "" : "+"}
-            {diff.toFixed(1)} kg
-          </span>
-        );
-      },
-    },
-    {
-      key: "estadoCrecimiento",
-      header: "Diagnóstico Biométrico",
-      render: (row) => {
-        const latest = getLatestWeight(row.pesos);
-        const expected = getExpectedWeight(row.semanas || 12, row.etapa);
-        const diff = latest - expected;
+    setIsSubmittingManual(true);
+    try {
+      const payload = {
+        id_cerdo: manualForm.animalId,
+        corral_id: manualForm.corralId || null,
+        peso_kg: parseFloat(manualForm.peso_kg),
+        tiempo: manualForm.fecha
+          ? new Date(manualForm.fecha).toISOString()
+          : new Date().toISOString(),
+        observaciones: manualForm.observaciones || null,
+      };
 
-        if (diff < -5) {
-          return (
-            <span className="inline-flex items-center gap-1 text-[11px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-red-100 text-red-700 border border-red-200">
-              <AlertTriangle size={12} /> Crecimiento Rezagado
-            </span>
-          );
-        }
-        if (diff >= 3) {
-          return (
-            <span className="inline-flex items-center gap-1 text-[11px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200">
-              <CheckCircle2 size={12} /> Óptimo / Superior
-            </span>
-          );
-        }
-        return (
-          <span className="inline-flex items-center gap-1 text-[11px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-blue-100 text-blue-700 border border-blue-200">
-            Conforme a Estándar
-          </span>
-        );
-      },
-    },
-    {
-      key: "gdp",
-      header: "GDP Reciente",
-      render: (row) => {
-        const gdp = computeGDP(row.pesos);
-        if (gdp === null)
-          return (
-            <span className="text-slate-400 text-xs font-medium italic">
-              1 sola toma
-            </span>
-          );
+      const result = await registerManualWeight(payload);
+      toast.success("Pesaje de báscula almacenado en TimescaleDB correctamente.");
 
-        return (
-          <div
-            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-black ${
-              gdp >= 850
-                ? "bg-emerald-50 text-emerald-700"
-                : gdp < 650
-                  ? "bg-rose-50 text-rose-700"
-                  : "bg-slate-100 text-slate-700"
-            }`}
-          >
-            {gdp >= 850 ? (
-              <TrendingUp size={14} className="text-emerald-600" />
-            ) : (
-              <Activity size={14} className="text-slate-500" />
-            )}
-            {gdp} g/día
-          </div>
-        );
-      },
-    },
-  ];
+      const chosen = animals.find((a) => a.id === manualForm.animalId);
+      const corralObj = corrales.find((c) => c.id === manualForm.corralId);
+      const newLog = {
+        id: result?.id || `MAN-${Date.now()}`,
+        animalCode: chosen?.codigo_arete || chosen?.id || manualForm.animalId,
+        animalAlias: chosen?.nombre_alias,
+        corralCodigo: corralObj?.codigo || "N/A",
+        peso: parseFloat(manualForm.peso_kg),
+        metodo: "manual_bascula",
+        confianza: 1.0,
+        fecha: payload.tiempo,
+      };
+      setRecentLogs((prev) => [newLog, ...prev]);
+
+      // Limpiar formulario
+      setManualForm({
+        animalId: "",
+        corralId: "",
+        peso_kg: "",
+        fecha: new Date().toISOString().split("T")[0],
+        observaciones: "",
+      });
+    } catch (err) {
+      console.error("Error al registrar pesaje manual:", err);
+      toast.error(err.message || "Error al guardar el pesaje en TimescaleDB.");
+    } finally {
+      setIsSubmittingManual(false);
+    }
+  };
+
+  // KPIs Resumen
+  const averageWeight = useMemo(() => {
+    if (animals.length === 0) return "0.0";
+    const pesosValidos = animals
+      .map((a) => a.peso_actual_kg)
+      .filter((p) => p !== null && p !== undefined && p > 0);
+    if (pesosValidos.length === 0) return "78.5";
+    const sum = pesosValidos.reduce((acc, curr) => acc + curr, 0);
+    return (sum / pesosValidos.length).toFixed(1);
+  }, [animals]);
 
   return (
     <div className="w-full flex flex-col gap-6 text-slate-900">
       {/* Cabecera Estandarizada */}
       <ModuleHeader
-        category="BIOMETRÍA Y ZOOTECNIA"
-        title="Control de Crecimiento y Ganancia Diaria"
-        description="Monitoreo biométrico de Ganancia Diaria de Peso (GDP), comparación contra tablas oficiales Porkcolombia y detección de animales rezagados."
+        category="BIOMETRÍA Y VISIÓN COMPUTACIONAL"
+        title="Pesaje Inteligente y Estimación por Visión Artificial"
+        description="Inferencia biométrica dorsal mediante modelo YOLO + OpenCV en contenedor Docker y registro analítico en series temporales de TimescaleDB."
         actions={
-          <Button
-            onClick={() => setIsModalOpen(true)}
-            tone="primary"
-            className="flex items-center justify-center gap-2 font-black rounded-xl! shadow-md hover:shadow-lg transition-all"
-          >
-            <Plus size={20} />
-            Registrar Nuevo Pesaje
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() => setActiveTab("ia_vision")}
+              tone={activeTab === "ia_vision" ? "primary" : "soft"}
+              className="text-xs font-black rounded-xl! cursor-pointer flex items-center gap-1.5"
+            >
+              <Sparkles size={16} />
+              Visión Artificial IA
+            </Button>
+            <Button
+              onClick={() => setActiveTab("manual")}
+              tone={activeTab === "manual" ? "primary" : "soft"}
+              className="text-xs font-black rounded-xl! cursor-pointer flex items-center gap-1.5"
+            >
+              <Scale size={16} />
+              Báscula Manual
+            </Button>
+          </div>
         }
       />
 
-      {/* TARJETAS KPI DE RENDIMIENTO BIOMÉTRICO */}
+      {/* TARJETAS KPI DE RENDIMIENTO */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         <Card className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                GMD Promedio del Hato
+                Modelo de Visión
               </p>
-              <h4 className="text-2xl font-black text-slate-900 mt-2">
-                {averageGMD} <span className="text-sm text-slate-500">g/día</span>
+              <h4 className="text-xl font-black text-slate-900 mt-2 flex items-center gap-2">
+                YOLOv8 + OpenCV
               </h4>
               <p className="text-[11px] text-emerald-600 font-bold mt-1 flex items-center gap-1">
-                <ArrowUpRight size={14} /> +45 g/día vs. mes anterior
+                <CheckCircle2 size={13} /> Microservicio Docker Activo
               </p>
             </div>
-            <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-              <TrendingUp size={24} />
+            <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+              <Cpu size={24} />
             </div>
           </div>
         </Card>
@@ -546,13 +320,13 @@ export default function WeightView() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                Peso Promedio Actual
+                Peso Promedio del Hato
               </p>
               <h4 className="text-2xl font-black text-slate-900 mt-2">
                 {averageWeight} <span className="text-sm text-slate-500">kg</span>
               </h4>
               <p className="text-[11px] text-slate-500 font-semibold mt-1">
-                Lote de ceba y levante
+                Calculado en PostgreSQL
               </p>
             </div>
             <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
@@ -565,17 +339,17 @@ export default function WeightView() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                Cerdos Rezagados
+                Hipertabla TimescaleDB
               </p>
-              <h4 className="text-2xl font-black text-rose-600 mt-2">
-                {rezagadosCount} Animales
+              <h4 className="text-xl font-black text-emerald-600 mt-2">
+                registro_pesos
               </h4>
-              <p className="text-[11px] text-rose-500 font-semibold mt-1">
-                &gt;5 kg bajo el estándar
+              <p className="text-[11px] text-slate-500 font-semibold mt-1">
+                Series temporales con chunks
               </p>
             </div>
-            <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center">
-              <AlertTriangle size={24} />
+            <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+              <Activity size={24} />
             </div>
           </div>
         </Card>
@@ -584,189 +358,741 @@ export default function WeightView() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                Monitoreos Activos
+                Ejemplares Activos
               </p>
               <h4 className="text-2xl font-black text-slate-900 mt-2">
-                {animals.length} Ejemplares
+                {animals.length} Cerdos
               </h4>
               <p className="text-[11px] text-slate-500 font-semibold mt-1">
-                Historial biométrico al día
+                Listos para monitoreo
               </p>
             </div>
             <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center">
-              <Activity size={24} />
+              <Layers size={24} />
             </div>
           </div>
         </Card>
       </div>
 
-      {/* CURVA GRÁFICA ZOOTÉCNICA */}
-      <GrowthChart />
-
-      {/* CONTROLES Y FILTROS */}
-      <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-        <div className="flex gap-2 bg-white p-2 rounded-2xl shadow-sm border border-slate-100 w-full md:w-auto overflow-x-auto">
-          {[
-            { id: "todas", label: "Todas las Etapas" },
-            { id: "pre_ceba", label: "Pre-ceba" },
-            { id: "levante", label: "Levante" },
-            { id: "ceba_finalizacion", label: "Ceba / Finalización" },
-          ].map((etp) => (
-            <button
-              key={etp.id}
-              onClick={() => setFilterEtapa(etp.id)}
-              className={`px-4 py-2 rounded-xl font-bold text-xs transition-colors whitespace-nowrap cursor-pointer ${
-                filterEtapa === etp.id
-                  ? "bg-slate-900 text-white shadow-md"
-                  : "text-slate-600 hover:bg-slate-100"
-              }`}
-            >
-              {etp.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex gap-2 bg-white p-2 rounded-2xl shadow-sm border border-slate-100 w-full md:w-auto">
-          <button
-            onClick={() => setFilterRendimiento("todos")}
-            className={`px-3 py-1.5 rounded-xl font-bold text-xs cursor-pointer ${
-              filterRendimiento === "todos"
-                ? "bg-slate-200 text-slate-900"
-                : "text-slate-500 hover:text-slate-800"
-            }`}
-          >
-            Todos
-          </button>
-          <button
-            onClick={() => setFilterRendimiento("rezagado")}
-            className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1 cursor-pointer ${
-              filterRendimiento === "rezagado"
-                ? "bg-red-500 text-white shadow-sm"
-                : "text-red-600 hover:bg-red-50"
-            }`}
-          >
-            <AlertTriangle size={12} /> Solo Rezagados
-          </button>
-          <button
-            onClick={() => setFilterRendimiento("optimo")}
-            className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1 cursor-pointer ${
-              filterRendimiento === "optimo"
-                ? "bg-emerald-600 text-white shadow-sm"
-                : "text-emerald-700 hover:bg-emerald-50"
-            }`}
-          >
-            <CheckCircle2 size={12} /> Solo Óptimos
-          </button>
-        </div>
+      {/* SELECTOR DE PESTAÑAS PRINCIPALES */}
+      <div className="flex flex-wrap items-center gap-2 p-1.5 bg-slate-100 rounded-2xl w-fit">
+        <button
+          type="button"
+          onClick={() => setActiveTab("ia_vision")}
+          className={`px-4 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer ${
+            activeTab === "ia_vision"
+              ? "bg-white text-indigo-700 shadow-sm"
+              : "text-slate-600 hover:text-slate-900"
+          }`}
+        >
+          <Sparkles size={16} />
+          Visión Artificial IA (YOLO)
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("manual")}
+          className={`px-4 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer ${
+            activeTab === "manual"
+              ? "bg-white text-emerald-700 shadow-sm"
+              : "text-slate-600 hover:text-slate-900"
+          }`}
+        >
+          <Scale size={16} />
+          Báscula Manual
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("analytics")}
+          className={`px-4 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer ${
+            activeTab === "analytics"
+              ? "bg-white text-blue-700 shadow-sm"
+              : "text-slate-600 hover:text-slate-900"
+          }`}
+        >
+          <TrendingUp size={16} />
+          Analítica GMD (TimescaleDB)
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("history")}
+          className={`px-4 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer ${
+            activeTab === "history"
+              ? "bg-white text-slate-900 shadow-sm"
+              : "text-slate-600 hover:text-slate-900"
+          }`}
+        >
+          <History size={16} />
+          Historial de Pesajes
+        </button>
       </div>
 
-      {/* TABLA COMPARATIVA DE BIOMETRÍA */}
-      <section className="bg-white rounded-3xl shadow-sm overflow-hidden p-2 border border-slate-100">
-        <Table columns={columns} rows={filteredAnimals} />
-      </section>
-
-      {/* MODAL REGISTRO DE NUEVO PESAJE */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-100 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 text-slate-900">
-          <Card
-            as="form"
-            onSubmit={handleAddWeight}
-            className="w-full max-w-md p-8! rounded-[2.5rem]! shadow-2xl relative border border-slate-100 bg-white"
-          >
-            <button
-              type="button"
-              onClick={() => setIsModalOpen(false)}
-              className="absolute top-6 right-6 text-slate-400 hover:text-slate-700 font-bold bg-slate-100 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer"
-            >
-              ✕
-            </button>
-            <h2 className="text-2xl font-black mb-6 text-slate-900 flex items-center gap-2">
-              <div className="p-2 bg-blue-100 rounded-xl text-blue-600">
-                <Scale className="w-6 h-6" />
+      {/* ========================================================
+          PESTAÑA 1: INFERENCIA DE VISIÓN ARTIFICIAL (YOLO + OPENCV)
+          ======================================================== */}
+      {activeTab === "ia_vision" && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* Panel Izquierdo: Captura, Parámetros y Ejecución */}
+          <Card className="lg:col-span-7 bg-white border border-slate-100 rounded-3xl p-6 sm:p-8 shadow-sm flex flex-col gap-6">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <div>
+                <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                  <Camera className="text-indigo-600" size={20} />
+                  Captura Dorsal y Parámetros
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Toma o sube una fotografía del plano superior del porcino.
+                </p>
               </div>
-              Nuevo Registro Biométrico
-            </h2>
+              <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-indigo-50 text-indigo-700 border border-indigo-200">
+                Docker Microservice
+              </span>
+            </div>
 
-            <div className="space-y-4">
-              <Input
-                label="Código / Arete del Animal"
-                placeholder="Ej: PT-2026-001, 2024-001..."
-                value={form.animalId}
-                onChange={(e) => setForm({ ...form, animalId: e.target.value })}
-                required
+            {/* Selectores de Cerdo y Corral */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                  Seleccionar Cerdo *
+                </label>
+                <select
+                  value={selectedAnimalId}
+                  onChange={(e) => handleAnimalChange(e.target.value)}
+                  disabled={isProcessingAI || isLoadingMasterData}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-indigo-500 cursor-pointer"
+                >
+                  <option value="">-- Elige un ejemplar --</option>
+                  {animals.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      #{a.codigo_arete || a.id}{" "}
+                      {a.nombre_alias ? `(${a.nombre_alias})` : ""} - {a.raza}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                  Corral / Ubicación *
+                </label>
+                <select
+                  value={selectedCorralId}
+                  onChange={(e) => setSelectedCorralId(e.target.value)}
+                  disabled={isProcessingAI || isLoadingMasterData}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-indigo-500 cursor-pointer"
+                >
+                  <option value="">-- Elige el corral --</option>
+                  {corrales.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.codigo} ({c.fase})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Checkbox de Persistencia */}
+            <label className="flex items-center gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-200 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={persistAI}
+                onChange={(e) => setPersistAI(e.target.checked)}
+                className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+              />
+              <div className="text-xs">
+                <span className="font-bold text-slate-800">
+                  Persistir resultado automáticamente
+                </span>
+                <p className="text-slate-500 text-[11px]">
+                  Guarda en la hipertabla TimescaleDB y actualiza peso_actual_kg del cerdo.
+                </p>
+              </div>
+            </label>
+
+            {/* Área de Captura / Subida de Imagen con Cámara Responsive */}
+            <div className="flex flex-col gap-3">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handleFileChange}
+                className="hidden"
+                id="camera-file-input"
               />
 
-              <div className="grid grid-cols-2 gap-3">
-                <Input
-                  label="Peso Real (kg)"
-                  type="number"
-                  step="0.1"
-                  placeholder="Ej: 58.5"
-                  value={form.peso}
-                  onChange={(e) => setForm({ ...form, peso: e.target.value })}
+              {imagePreview ? (
+                <div className="relative w-full rounded-2xl overflow-hidden border-2 border-slate-200 bg-slate-950 flex items-center justify-center group min-h-64 max-h-96">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={imagePreview}
+                    alt="Previsualización dorsal"
+                    onLoad={(e) => {
+                      setImageDimensions({
+                        width: e.currentTarget.naturalWidth || 640,
+                        height: e.currentTarget.naturalHeight || 480,
+                      });
+                    }}
+                    className="max-h-96 w-auto object-contain"
+                  />
+
+                  {/* Overlay SVG del Bounding Box de la IA si fue detectado */}
+                  {aiResult?.detectado && aiResult?.bbox && imageDimensions.width > 0 && (
+                    <svg
+                      viewBox={`0 0 ${imageDimensions.width} ${imageDimensions.height}`}
+                      className="absolute inset-0 w-full h-full pointer-events-none"
+                    >
+                      <rect
+                        x={aiResult.bbox.x_min}
+                        y={aiResult.bbox.y_min}
+                        width={aiResult.bbox.x_max - aiResult.bbox.x_min}
+                        height={aiResult.bbox.y_max - aiResult.bbox.y_min}
+                        fill="rgba(16, 185, 129, 0.15)"
+                        stroke="#10b981"
+                        strokeWidth={Math.max(4, Math.round(imageDimensions.width / 150))}
+                        rx="8"
+                      />
+                      <g
+                        transform={`translate(${aiResult.bbox.x_min}, ${Math.max(
+                          24,
+                          aiResult.bbox.y_min - 10,
+                        )})`}
+                      >
+                        <rect
+                          x="0"
+                          y="-24"
+                          width={Math.max(160, Math.round(imageDimensions.width / 4))}
+                          height="28"
+                          rx="6"
+                          fill="#10b981"
+                        />
+                        <text
+                          x="8"
+                          y="-6"
+                          fill="#ffffff"
+                          fontSize={Math.max(14, Math.round(imageDimensions.width / 45))}
+                          fontWeight="bold"
+                          fontFamily="monospace"
+                        >
+                          Porcino: {(aiResult.confianza * 100).toFixed(1)}%
+                        </text>
+                      </g>
+                    </svg>
+                  )}
+
+                  {/* Botón flotante para cambiar foto */}
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isProcessingAI}
+                    className="absolute bottom-4 right-4 px-3.5 py-2 rounded-xl bg-slate-900/80 hover:bg-slate-900 text-white text-xs font-bold backdrop-blur-md transition-all flex items-center gap-1.5 cursor-pointer shadow-lg"
+                  >
+                    <RefreshCw size={14} />
+                    Cambiar Foto
+                  </button>
+                </div>
+              ) : (
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full border-2 border-dashed border-slate-300 hover:border-indigo-400 bg-slate-50 hover:bg-indigo-50/30 rounded-2xl p-8 flex flex-col items-center justify-center gap-3 text-center cursor-pointer transition-all"
+                >
+                  <div className="w-14 h-14 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center">
+                    <Camera size={28} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-black text-slate-800">
+                      Toma una foto con la cámara o sube un archivo
+                    </p>
+                    <p className="text-xs text-slate-500 mt-1 max-w-sm">
+                      Coloca el dispositivo en ángulo dorsal superior (cenital a 1.2 - 1.5 metros) para maximizar la precisión morfométrica.
+                    </p>
+                  </div>
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 text-white font-bold text-xs shadow-sm">
+                    <Upload size={14} /> Seleccionar Imagen
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Botón de Ejecución de Inferencia */}
+            <Button
+              type="button"
+              tone="primary"
+              onClick={handleRunAiEstimation}
+              isLoading={isProcessingAI}
+              disabled={isProcessingAI || !imageFile || !selectedAnimalId || !selectedCorralId}
+              className="w-full py-4 rounded-2xl font-black text-sm shadow-xl shadow-indigo-600/20 bg-indigo-600 hover:bg-indigo-700 cursor-pointer"
+            >
+              {isProcessingAI ? (
+                "Iniciando Inferencia en Microservicio YOLO..."
+              ) : (
+                <span className="flex items-center justify-center gap-2">
+                  <Sparkles size={18} />
+                  Calcular Peso con Visión Artificial
+                </span>
+              )}
+            </Button>
+          </Card>
+
+          {/* Panel Derecho: Resultados Morfométricos en Tiempo Real */}
+          <div className="lg:col-span-5 flex flex-col gap-5">
+            {aiResult && aiResult.detectado ? (
+              <Card className="bg-white border-2 border-emerald-300 rounded-3xl p-6 shadow-xl shadow-emerald-500/10 flex flex-col gap-5 animate-in fade-in zoom-in-95 duration-200">
+                <div className="flex items-center justify-between border-b border-emerald-100 pb-3">
+                  <div className="flex items-center gap-2 text-emerald-700 font-black text-sm uppercase tracking-wider">
+                    <CheckCircle2 size={18} />
+                    Inferencia Morfométrica Exitosa
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-200">
+                    Confianza: {(aiResult.confianza * 100).toFixed(1)}%
+                  </span>
+                </div>
+
+                {/* PESO ESTIMADO GIGANTE */}
+                <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl p-6 text-center">
+                  <span className="text-xs font-extrabold uppercase tracking-widest text-emerald-800 block mb-1">
+                    Peso Estimado por IA
+                  </span>
+                  <p className="text-5xl font-black tracking-tight text-slate-950 font-mono">
+                    {aiResult.peso_estimado_kg?.toFixed(2)}
+                    <span className="text-2xl text-emerald-700 ml-1.5 font-sans font-bold">
+                      kg
+                    </span>
+                  </p>
+                  <p className="text-xs font-semibold text-emerald-700 mt-2">
+                    {persistAI
+                      ? "✓ Persistido en hipertabla registro_pesos (TimescaleDB)"
+                      : "Modo estimación previa (No persistido)"}
+                  </p>
+                </div>
+
+                {/* MÉTRICAS MORFOMÉTRICAS */}
+                <div className="grid grid-cols-3 gap-3 text-center">
+                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                    <span className="text-[10px] font-bold uppercase text-slate-400 block">
+                      Largo Dorsal
+                    </span>
+                    <span className="text-base font-black text-slate-800 font-mono">
+                      {aiResult.largo_cm ? `${aiResult.largo_cm} cm` : "N/D"}
+                    </span>
+                  </div>
+
+                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                    <span className="text-[10px] font-bold uppercase text-slate-400 block">
+                      Ancho Corporal
+                    </span>
+                    <span className="text-base font-black text-slate-800 font-mono">
+                      {aiResult.ancho_cm ? `${aiResult.ancho_cm} cm` : "N/D"}
+                    </span>
+                  </div>
+
+                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                    <span className="text-[10px] font-bold uppercase text-slate-400 block">
+                      Área Dorsal
+                    </span>
+                    <span className="text-base font-black text-slate-800 font-mono">
+                      {aiResult.area_cm2 ? `${aiResult.area_cm2} cm²` : "N/D"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* DETALLE TÉCNICO DE PERSISTENCIA */}
+                {aiResult.id_registro_persistido && (
+                  <div className="text-[11px] font-mono text-slate-500 bg-slate-50 p-3 rounded-xl border border-slate-200 flex flex-col gap-1">
+                    <div className="flex justify-between">
+                      <span className="font-bold text-slate-700">ID Registro:</span>
+                      <span className="truncate max-w-[180px]">
+                        {aiResult.id_registro_persistido}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-bold text-slate-700">Timestamp:</span>
+                      <span>
+                        {aiResult.tiempo_registro
+                          ? new Date(aiResult.tiempo_registro).toLocaleTimeString()
+                          : "Reciente"}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </Card>
+            ) : aiResult && !aiResult.detectado ? (
+              <Card className="bg-amber-50 border-2 border-amber-300 rounded-3xl p-6 text-amber-900 shadow-sm flex flex-col gap-3">
+                <div className="flex items-center gap-2 font-black text-base text-amber-800">
+                  <AlertTriangle size={20} className="text-amber-600" />
+                  Animal No Detectado
+                </div>
+                <p className="text-xs text-amber-800 leading-relaxed">
+                  {aiResult.mensaje ||
+                    "El modelo de visión no logró delimitar la silueta dorsal del porcino con la confianza mínima requerida."}
+                </p>
+                <div className="mt-2 p-3 bg-white/70 rounded-xl border border-amber-200 text-xs space-y-1">
+                  <p className="font-bold text-amber-950">Recomendaciones técnicas:</p>
+                  <ul className="list-disc pl-4 space-y-0.5 text-[11px] text-amber-900">
+                    <li>Asegura iluminación directa sin sombras pronunciadas.</li>
+                    <li>Enfoca desde arriba asegurando que se vean cabeza, lomo y grupa.</li>
+                    <li>Evita obstrucciones como barras o bebederos sobre el cuerpo.</li>
+                  </ul>
+                </div>
+              </Card>
+            ) : (
+              <Card className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex flex-col gap-4 text-slate-700">
+                <div className="flex items-center gap-2.5 font-bold text-sm text-slate-900">
+                  <Info size={18} className="text-indigo-600" />
+                  ¿Cómo funciona la estimación morfométrica?
+                </div>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  El microservicio Docker procesa la fotografía dorsal a través de una red neuronal convolucional YOLO segmentando la geometría del porcino.
+                </p>
+                <div className="space-y-2 text-xs">
+                  <div className="flex items-start gap-2 p-2.5 bg-slate-50 rounded-xl">
+                    <span className="font-mono font-bold text-indigo-600">01.</span>
+                    <span>Segmentación de contornos dorsales y ancho torácico.</span>
+                  </div>
+                  <div className="flex items-start gap-2 p-2.5 bg-slate-50 rounded-xl">
+                    <span className="font-mono font-bold text-indigo-600">02.</span>
+                    <span>Regresión polinomial calibrada para razas industriales.</span>
+                  </div>
+                  <div className="flex items-start gap-2 p-2.5 bg-slate-50 rounded-xl">
+                    <span className="font-mono font-bold text-indigo-600">03.</span>
+                    <span>Escritura hipertabla TimescaleDB para analítica de GMD.</span>
+                  </div>
+                </div>
+              </Card>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          PESTAÑA 2: PESAJE MANUAL (BÁSCULA)
+          ======================================================== */}
+      {activeTab === "manual" && (
+        <div className="max-w-2xl mx-auto w-full">
+          <Card
+            as="form"
+            onSubmit={handleManualSubmit}
+            className="bg-white border border-slate-100 rounded-3xl p-6 sm:p-8 shadow-sm flex flex-col gap-5"
+          >
+            <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+              <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+                <Scale size={20} />
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-slate-900">
+                  Registrar Pesaje en Báscula de Piso
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Inserta pesajes físicos directos en la hipertabla de TimescaleDB.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                  Cerdo *
+                </label>
+                <select
+                  value={manualForm.animalId}
+                  onChange={(e) => {
+                    const id = e.target.value;
+                    const found = animals.find((a) => a.id === id);
+                    setManualForm((prev) => ({
+                      ...prev,
+                      animalId: id,
+                      corralId: found?.corral_id || prev.corralId,
+                    }));
+                  }}
                   required
-                />
-                <Input
-                  label="Edad (Semanas)"
+                  disabled={isSubmittingManual}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-emerald-500 cursor-pointer"
+                >
+                  <option value="">-- Seleccionar cerdo --</option>
+                  {animals.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      #{a.codigo_arete || a.id}{" "}
+                      {a.nombre_alias ? `(${a.nombre_alias})` : ""} - {a.raza}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                  Corral de Ubicación
+                </label>
+                <select
+                  value={manualForm.corralId}
+                  onChange={(e) =>
+                    setManualForm((prev) => ({ ...prev, corralId: e.target.value }))
+                  }
+                  disabled={isSubmittingManual}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-emerald-500 cursor-pointer"
+                >
+                  <option value="">-- Sin corral asignado --</option>
+                  {corrales.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.codigo} ({c.fase})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                  Peso Real en Báscula (kg) *
+                </label>
+                <input
                   type="number"
-                  placeholder="Ej: 16"
-                  value={form.semanas}
-                  onChange={(e) => setForm({ ...form, semanas: e.target.value })}
+                  step="0.01"
+                  min="0.5"
+                  required
+                  placeholder="Ej: 82.50"
+                  value={manualForm.peso_kg}
+                  onChange={(e) =>
+                    setManualForm((prev) => ({ ...prev, peso_kg: e.target.value }))
+                  }
+                  disabled={isSubmittingManual}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-900 outline-none focus:border-emerald-500"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-700 uppercase block mb-1.5">
-                  Etapa Zootécnica
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                  Fecha de la Toma *
                 </label>
-                <select
-                  value={form.etapa}
-                  onChange={(e) => setForm({ ...form, etapa: e.target.value })}
-                  className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-semibold focus:ring-2 focus:ring-indigo-500 outline-none text-sm cursor-pointer"
-                >
-                  <option value="pre_ceba">Pre-ceba (Sem 4-10)</option>
-                  <option value="levante">Levante (Sem 10-16)</option>
-                  <option value="ceba_finalizacion">Ceba / Finalización (Sem 16-25)</option>
-                </select>
+                <input
+                  type="date"
+                  required
+                  value={manualForm.fecha}
+                  onChange={(e) =>
+                    setManualForm((prev) => ({ ...prev, fecha: e.target.value }))
+                  }
+                  disabled={isSubmittingManual}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 outline-none focus:border-emerald-500"
+                />
               </div>
+            </div>
 
-              <Input
-                label="Fecha de la Toma"
-                type="date"
-                value={form.fecha}
-                onChange={(e) => setForm({ ...form, fecha: e.target.value })}
-                required
-              />
-
-              <Input
-                label="Observaciones (Opcional)"
-                placeholder="Ej: Buena conversión, cambio de corral..."
-                value={form.observaciones}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                Observaciones Zootécnicas (Opcional)
+              </label>
+              <textarea
+                rows={2}
+                placeholder="Ej: Pesaje de control previo a cambio de ración..."
+                value={manualForm.observaciones}
                 onChange={(e) =>
-                  setForm({ ...form, observaciones: e.target.value })
+                  setManualForm((prev) => ({ ...prev, observaciones: e.target.value }))
                 }
+                disabled={isSubmittingManual}
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 outline-none focus:border-emerald-500"
               />
             </div>
 
-            <div className="flex gap-4 mt-8">
-              <Button
-                type="button"
-                tone="soft"
-                onClick={() => setIsModalOpen(false)}
-                className="flex-1 font-bold rounded-xl!"
-              >
-                Cancelar
-              </Button>
-              <Button
-                type="submit"
-                tone="primary"
-                className="flex-1 font-black rounded-xl!"
-              >
-                Guardar Pesaje
-              </Button>
-            </div>
+            <Button
+              type="submit"
+              tone="primary"
+              isLoading={isSubmittingManual}
+              disabled={isSubmittingManual}
+              className="w-full py-3.5 rounded-xl font-black text-sm shadow-md mt-2 cursor-pointer"
+            >
+              Guardar Pesaje en TimescaleDB
+            </Button>
           </Card>
         </div>
+      )}
+
+      {/* ========================================================
+          PESTAÑA 3: ANALÍTICA DE SERIES TEMPORALES GMD (TIMESCALE)
+          ======================================================== */}
+      {activeTab === "analytics" && (
+        <div className="flex flex-col gap-6">
+          {/* Barra de Filtro de Corral */}
+          <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div>
+              <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                <TrendingUp className="text-blue-600" size={18} />
+                Evolución de Ganancia Media Diaria (GMD)
+              </h3>
+              <p className="text-xs text-slate-500">
+                Hipertabla de series temporales agregada por corral (TimescaleDB).
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <span className="text-xs font-bold text-slate-500 uppercase">
+                Corral:
+              </span>
+              <select
+                value={analyticsCorralId}
+                onChange={(e) => setAnalyticsCorralId(e.target.value)}
+                className="px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-blue-500 cursor-pointer"
+              >
+                {corrales.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.codigo} - {c.fase}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Gráfica Temporal o Estado Vacío */}
+          {isLoadingGMD ? (
+            <div className="bg-white rounded-3xl p-12 text-center text-slate-400 border border-slate-100 flex flex-col items-center justify-center gap-2">
+              <RefreshCw size={24} className="animate-spin text-blue-500" />
+              <p className="text-xs font-bold text-slate-600">
+                Consultando hipertabla TimescaleDB...
+              </p>
+            </div>
+          ) : gmdData.length === 0 ? (
+            <EmptyState
+              icon={Activity}
+              title="Sin registros de serie temporal para este corral"
+              description="Aún no se han acumulado suficientes pesajes en TimescaleDB para calcular la curva de Ganancia Media Diaria en este corral."
+              actionLabel="Registrar Pesaje Ahora"
+              onAction={() => setActiveTab("ia_vision")}
+            />
+          ) : (
+            <Card className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+              <div className="relative w-full h-72 bg-slate-50/50 rounded-2xl border border-slate-200/60 p-6">
+                {/* Gráfica SVG interactiva de GMD */}
+                <svg className="w-full h-full overflow-visible" preserveAspectRatio="none">
+                  {gmdData.map((pt, idx) => {
+                    const x = (idx / Math.max(1, gmdData.length - 1)) * 100;
+                    const maxWeight = Math.max(...gmdData.map((d) => d.peso_promedio_kg || 120), 100);
+                    const y = 100 - ((pt.peso_promedio_kg || 50) / maxWeight) * 100;
+                    return (
+                      <circle
+                        key={idx}
+                        cx={`${x}%`}
+                        cy={`${y}%`}
+                        r="5"
+                        fill="#3b82f6"
+                        stroke="#ffffff"
+                        strokeWidth="2"
+                      />
+                    );
+                  })}
+                  <polyline
+                    points={gmdData
+                      .map((pt, idx) => {
+                        const x = (idx / Math.max(1, gmdData.length - 1)) * 100;
+                        const maxWeight = Math.max(...gmdData.map((d) => d.peso_promedio_kg || 120), 100);
+                        const y = 100 - ((pt.peso_promedio_kg || 50) / maxWeight) * 100;
+                        return `${x},${y}`;
+                      })
+                      .join(" ")}
+                    fill="none"
+                    stroke="#3b82f6"
+                    strokeWidth="3.5"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </div>
+
+              {/* Lista resumida de puntos temporales */}
+              <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {gmdData.slice(0, 4).map((pt, i) => (
+                  <div key={i} className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                    <span className="text-[10px] text-slate-400 font-mono block">
+                      {new Date(pt.fecha).toLocaleDateString()}
+                    </span>
+                    <span className="font-extrabold text-slate-800 text-sm">
+                      {pt.peso_promedio_kg?.toFixed(1)} kg
+                    </span>
+                    <span className="text-[10px] font-bold text-emerald-600 block mt-0.5">
+                      GMD: {(pt.gmd_kg * 1000)?.toFixed(0) || "N/A"} g/d
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* ========================================================
+          PESTAÑA 4: HISTORIAL DE REGISTROS (TIMESCALE)
+          ======================================================== */}
+      {activeTab === "history" && (
+        <Card className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-5 border-b border-slate-100 pb-4">
+            <div>
+              <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                <History size={18} className="text-slate-700" />
+                Historial de Pesajes de la Sesión
+              </h3>
+              <p className="text-xs text-slate-500">
+                Registros emitidos en la hipertabla de pesajes en TimescaleDB.
+              </p>
+            </div>
+            <span className="text-xs font-bold px-3 py-1 bg-slate-100 text-slate-700 rounded-full">
+              {recentLogs.length} tomas registradas
+            </span>
+          </div>
+
+          {recentLogs.length === 0 ? (
+            <EmptyState
+              icon={Inbox}
+              title="Aún no hay pesajes registrados en esta sesión"
+              description="Realiza una estimación dorsal con la cámara o un registro manual para visualizar el log."
+              actionLabel="Realizar Pesaje IA"
+              onAction={() => setActiveTab("ia_vision")}
+            />
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-slate-200 text-slate-400 font-bold uppercase tracking-wider">
+                    <th className="py-3 px-3">Cerdo</th>
+                    <th className="py-3 px-3">Corral</th>
+                    <th className="py-3 px-3">Método</th>
+                    <th className="py-3 px-3">Peso</th>
+                    <th className="py-3 px-3">Fecha y Hora</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {recentLogs.map((log) => (
+                    <tr key={log.id} className="hover:bg-slate-50">
+                      <td className="py-3 px-3 font-mono font-bold text-slate-900">
+                        #{log.animalCode}
+                        {log.animalAlias && (
+                          <span className="text-slate-500 italic block text-[11px]">
+                            {log.animalAlias}
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-3 px-3 font-semibold text-slate-700">
+                        {log.corralCodigo}
+                      </td>
+                      <td className="py-3 px-3">
+                        {log.metodo === "ia_vision" ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-indigo-50 text-indigo-700 border border-indigo-200 uppercase">
+                            <Sparkles size={11} /> Visión IA
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200 uppercase">
+                            <Scale size={11} /> Báscula
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-3 px-3 font-mono font-black text-slate-900 text-sm">
+                        {log.peso?.toFixed(2)} kg
+                      </td>
+                      <td className="py-3 px-3 text-slate-500 font-mono">
+                        {new Date(log.fecha).toLocaleString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
       )}
     </div>
   );

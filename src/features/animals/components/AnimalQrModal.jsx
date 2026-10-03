@@ -41,12 +41,14 @@ export default function AnimalQrModal({ animal, isOpen, onClose }) {
 
   if (!isOpen || !animal) return null;
 
-  const animalCode = animal.code || animal.id || "PT-2026-001";
+  const animalCode =
+    animal.codigo_arete || animal.code || animal.id || "PT-2026-001";
+  const qrTarget = animal.codigo_qr || animalCode;
   const originUrl =
     typeof window !== "undefined"
       ? window.location.origin
       : "https://porcitech.com";
-  const publicTraceUrl = `${originUrl}/trace/${encodeURIComponent(animalCode)}`;
+  const publicTraceUrl = `${originUrl}/trace/${encodeURIComponent(qrTarget)}`;
 
   const handleCopyLink = async () => {
     try {
@@ -65,12 +67,23 @@ export default function AnimalQrModal({ animal, isOpen, onClose }) {
   };
 
   const raza = animal.raza || "Landrace x Duroc";
-  const lote = animal.lote || animal.galpon || "Lote #42 - C-01";
-  const sexo = animal.sexo || "Macho";
-  const estado = animal.estado || animal.estadoSalud || "ÓPTIMO";
+  const lote =
+    animal.corral_codigo ||
+    animal.corral?.codigo ||
+    animal.lote ||
+    animal.galpon ||
+    "Sin asignar";
+  const sexo =
+    animal.sexo === "macho"
+      ? "Macho"
+      : animal.sexo === "hembra"
+        ? "Hembra"
+        : animal.sexo || "No especificado";
+  const estado = animal.estado || animal.estadoSalud || "Activo";
   const fechaIngreso =
-    animal.fechaIngreso ||
+    animal.fecha_nacimiento ||
     animal.fechaNacimiento ||
+    animal.fechaIngreso ||
     new Date().toISOString().split("T")[0];
 
   return (
