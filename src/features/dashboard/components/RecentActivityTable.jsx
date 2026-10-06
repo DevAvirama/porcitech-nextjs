@@ -70,18 +70,28 @@ function RecentActivityTable({ rows, activities, isLoading = false }) {
     {
       key: "titulo",
       header: "Actividad / Evento",
-      render: (row) => (
-        <div className="py-1">
-          <p className="font-bold text-slate-900 text-sm">
-            {row.titulo || "Evento operativo"}
-          </p>
-          {row.descripcion && (
-            <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
-              {row.descripcion}
-            </p>
-          )}
-        </div>
-      ),
+      render: (row) => {
+        const arete = row.metadata?.codigo_arete || row.animal_arete || row.arete;
+        return (
+          <div className="py-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className="font-bold text-slate-900 text-sm">
+                {row.titulo || "Evento operativo"}
+              </p>
+              {arete && !row.titulo?.includes(arete) && (
+                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-mono border border-slate-200">
+                  #{arete}
+                </span>
+              )}
+            </div>
+            {row.descripcion && (
+              <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                {row.descripcion}
+              </p>
+            )}
+          </div>
+        );
+      },
     },
     {
       key: "usuario",

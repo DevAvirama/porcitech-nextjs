@@ -463,8 +463,7 @@ export default function WeightView() {
                   <option value="">-- Elige un ejemplar --</option>
                   {animals.map((a) => (
                     <option key={a.id} value={a.id}>
-                      #{a.codigo_arete || a.id}{" "}
-                      {a.nombre_alias ? `(${a.nombre_alias})` : ""} - {a.raza}
+                      {a.codigo_arete} - {a.nombre_alias || "Sin alias"} ({a.raza || "Porcino"})
                     </option>
                   ))}
                 </select>
@@ -810,8 +809,7 @@ export default function WeightView() {
                   <option value="">-- Seleccionar cerdo --</option>
                   {animals.map((a) => (
                     <option key={a.id} value={a.id}>
-                      #{a.codigo_arete || a.id}{" "}
-                      {a.nombre_alias ? `(${a.nombre_alias})` : ""} - {a.raza}
+                      {a.codigo_arete} - {a.nombre_alias || "Sin alias"} ({a.raza || "Porcino"})
                     </option>
                   ))}
                 </select>

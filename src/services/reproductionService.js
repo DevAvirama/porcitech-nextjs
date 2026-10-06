@@ -49,6 +49,25 @@ export async function createService(data) {
 }
 
 /**
+ * Actualiza el diagnóstico o estado de confirmación de un servicio reproductivo.
+ * Endpoint: PUT /api/v1/reproduccion/servicios/{id}
+ * 
+ * @param {string} id - UUID del servicio.
+ * @param {object} serviceData - Datos a actualizar.
+ * @param {'pendiente' | 'positiva' | 'negativa' | 'repetida'} serviceData.estado_confirmacion
+ * @param {string} [serviceData.fecha_diagnostico]
+ * @param {string} [serviceData.observaciones]
+ * @returns {Promise<object>} Servicio actualizado.
+ */
+export async function updateService(id, serviceData) {
+  if (!id) throw new Error('Se requiere el ID del servicio reproductivo');
+  return await apiFetch(`/reproduccion/servicios/${id}`, {
+    method: 'PUT',
+    body: serviceData,
+  });
+}
+
+/**
  * Obtiene el registro histórico de partos y camadas nacidas.
  * Endpoint: GET /api/v1/reproduccion/partos
  * 
@@ -138,6 +157,7 @@ export async function createWeaning(data) {
 const reproductionService = {
   getServices,
   createService,
+  updateService,
   getFarrowings,
   createFarrowing,
   getWeanings,

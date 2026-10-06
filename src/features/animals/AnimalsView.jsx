@@ -14,6 +14,8 @@ import {
 import AnimalTable from "./components/AnimalTable";
 import AddAnimalModal from "./components/AddAnimalModal";
 import AnimalQrModal from "./components/AnimalQrModal";
+import ManageCorralsModal from "./components/ManageCorralsModal";
+import EditAnimalModal from "./components/EditAnimalModal";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import EmptyState from "@/components/ui/EmptyState";
@@ -35,7 +37,9 @@ const AnimalsView = () => {
 
   // Modales
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCorralModalOpen, setIsCorralModalOpen] = useState(false);
   const [selectedAnimalForQr, setSelectedAnimalForQr] = useState(null);
+  const [selectedAnimalForEdit, setSelectedAnimalForEdit] = useState(null);
 
   // Cargar Corrales activos desde FastAPI
   const loadCorrales = useCallback(async () => {
@@ -144,14 +148,26 @@ const AnimalsView = () => {
         title="Registro de animales"
         description="Gestión y control del inventario porcino sincronizado con la base de datos."
         actions={
-          <Button
-            onClick={() => setIsModalOpen(true)}
-            tone="primary"
-            className="rounded-xl! shadow-md hover:shadow-xl transition-all duration-200 cursor-pointer"
-          >
-            <Plus size={18} className="mr-1.5" />
-            Añadir Cerdo
-          </Button>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              type="button"
+              onClick={() => setIsCorralModalOpen(true)}
+              tone="soft"
+              className="rounded-xl! shadow-xs hover:shadow-md transition-all duration-200 cursor-pointer flex items-center gap-1.5 font-bold text-sm py-2.5 px-4"
+            >
+              <Layers size={18} className="text-emerald-700" />
+              Gestionar Corrales
+            </Button>
+            <Button
+              type="button"
+              onClick={() => setIsModalOpen(true)}
+              tone="primary"
+              className="rounded-xl! shadow-md hover:shadow-xl transition-all duration-200 cursor-pointer flex items-center gap-1.5 text-sm py-2.5 px-4"
+            >
+              <Plus size={18} />
+              Añadir Cerdo
+            </Button>
+          </div>
         }
       />
 
@@ -294,6 +310,7 @@ const AnimalsView = () => {
             animals={animals}
             onDelete={moveToTrash}
             onOpenQr={(animal) => setSelectedAnimalForQr(animal)}
+            onEditAnimal={(animal) => setSelectedAnimalForEdit(animal)}
           />
         )}
 
@@ -311,6 +328,7 @@ const AnimalsView = () => {
               isTrash={true}
               onRecover={recoverFromTrash}
               onPermanentDelete={permanentDelete}
+              onEditAnimal={(animal) => setSelectedAnimalForEdit(animal)}
             />
           </div>
         )}
@@ -323,6 +341,30 @@ const AnimalsView = () => {
             loadAnimals();
           }}
           corrales={corrales}
+        />
+
+        {/* MODAL GESTIONAR CORRALES */}
+        <ManageCorralsModal
+          isOpen={isCorralModalOpen}
+          onClose={() => setIsCorralModalOpen(false)}
+          corrales={corrales}
+          animals={animals}
+          onCorralesUpdated={(updated) => {
+            setCorrales(updated || []);
+            loadAnimals();
+          }}
+        />
+
+        {/* MODAL EDITAR / TRASLADAR ANIMAL */}
+        <EditAnimalModal
+          isOpen={Boolean(selectedAnimalForEdit)}
+          onClose={() => setSelectedAnimalForEdit(null)}
+          animal={selectedAnimalForEdit}
+          corrales={corrales}
+          onAnimalUpdated={() => {
+            loadAnimals();
+            loadCorrales();
+          }}
         />
 
         {/* MODAL DE CHAPETA E IMPRESIÓN QR */}

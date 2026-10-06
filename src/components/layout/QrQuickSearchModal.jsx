@@ -9,11 +9,9 @@ import {
   X,
   Sparkles,
   ExternalLink,
-  CheckCircle2,
   AlertCircle,
   ArrowRight,
   ShieldCheck,
-  RefreshCw,
   Zap,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -63,8 +61,11 @@ export default function QrQuickSearchModal({ isOpen, onClose }) {
       (a) =>
         (a.codigo_arete && a.codigo_arete.toLowerCase() === cleaned) ||
         (a.codigo_qr && a.codigo_qr.toLowerCase() === cleaned) ||
-        (a.id && a.id.toLowerCase() === cleaned) ||
-        (a.nombre_alias && a.nombre_alias.toLowerCase().includes(cleaned))
+        (a.nombre_alias && a.nombre_alias.toLowerCase() === cleaned) ||
+        (a.nombre_alias && a.nombre_alias.toLowerCase().includes(cleaned)) ||
+        (a.codigo_arete && a.codigo_arete.toLowerCase().includes(cleaned)) ||
+        (a.codigo_qr && a.codigo_qr.toLowerCase().includes(cleaned)) ||
+        (a.id && a.id.toLowerCase() === cleaned)
     );
     setMatchedAnimal(found || null);
   };
@@ -72,21 +73,32 @@ export default function QrQuickSearchModal({ isOpen, onClose }) {
   const handleExecuteSearch = async (targetCode) => {
     const codeToSearch = (targetCode || searchCode).trim();
     if (!codeToSearch) {
-      toast.error("Por favor ingresa un código de arete o chapeta");
+      toast.error("Por favor ingresa un código de arete, alias o chapeta");
       return;
     }
 
     setIsSearching(true);
 
-    // 1. Verificar si ya está en knownAnimals
+    const lower = codeToSearch.toLowerCase();
+    // 1. Verificar coincidencia exacta en knownAnimals
     let found = knownAnimals.find(
       (a) =>
-        (a.codigo_arete && a.codigo_arete.toLowerCase() === codeToSearch.toLowerCase()) ||
-        (a.codigo_qr && a.codigo_qr.toLowerCase() === codeToSearch.toLowerCase()) ||
-        (a.id && a.id.toLowerCase() === codeToSearch.toLowerCase())
+        (a.codigo_arete && a.codigo_arete.toLowerCase() === lower) ||
+        (a.codigo_qr && a.codigo_qr.toLowerCase() === lower) ||
+        (a.nombre_alias && a.nombre_alias.toLowerCase() === lower) ||
+        (a.id && a.id.toLowerCase() === lower)
     );
 
-    // 2. Si no está en cache local, buscar directamente en el backend
+    // 2. Coincidencia parcial por arete o alias
+    if (!found) {
+      found = knownAnimals.find(
+        (a) =>
+          (a.codigo_arete && a.codigo_arete.toLowerCase().includes(lower)) ||
+          (a.nombre_alias && a.nombre_alias.toLowerCase().includes(lower))
+      );
+    }
+
+    // 3. Si no está en cache local, buscar directamente en el backend
     if (!found) {
       try {
         try {
@@ -110,12 +122,15 @@ export default function QrQuickSearchModal({ isOpen, onClose }) {
 
     if (found) {
       const targetId = found.id || found.codigo_arete || codeToSearch;
-      toast.success(`Animal #${found.codigo_arete || found.id} localizado`);
+      const displayLabel = found.codigo_arete
+        ? `#${found.codigo_arete}${found.nombre_alias ? ` · ${found.nombre_alias}` : ""}`
+        : `#${found.id}`;
+      toast.success(`Animal ${displayLabel} localizado`);
       onClose();
       router.push(`/dashboard/animals/profile?id=${encodeURIComponent(targetId)}`);
     } else {
       toast.error(
-        `El arete "${codeToSearch}" no figura en el inventario activo`,
+        `El arete o alias "${codeToSearch}" no figura en el inventario activo`,
         {
           action: {
             label: "Ver Pasaporte",
@@ -132,29 +147,41 @@ export default function QrQuickSearchModal({ isOpen, onClose }) {
   // Simular escaneo de cámara
   const handleSimulateScan = (presetCode) => {
     setIsScanning(true);
-    const target = presetCode || knownAnimals[0]?.id || "PT-2026-001";
+    const target =
+      presetCode ||
+      knownAnimals[0]?.codigo_arete ||
+      knownAnimals[0]?.codigo_qr ||
+      "PT-2026-001";
 
     setTimeout(() => {
       setIsScanning(false);
       setSearchCode(target);
+      const lower = target.toLowerCase();
       const found = knownAnimals.find(
         (a) =>
-          (a.id && a.id.toLowerCase() === target.toLowerCase()) ||
-          (a.code && a.code.toLowerCase() === target.toLowerCase()),
+          (a.codigo_arete && a.codigo_arete.toLowerCase() === lower) ||
+          (a.codigo_qr && a.codigo_qr.toLowerCase() === lower) ||
+          (a.nombre_alias && a.nombre_alias.toLowerCase() === lower) ||
+          (a.id && a.id.toLowerCase() === lower)
       );
       setMatchedAnimal(
         found || {
-          id: target,
+          codigo_arete: target,
+          nombre_alias: "Cerdo Detectado",
           raza: "Porcino Detectado",
           estadoSalud: "Óptimo",
-        },
+        }
       );
-      toast.success(`¡Código QR detectado: #${target}!`);
+      const label = found
+        ? `#${found.codigo_arete || target}${found.nombre_alias ? ` · ${found.nombre_alias}` : ""}`
+        : `#${target}`;
+      toast.success(`¡Código QR detectado: ${label}!`);
 
       setTimeout(() => {
         onClose();
+        const profileTarget = found?.id || target;
         router.push(
-          `/dashboard/animals/profile?code=${encodeURIComponent(target)}`,
+          `/dashboard/animals/profile?id=${encodeURIComponent(profileTarget)}`
         );
       }, 1000);
     }, 1200);
@@ -181,8 +208,7 @@ export default function QrQuickSearchModal({ isOpen, onClose }) {
                 Escáner de QR
               </h2>
               <p className="text-xs text-slate-500 font-medium">
-                Localiza rápidamente cualquier animal por arete o escaneo de
-                código QR.
+                Localiza rápidamente cualquier animal por arete o escaneo de código QR.
               </p>
             </div>
           </div>
@@ -207,7 +233,7 @@ export default function QrQuickSearchModal({ isOpen, onClose }) {
             }`}
           >
             <Search size={15} />
-            Búsqueda por Arete / Código
+            Búsqueda por Arete / Alias
           </button>
           <button
             type="button"
@@ -237,13 +263,13 @@ export default function QrQuickSearchModal({ isOpen, onClose }) {
               >
                 <div>
                   <label className="text-xs font-black text-slate-700 uppercase tracking-wider mb-2 block">
-                    Número de Arete o Código Oficial
+                    Número de Arete o Alias del Cerdo
                   </label>
                   <div className="relative">
                     <input
                       ref={inputRef}
                       type="text"
-                      placeholder="Ej: PT-2026-001, L-042, 2024-001..."
+                      placeholder="Ej: PT-2026-001, Titan, 2024-001..."
                       value={searchCode}
                       onChange={(e) => handleCodeChange(e.target.value)}
                       className="w-full pl-11 pr-24 py-3.5 bg-slate-50 border-2 border-slate-200 focus:border-emerald-500 focus:bg-white rounded-2xl outline-none font-bold text-slate-900 transition-all text-sm placeholder:text-slate-400 font-mono"
@@ -253,9 +279,10 @@ export default function QrQuickSearchModal({ isOpen, onClose }) {
                     </div>
                     <button
                       type="submit"
+                      disabled={isSearching}
                       className="absolute right-2 top-1/2 -translate-y-1/2 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-colors cursor-pointer"
                     >
-                      Buscar
+                      {isSearching ? "Buscando..." : "Buscar"}
                     </button>
                   </div>
                 </div>
@@ -269,12 +296,12 @@ export default function QrQuickSearchModal({ isOpen, onClose }) {
                       🐷
                     </div>
                     <div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-mono font-black text-slate-900 text-base">
-                          #{matchedAnimal.codigo_arete || matchedAnimal.id}
+                          #{matchedAnimal.codigo_arete || (matchedAnimal.codigo_qr ? matchedAnimal.codigo_qr.replace("QR-", "") : "S/A")}
                         </span>
                         {matchedAnimal.nombre_alias && (
-                          <span className="text-xs font-semibold text-slate-500 italic">
+                          <span className="text-xs font-semibold text-slate-600 italic">
                             ({matchedAnimal.nombre_alias})
                           </span>
                         )}
@@ -295,7 +322,7 @@ export default function QrQuickSearchModal({ isOpen, onClose }) {
                       onClick={() => {
                         onClose();
                         router.push(
-                          `/dashboard/animals/profile?id=${encodeURIComponent(matchedAnimal.id || matchedAnimal.codigo_arete)}`,
+                          `/dashboard/animals/profile?id=${encodeURIComponent(matchedAnimal.id || matchedAnimal.codigo_arete)}`
                         );
                       }}
                       className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-sm cursor-pointer"
@@ -321,7 +348,7 @@ export default function QrQuickSearchModal({ isOpen, onClose }) {
                       className="text-amber-600 shrink-0"
                     />
                     <span>
-                      No figura con ese código exacto en el inventario activo.
+                      No figura con ese arete o alias exacto en el inventario activo.
                     </span>
                   </div>
                   <button
@@ -329,7 +356,7 @@ export default function QrQuickSearchModal({ isOpen, onClose }) {
                     onClick={() => {
                       onClose();
                       router.push(
-                        `/trace/${encodeURIComponent(searchCode.trim())}`,
+                        `/trace/${encodeURIComponent(searchCode.trim())}`
                       );
                     }}
                     className="font-bold underline text-amber-900 hover:text-amber-950 cursor-pointer"
@@ -346,20 +373,29 @@ export default function QrQuickSearchModal({ isOpen, onClose }) {
                   QR sugeridos en el plantel:
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {knownAnimals.slice(0, 6).map((animal, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => {
-                        setSearchCode(animal.id);
-                        handleExecuteSearch(animal.id);
-                      }}
-                      className="px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 hover:border-slate-300 text-xs font-mono font-bold text-slate-700 transition-all flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                      #{animal.id}
-                    </button>
-                  ))}
+                  {knownAnimals.slice(0, 6).map((animal, idx) => {
+                    const arete =
+                      animal.codigo_arete ||
+                      (animal.codigo_qr ? animal.codigo_qr.replace("QR-", "") : "S/A");
+                    const label = animal.nombre_alias
+                      ? `#${arete} · ${animal.nombre_alias}`
+                      : `#${arete}`;
+                    return (
+                      <button
+                        key={animal.id || idx}
+                        type="button"
+                        onClick={() => {
+                          const code = animal.codigo_arete || animal.codigo_qr || animal.id;
+                          setSearchCode(code);
+                          handleExecuteSearch(code);
+                        }}
+                        className="px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 hover:border-slate-300 text-xs font-mono font-bold text-slate-700 transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                      >
+                        <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        {label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -430,7 +466,10 @@ export default function QrQuickSearchModal({ isOpen, onClose }) {
                   <span className="text-xs text-slate-500 font-bold self-center mr-1">
                     Simular con:
                   </span>
-                  {["PT-2026-001", "L-042", "2024-001"].map((code) => (
+                  {(knownAnimals.length > 0
+                    ? knownAnimals.slice(0, 4).map((a) => a.codigo_arete).filter(Boolean)
+                    : ["PT-2026-001", "2024-001", "2024-042", "H-001"]
+                  ).map((code) => (
                     <button
                       key={code}
                       type="button"

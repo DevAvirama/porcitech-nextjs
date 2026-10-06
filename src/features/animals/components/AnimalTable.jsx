@@ -3,7 +3,7 @@
 import React from "react";
 import Table from "../../../components/ui/Table";
 import AnimalStatusBadge from "./AnimalStatusBadge";
-import { QrCode, FileText } from "lucide-react";
+import { QrCode, FileText, ArrowRightLeft } from "lucide-react";
 import Link from "next/link";
 
 const AnimalTable = ({
@@ -13,20 +13,23 @@ const AnimalTable = ({
   onRecover,
   onPermanentDelete,
   onOpenQr,
+  onEditAnimal,
 }) => {
   const columns = [
     {
       key: "arete",
       header: "ARETE / IDENTIFICACIÓN",
       render: (row) => {
-        const arete = row.codigo_arete || row.id || "N/A";
+        const arete =
+          row.codigo_arete ||
+          (row.codigo_qr ? row.codigo_qr.replace(/^QR-/, "") : "S/A");
         return (
           <div className="flex flex-col">
-            <span className="font-extrabold text-slate-900 tracking-tight">
+            <span className="font-extrabold text-slate-900 tracking-tight text-sm">
               #{arete}
             </span>
             {row.nombre_alias && (
-              <span className="text-xs text-slate-500 italic">
+              <span className="text-xs font-semibold text-slate-500 italic">
                 &ldquo;{row.nombre_alias}&rdquo;
               </span>
             )}
@@ -128,6 +131,17 @@ const AnimalTable = ({
                 <FileText size={15} />
                 <span className="hidden sm:inline">Ficha</span>
               </Link>
+              {onEditAnimal && (
+                <button
+                  type="button"
+                  onClick={() => onEditAnimal(row)}
+                  title="Editar datos y trasladar de corral"
+                  className="p-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white transition-all shadow-xs cursor-pointer flex items-center gap-1 text-xs font-bold"
+                >
+                  <ArrowRightLeft size={15} />
+                  <span className="hidden sm:inline">Trasladar</span>
+                </button>
+              )}
               {onOpenQr && (
                 <button
                   type="button"

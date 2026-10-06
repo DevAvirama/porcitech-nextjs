@@ -258,7 +258,7 @@ export default function AddHealthRecordModal({ isOpen, onClose, onSaved }) {
                 </option>
                 {animals.map((a) => (
                   <option key={a.id} value={a.id}>
-                    Arete: {a.codigo_arete} {a.nombre_alias ? `(${a.nombre_alias})` : ""} - {a.raza || "Cerdo"}
+                    {a.codigo_arete} - {a.nombre_alias || "Sin alias"} ({a.raza || "Porcino"})
                   </option>
                 ))}
               </select>
