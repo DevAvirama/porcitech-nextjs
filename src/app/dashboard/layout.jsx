@@ -1,12 +1,12 @@
-import DashboardSidebar from "@/components/layout/DashboardSidebar";
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import DashboardSplitLayout from "@/components/layout/DashboardSplitLayout";
 
 export default function DashboardLayout({ children }) {
   return (
-    <div className="min-h-screen flex bg-slate-100 text-slate-900">
-      <DashboardSidebar />
-      <main className="w-full flex-1 min-w-0 px-4 sm:px-6 lg:px-8 py-6 flex flex-col gap-6 overflow-y-auto">
+    <ProtectedRoute>
+      <DashboardSplitLayout>
         {children}
-      </main>
-    </div>
+      </DashboardSplitLayout>
+    </ProtectedRoute>
   );
 }

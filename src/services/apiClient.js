@@ -14,7 +14,7 @@ export async function apiFetch(endpoint, options = {}) {
 
   // Interceptar peticiones y añadir Bearer token si existe en localStorage
   if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('porcitech_token');
+    const token = localStorage.getItem('token') || localStorage.getItem('porcitech_token');
     if (token && !configHeaders.Authorization && !configHeaders.authorization) {
       configHeaders['Authorization'] = `Bearer ${token}`;
     }
@@ -56,8 +56,12 @@ export async function apiFetch(endpoint, options = {}) {
   // Manejo de 401 Unauthorized: limpiar credenciales y redirigir
   if (response.status === 401) {
     if (typeof window !== 'undefined') {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
       localStorage.removeItem('porcitech_token');
       localStorage.removeItem('porcitech_user');
+      document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
+      document.cookie = 'porcitech_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
       if (window.location.pathname !== '/login') {
         // eslint-disable-next-line @next/next/no-location-assign-relative-destination
         window.location.href = '/login';

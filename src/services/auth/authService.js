@@ -27,9 +27,16 @@ export async function login(emailOrCredentials, maybePassword) {
 
   if (typeof window !== 'undefined') {
     if (response?.access_token) {
+      // Guardar token en localStorage (estándar y porcitech para retrocompatibilidad)
+      localStorage.setItem('token', response.access_token);
       localStorage.setItem('porcitech_token', response.access_token);
+
+      // Establecer cookies de sesión accesibles por el servidor Next.js
+      document.cookie = `token=${response.access_token}; path=/; SameSite=Lax; max-age=86400`;
+      document.cookie = `porcitech_token=${response.access_token}; path=/; SameSite=Lax; max-age=86400`;
     }
     if (response?.usuario) {
+      localStorage.setItem('user', JSON.stringify(response.usuario));
       localStorage.setItem('porcitech_user', JSON.stringify(response.usuario));
     }
   }
@@ -41,36 +48,73 @@ export async function login(emailOrCredentials, maybePassword) {
 export const signIn = login;
 
 /**
- * Cierra la sesión activa del usuario, limpia el almacenamiento local y redirecciona al login.
+ * Cierra la sesión activa del usuario, limpia el almacenamiento local,
+ * expira las cookies de sesión y redirecciona a /login.
  */
 export function logout() {
   if (typeof window !== 'undefined') {
+    // Eliminar tokens y usuarios de localStorage
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
     localStorage.removeItem('porcitech_token');
     localStorage.removeItem('porcitech_user');
-    // Limpieza de claves previas por retrocompatibilidad
     localStorage.removeItem('sigep_token');
     localStorage.removeItem('sigep_user');
+
+    // Limpiar cookies de sesión para middleware de Next.js
+    document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
+    document.cookie = 'porcitech_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
+
+    // Redirigir inmediatamente a /login
     // eslint-disable-next-line @next/next/no-location-assign-relative-destination
     window.location.href = '/login';
   }
 }
 
 /**
- * Obtiene y parsea el usuario actualmente autenticado desde localStorage.
- * Solo se ejecuta en el entorno del cliente.
+ * Retorna el token JWT almacenado o null si no existe.
+ * 
+ * @returns {string | null}
+ */
+export function getToken() {
+  if (typeof window === 'undefined') return null;
+  const token = localStorage.getItem('token') || localStorage.getItem('porcitech_token');
+  if (!token || token.trim() === '') return null;
+  return token;
+}
+
+/**
+ * Retorna estrictamente si el usuario está autenticado en base a la presencia del token.
+ * Si no hay token válido, retorna false.
+ * 
+ * @returns {boolean}
+ */
+export function isAuthenticated() {
+  if (typeof window === 'undefined') return false;
+  const token = getToken();
+  return Boolean(token && token.trim() !== '');
+}
+
+/**
+ * Obtiene el usuario actualmente autenticado desde localStorage.
+ * Si no hay token válido o no hay usuario guardado, retorna estrictamente null.
+ * Elimina cualquier mock o fallback arbitrario.
  * 
  * @returns {object | null}
  */
 export function getCurrentUser() {
   if (typeof window === 'undefined') return null;
 
-  const userStr =
-    localStorage.getItem('porcitech_user') || localStorage.getItem('sigep_user');
+  // Validación estricta: debe existir token
+  const token = getToken();
+  if (!token) return null;
+
+  const userStr = localStorage.getItem('user') || localStorage.getItem('porcitech_user');
   if (!userStr) return null;
 
   try {
     const user = JSON.parse(userStr);
-    if (!user) return null;
+    if (!user || typeof user !== 'object') return null;
 
     // Normalización de propiedades para asegurar compatibilidad total en toda la UI
     const fullName = [user.nombre, user.apellido].filter(Boolean).join(' ').trim();
@@ -87,17 +131,6 @@ export function getCurrentUser() {
 }
 
 /**
- * Comprueba si el usuario tiene una sesión activa mediante el token JWT en localStorage.
- * 
- * @returns {boolean}
- */
-export function isAuthenticated() {
-  if (typeof window === 'undefined') return false;
-  const token = localStorage.getItem('porcitech_token');
-  return Boolean(token && token.trim() !== '');
-}
-
-/**
  * Helper para actualizar la información del perfil del usuario localmente.
  */
 export function updateCurrentUser(newData) {
@@ -105,6 +138,7 @@ export function updateCurrentUser(newData) {
   const currentUser = getCurrentUser() || {};
   const updatedUser = { ...currentUser, ...newData };
 
+  localStorage.setItem('user', JSON.stringify(updatedUser));
   localStorage.setItem('porcitech_user', JSON.stringify(updatedUser));
 
   const users = getUsers();
@@ -118,7 +152,7 @@ export function updateCurrentUser(newData) {
 }
 
 /**
- * Funciones de gestión de usuarios locales (utilizadas en SettingsView).
+ * Funciones de gestión de usuarios locales (utilizadas como respaldo).
  */
 export function getUsers() {
   if (typeof window === 'undefined') return [];
