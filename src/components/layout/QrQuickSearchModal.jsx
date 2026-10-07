@@ -17,6 +17,7 @@ import {
 import { toast } from "sonner";
 import Button from "@/components/ui/Button";
 import { getAnimales, getAnimalByQr, getAnimalById } from "@/services/animalService";
+import { getAnimalDisplayName, UUID_REGEX } from "@/utils/formatters";
 
 export default function QrQuickSearchModal({ isOpen, onClose }) {
   const router = useRouter();
@@ -146,44 +147,47 @@ export default function QrQuickSearchModal({ isOpen, onClose }) {
 
   // Simular escaneo de cámara
   const handleSimulateScan = (presetCode) => {
+    const availableCodes = knownAnimals
+      .map((a) => a.codigo_arete || a.codigo_qr || a.id)
+      .filter(Boolean);
+
+    const target = presetCode || availableCodes[0];
+    if (!target) {
+      toast.error("No hay animales registrados en el inventario para escanear");
+      return;
+    }
+
     setIsScanning(true);
-    const target =
-      presetCode ||
-      knownAnimals[0]?.codigo_arete ||
-      knownAnimals[0]?.codigo_qr ||
-      "PT-2026-001";
 
     setTimeout(() => {
       setIsScanning(false);
       setSearchCode(target);
-      const lower = target.toLowerCase();
+      const lower = String(target).toLowerCase();
       const found = knownAnimals.find(
         (a) =>
           (a.codigo_arete && a.codigo_arete.toLowerCase() === lower) ||
           (a.codigo_qr && a.codigo_qr.toLowerCase() === lower) ||
           (a.nombre_alias && a.nombre_alias.toLowerCase() === lower) ||
-          (a.id && a.id.toLowerCase() === lower)
+          (a.id && String(a.id).toLowerCase() === lower)
       );
-      setMatchedAnimal(
-        found || {
-          codigo_arete: target,
-          nombre_alias: "Cerdo Detectado",
-          raza: "Porcino Detectado",
-          estadoSalud: "Óptimo",
-        }
-      );
-      const label = found
-        ? `#${found.codigo_arete || target}${found.nombre_alias ? ` · ${found.nombre_alias}` : ""}`
-        : `#${target}`;
-      toast.success(`¡Código QR detectado: ${label}!`);
+      setMatchedAnimal(found || null);
 
-      setTimeout(() => {
-        onClose();
-        const profileTarget = found?.id || target;
-        router.push(
-          `/dashboard/animals/profile?id=${encodeURIComponent(profileTarget)}`
-        );
-      }, 1000);
+      if (found) {
+        const label = found.codigo_arete
+          ? `#${found.codigo_arete}${found.nombre_alias ? ` · ${found.nombre_alias}` : ""}`
+          : `#${found.id || target}`;
+        toast.success(`¡Código QR detectado: ${label}!`);
+
+        setTimeout(() => {
+          onClose();
+          const profileTarget = found.id || target;
+          router.push(
+            `/dashboard/animals/profile?id=${encodeURIComponent(profileTarget)}`
+          );
+        }, 1000);
+      } else {
+        toast.info(`Código leído: #${target}`);
+      }
     }, 1200);
   };
 
@@ -269,7 +273,7 @@ export default function QrQuickSearchModal({ isOpen, onClose }) {
                     <input
                       ref={inputRef}
                       type="text"
-                      placeholder="Ej: PT-2026-001, Titan, 2024-001..."
+                      placeholder="Ej: Arete, alias o identificador..."
                       value={searchCode}
                       onChange={(e) => handleCodeChange(e.target.value)}
                       className="w-full pl-11 pr-24 py-3.5 bg-slate-50 border-2 border-slate-200 focus:border-emerald-500 focus:bg-white rounded-2xl outline-none font-bold text-slate-900 transition-all text-sm placeholder:text-slate-400 font-mono"
@@ -297,14 +301,28 @@ export default function QrQuickSearchModal({ isOpen, onClose }) {
                     </div>
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-mono font-black text-slate-900 text-base">
-                          #{matchedAnimal.codigo_arete || (matchedAnimal.codigo_qr ? matchedAnimal.codigo_qr.replace("QR-", "") : "S/A")}
-                        </span>
-                        {matchedAnimal.nombre_alias && (
-                          <span className="text-xs font-semibold text-slate-600 italic">
-                            ({matchedAnimal.nombre_alias})
-                          </span>
-                        )}
+                        {(() => {
+                          const rawArete =
+                            matchedAnimal.codigo_arete ||
+                            (matchedAnimal.codigo_qr
+                              ? matchedAnimal.codigo_qr.replace("QR-", "")
+                              : null);
+                          const hasValidArete =
+                            rawArete && !UUID_REGEX.test(String(rawArete).trim());
+                          const displayName = getAnimalDisplayName(matchedAnimal);
+                          return (
+                            <>
+                              <span className="font-mono font-black text-slate-900 text-base">
+                                {hasValidArete ? `#${String(rawArete).trim()}` : displayName}
+                              </span>
+                              {hasValidArete && matchedAnimal.nombre_alias && (
+                                <span className="text-xs font-semibold text-slate-600 italic">
+                                  ({matchedAnimal.nombre_alias})
+                                </span>
+                              )}
+                            </>
+                          );
+                        })()}
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-200 text-emerald-800 uppercase">
                           Registrado
                         </span>
@@ -367,37 +385,45 @@ export default function QrQuickSearchModal({ isOpen, onClose }) {
               ) : null}
 
               {/* Accesos rápidos a chapetas registradas */}
-              <div>
-                <p className="text-[11px] font-black uppercase tracking-wider text-slate-400 mb-2.5 flex items-center gap-1.5">
-                  <Sparkles size={13} className="text-amber-500" />
-                  QR sugeridos en el plantel:
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {knownAnimals.slice(0, 6).map((animal, idx) => {
-                    const arete =
-                      animal.codigo_arete ||
-                      (animal.codigo_qr ? animal.codigo_qr.replace("QR-", "") : "S/A");
-                    const label = animal.nombre_alias
-                      ? `#${arete} · ${animal.nombre_alias}`
-                      : `#${arete}`;
-                    return (
-                      <button
-                        key={animal.id || idx}
-                        type="button"
-                        onClick={() => {
-                          const code = animal.codigo_arete || animal.codigo_qr || animal.id;
-                          setSearchCode(code);
-                          handleExecuteSearch(code);
-                        }}
-                        className="px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 hover:border-slate-300 text-xs font-mono font-bold text-slate-700 transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
-                      >
-                        <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                        {label}
-                      </button>
-                    );
-                  })}
+              {knownAnimals.length > 0 && (
+                <div>
+                  <p className="text-[11px] font-black uppercase tracking-wider text-slate-400 mb-2.5 flex items-center gap-1.5">
+                    <Sparkles size={13} className="text-amber-500" />
+                    QR sugeridos en el plantel:
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {knownAnimals.slice(0, 6).map((animal, idx) => {
+                      const rawArete =
+                        animal.codigo_arete ||
+                        (animal.codigo_qr ? animal.codigo_qr.replace("QR-", "") : null);
+                      const hasValidArete =
+                        rawArete && !UUID_REGEX.test(String(rawArete).trim());
+                      const displayName = getAnimalDisplayName(animal);
+                      const label =
+                        hasValidArete && animal.nombre_alias
+                          ? `#${String(rawArete).trim()} · ${animal.nombre_alias}`
+                          : displayName;
+                      return (
+                        <button
+                          key={animal.id || idx}
+                          type="button"
+                          onClick={() => {
+                            const code = hasValidArete
+                              ? String(rawArete).trim()
+                              : (animal.codigo_qr || animal.id);
+                            setSearchCode(code);
+                            handleExecuteSearch(code);
+                          }}
+                          className="px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 hover:border-slate-300 text-xs font-mono font-bold text-slate-700 transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                        >
+                          <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           ) : (
             /* SIMULADOR DE CÁMARA / ESCÁNER ÓPTICO */
@@ -462,40 +488,49 @@ export default function QrQuickSearchModal({ isOpen, onClose }) {
                     : "Escanear Arete Detectado"}
                 </Button>
 
-                <div className="flex flex-wrap justify-center gap-2 pt-1">
-                  <span className="text-xs text-slate-500 font-bold self-center mr-1">
-                    Simular con:
-                  </span>
-                  {(knownAnimals.length > 0
-                    ? knownAnimals.slice(0, 4).map((a) => a.codigo_arete).filter(Boolean)
-                    : ["PT-2026-001", "2024-001", "2024-042", "H-001"]
-                  ).map((code) => (
-                    <button
-                      key={code}
-                      type="button"
-                      onClick={() => handleSimulateScan(code)}
-                      disabled={isScanning}
-                      className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-[11px] font-mono font-bold text-slate-700 cursor-pointer transition-colors"
-                    >
-                      #{code}
-                    </button>
-                  ))}
-                </div>
+                {knownAnimals.length > 0 &&
+                  knownAnimals.some(
+                    (a) =>
+                      a.codigo_arete && !UUID_REGEX.test(String(a.codigo_arete).trim())
+                  ) && (
+                    <div className="flex flex-wrap justify-center gap-2 pt-1">
+                      <span className="text-xs text-slate-500 font-bold self-center mr-1">
+                        Ejemplares en granja:
+                      </span>
+                      {knownAnimals
+                        .map((a) => a.codigo_arete)
+                        .filter(
+                          (c) => Boolean(c) && !UUID_REGEX.test(String(c).trim())
+                        )
+                        .slice(0, 4)
+                        .map((code) => (
+                          <button
+                            key={code}
+                            type="button"
+                            onClick={() => handleSimulateScan(code)}
+                            disabled={isScanning}
+                            className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-[11px] font-mono font-bold text-slate-700 cursor-pointer transition-colors"
+                          >
+                            #{code}
+                          </button>
+                        ))}
+                    </div>
+                  )}
               </div>
             </div>
           )}
         </div>
 
         {/* Pie del modal */}
-        <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-          <div className="flex items-center gap-1.5">
-            <ShieldCheck size={14} className="text-emerald-600" />
-            <span>Integrado con la red de trazabilidad PorciTech</span>
+        <div className="p-4 sm:p-5 bg-slate-50/90 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
+          <div className="flex items-center gap-1.5 min-w-0 text-center sm:text-left">
+            <ShieldCheck size={14} className="text-emerald-600 shrink-0" />
+            <span className="truncate sm:whitespace-normal">Integrado con la red de trazabilidad PorciTech</span>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="font-bold text-slate-500 hover:text-slate-800 cursor-pointer"
+            className="font-bold text-slate-500 hover:text-slate-800 transition-colors cursor-pointer shrink-0"
           >
             Cerrar
           </button>

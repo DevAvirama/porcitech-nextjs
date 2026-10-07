@@ -843,14 +843,30 @@ export default function InventoryView() {
             ) : items.length === 0 ? (
               <EmptyState
                 icon={Package}
-                title="No se encontraron insumos en bodega"
+                title={
+                  searchTerm || filterCategory || filterLowStockOnly
+                    ? "No se encontraron insumos con los filtros aplicados"
+                    : "Inventario sin insumos"
+                }
                 description={
                   searchTerm || filterCategory || filterLowStockOnly
                     ? "No existen artículos que coincidan con los filtros aplicados. Intenta restablecer los filtros."
-                    : "Aún no se han registrado insumos en la base de datos de PostgreSQL."
+                    : "Comienza registrando alimentos balanceados, fármacos o materias primas."
                 }
-                actionLabel="Registrar Nuevo Insumo"
-                onAction={() => setIsAddModalOpen(true)}
+                actionLabel={
+                  searchTerm || filterCategory || filterLowStockOnly
+                    ? "Restablecer Filtros"
+                    : "+ Registrar Insumo"
+                }
+                onAction={
+                  searchTerm || filterCategory || filterLowStockOnly
+                    ? () => {
+                        setSearchTerm("");
+                        setFilterCategory("");
+                        setFilterLowStockOnly(false);
+                      }
+                    : () => setIsAddModalOpen(true)
+                }
               />
             ) : (
               <Table columns={itemColumns} rows={items} />

@@ -26,11 +26,26 @@ const FASES_ESTADOS = [
   { value: "cuarentena", label: "Cuarentena / Observación" },
 ];
 
+const ESTADOS_REPRODUCTIVOS_MACHO = [
+  "No reproductor / Ceba",
+  "Semental activo",
+  "En descanso",
+];
+
+const ESTADOS_REPRODUCTIVOS_HEMBRA = [
+  "Vacía",
+  "Inseminada / Servida",
+  "Gestante",
+  "Lactante",
+  "Descarte",
+];
+
 const getInitialFormState = () => ({
   codigo_arete: "",
   codigo_qr: "",
   nombre_alias: "",
   sexo: "hembra",
+  estado_reproductivo: "Vacía",
   raza: "Landrace",
   fecha_nacimiento: new Date().toISOString().split("T")[0],
   estado: "activo",
@@ -77,6 +92,10 @@ const AddAnimalModal = ({
     const { name, value } = e.target;
     setForm((prev) => {
       const updated = { ...prev, [name]: value };
+      if (name === "sexo") {
+        updated.estado_reproductivo =
+          value === "macho" ? "No reproductor / Ceba" : "Vacía";
+      }
       // Si se escribe el código de arete y el QR estaba vacío o sincronizado, autogenerar sugerencia
       if (name === "codigo_arete" && (!prev.codigo_qr || prev.codigo_qr.startsWith("QR-"))) {
         updated.codigo_qr = value.trim() ? `QR-${value.trim()}` : "";
@@ -107,10 +126,13 @@ const AddAnimalModal = ({
         codigo_qr: form.codigo_qr.trim() || `QR-${form.codigo_arete.trim()}`,
         nombre_alias: form.nombre_alias.trim() || null,
         sexo: form.sexo,
+        estado_reproductivo: form.estado_reproductivo,
         raza: form.raza,
         fecha_nacimiento: form.fecha_nacimiento,
         estado: form.estado,
         corral_id: form.corral_id && form.corral_id !== "" ? form.corral_id : null,
+        tratamientos_aplicados: [],
+        historial_medico: [],
       };
 
       if (form.peso_actual_kg !== "" && !isNaN(form.peso_actual_kg)) {
@@ -143,7 +165,7 @@ const AddAnimalModal = ({
         if (e.target === e.currentTarget && !isSubmitting) onClose();
       }}
     >
-      <div className="relative bg-white rounded-3xl w-full max-w-2xl p-6 sm:p-8 shadow-2xl border border-slate-100 text-slate-900 my-8">
+      <div className="relative bg-white rounded-3xl w-full max-w-2xl p-6 sm:p-8 shadow-2xl border border-slate-100 overflow-hidden text-slate-900 my-8">
         {/* Cabecera del Modal */}
         <div className="flex items-center justify-between pb-5 mb-5 border-b border-slate-100">
           <div className="flex items-center gap-3">
@@ -214,22 +236,22 @@ const AddAnimalModal = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Nombre o Alias */}
-            <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                Nombre o Alias (Opcional)
-              </label>
-              <input
-                name="nombre_alias"
-                placeholder="Ej: Campeón, Lola"
-                value={form.nombre_alias}
-                onChange={handleChange}
-                disabled={isSubmitting}
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 text-slate-900 text-sm"
-              />
-            </div>
+          {/* Nombre o Alias */}
+          <div>
+            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+              Nombre o Alias (Opcional)
+            </label>
+            <input
+              name="nombre_alias"
+              placeholder="Ej: Campeón, Lola"
+              value={form.nombre_alias}
+              onChange={handleChange}
+              disabled={isSubmitting}
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 text-slate-900 text-sm"
+            />
+          </div>
 
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Sexo */}
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
@@ -244,6 +266,29 @@ const AddAnimalModal = ({
               >
                 <option value="hembra">♀ Hembra</option>
                 <option value="macho">♂ Macho</option>
+              </select>
+            </div>
+
+            {/* Estado Reproductivo Condicional */}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                Estado Reproductivo *
+              </label>
+              <select
+                name="estado_reproductivo"
+                value={form.estado_reproductivo}
+                onChange={handleChange}
+                disabled={isSubmitting}
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 text-slate-900 font-semibold cursor-pointer"
+              >
+                {(form.sexo === "macho"
+                  ? ESTADOS_REPRODUCTIVOS_MACHO
+                  : ESTADOS_REPRODUCTIVOS_HEMBRA
+                ).map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
@@ -348,12 +393,12 @@ const AddAnimalModal = ({
           </div>
 
           {/* Botones de Acción */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+          <div className="flex flex-col-reverse sm:flex-row items-center justify-end gap-3 pt-4 border-t border-slate-100">
             <button
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="px-5 py-3 rounded-xl font-bold text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+              className="w-full sm:w-auto px-5 py-3 rounded-xl font-bold text-slate-500 hover:text-slate-800 transition-colors cursor-pointer text-center"
             >
               Cancelar
             </button>
@@ -363,7 +408,7 @@ const AddAnimalModal = ({
               tone="primary"
               isLoading={isSubmitting}
               disabled={isSubmitting}
-              className="px-6 py-3 rounded-xl font-black shadow-lg shadow-emerald-500/20"
+              className="w-full sm:w-auto px-6 py-3 rounded-xl font-black shadow-lg shadow-emerald-500/20"
             >
               {isSubmitting ? "Guardando..." : "Guardar en Base de Datos"}
             </Button>

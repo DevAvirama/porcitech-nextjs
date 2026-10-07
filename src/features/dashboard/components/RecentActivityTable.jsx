@@ -13,7 +13,7 @@ import {
 import Card from "../../../components/ui/Card.jsx";
 import Table from "../../../components/ui/Table.jsx";
 import EmptyState from "../../../components/ui/EmptyState.jsx";
-import { formatDateTime } from "../../../utils/formatters.js";
+import { formatDateTime, UUID_REGEX } from "../../../utils/formatters.js";
 
 const TYPE_CONFIG = {
   pesaje: {
@@ -78,7 +78,7 @@ function RecentActivityTable({ rows, activities, isLoading = false }) {
               <p className="font-bold text-slate-900 text-sm">
                 {row.titulo || "Evento operativo"}
               </p>
-              {arete && !row.titulo?.includes(arete) && (
+              {arete && !UUID_REGEX.test(arete) && !row.titulo?.includes(arete) && (
                 <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-mono border border-slate-200">
                   #{arete}
                 </span>
@@ -144,8 +144,8 @@ function RecentActivityTable({ rows, activities, isLoading = false }) {
           ) : data.length === 0 ? (
             <EmptyState
               icon={Clock}
-              title="Sin actividades recientes"
-              description="No se han registrado eventos o movimientos en la granja recientemente."
+              title="Sin actividad registrada"
+              description="Los pesajes, tratamientos y movimientos de inventario registrados aparecerán aquí."
             />
           ) : (
             <Table columns={columns} rows={data} />

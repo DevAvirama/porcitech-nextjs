@@ -10,6 +10,7 @@ import { getAnimales } from "@/services/animalService";
 import { getItems } from "@/services/inventoryService";
 import { getCorrales } from "@/services/corralService";
 import { createTreatment } from "@/services/healthService";
+import { getAnimalDisplayName, UUID_REGEX } from "@/utils/formatters";
 
 const VIAS_ADMINISTRACION = [
   "Subcutánea",
@@ -43,6 +44,7 @@ export default function AddHealthRecordModal({ isOpen, onClose, onSaved }) {
     via_administracion: "Intramuscular",
     tiempo_retiro_dias: "0",
     fecha_proxima_dosis: "",
+    lote_biologico: "",
     observaciones: "",
   });
 
@@ -143,6 +145,14 @@ export default function AddHealthRecordModal({ isOpen, onClose, onSaved }) {
 
     setIsSubmitting(true);
     try {
+      let finalObservaciones = form.observaciones.trim();
+      if (form.lote_biologico && form.lote_biologico.trim()) {
+        const lotePrefix = `Lote: ${form.lote_biologico.trim()}`;
+        finalObservaciones = finalObservaciones
+          ? `${lotePrefix} | ${finalObservaciones}`
+          : lotePrefix;
+      }
+
       const payload = {
         animal_id: form.animal_id,
         tipo_evento: eventType,
@@ -152,7 +162,7 @@ export default function AddHealthRecordModal({ isOpen, onClose, onSaved }) {
         unidad_dosis: form.unidad_dosis,
         via_administracion: form.via_administracion,
         tiempo_retiro_dias: retiroNum,
-        observaciones: form.observaciones.trim() || undefined,
+        observaciones: finalObservaciones || undefined,
       };
 
       if (form.corral_id) payload.corral_id = form.corral_id;
@@ -256,11 +266,18 @@ export default function AddHealthRecordModal({ isOpen, onClose, onSaved }) {
                 <option value="">
                   {loadingCatalogs ? "Cargando cerdos..." : "Seleccione cerdo..."}
                 </option>
-                {animals.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.codigo_arete} - {a.nombre_alias || "Sin alias"} ({a.raza || "Porcino"})
-                  </option>
-                ))}
+                {animals.map((a) => {
+                  const displayName = getAnimalDisplayName(a);
+                  const validArete =
+                    a.codigo_arete && !UUID_REGEX.test(a.codigo_arete)
+                      ? `#${a.codigo_arete} · `
+                      : "";
+                  return (
+                    <option key={a.id} value={a.id}>
+                      {validArete ? `${validArete}${displayName}` : displayName} ({a.raza || "Porcino"})
+                    </option>
+                  );
+                })}
               </select>
               <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
                 <ChevronDown size={18} />
@@ -419,6 +436,22 @@ export default function AddHealthRecordModal({ isOpen, onClose, onSaved }) {
               type="date"
               value={form.fecha_proxima_dosis}
               onChange={(e) => setForm({ ...form, fecha_proxima_dosis: e.target.value })}
+            />
+          </div>
+
+          {/* Lote Biológico */}
+          <div className="md:col-span-2">
+            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+              <span>Lote Biológico / Registro Farmacéutico {eventType === "vacuna" && "*"}</span>
+              <span className="text-[10px] text-indigo-600 font-bold lowercase">
+                Trazabilidad oficial ICA / BPP
+              </span>
+            </label>
+            <Input
+              required={eventType === "vacuna"}
+              placeholder="Ej: L-PPC-2026-99 / L-CIRCO-410"
+              value={form.lote_biologico}
+              onChange={(e) => setForm({ ...form, lote_biologico: e.target.value })}
             />
           </div>
 

@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import Button from "@/components/ui/Button";
+import { getAnimalDisplayName, UUID_REGEX } from "@/utils/formatters";
 
 export default function AnimalQrModal({ animal, isOpen, onClose }) {
   const [mounted, setMounted] = useState(false);
@@ -41,9 +42,16 @@ export default function AnimalQrModal({ animal, isOpen, onClose }) {
 
   if (!isOpen || !animal) return null;
 
-  const animalCode =
-    animal.codigo_arete || animal.code || animal.id || "PT-2026-001";
-  const qrTarget = animal.codigo_qr || animalCode;
+  const rawArete = animal.codigo_arete || animal.code || animal.arete;
+  const validArete =
+    rawArete && !UUID_REGEX.test(String(rawArete).trim())
+      ? String(rawArete).trim()
+      : null;
+  const displayName = getAnimalDisplayName(animal);
+  const displayCode = validArete ? `#${validArete}` : displayName;
+
+  const qrTarget =
+    animal.codigo_qr || validArete || animal.id || "";
   const originUrl =
     typeof window !== "undefined"
       ? window.location.origin
@@ -66,7 +74,7 @@ export default function AnimalQrModal({ animal, isOpen, onClose }) {
     window.print();
   };
 
-  const raza = animal.raza || "Landrace x Duroc";
+  const raza = animal.raza || "No especificada";
   const lote =
     animal.corral_codigo ||
     animal.corral?.codigo ||
@@ -88,12 +96,13 @@ export default function AnimalQrModal({ animal, isOpen, onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto"
+      className="fixed inset-0 z-100 overflow-y-auto bg-slate-950/80 backdrop-blur-md p-4 sm:p-6"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden text-slate-900 my-8">
+      <div className="min-h-full flex items-center justify-center">
+        <div className="relative w-full max-w-xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col text-slate-900 my-4 sm:my-8">
         {/* Cabecera del Modal (no se imprime) */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/80 no-print">
           <div className="flex items-center gap-3">
@@ -173,11 +182,11 @@ export default function AnimalQrModal({ animal, isOpen, onClose }) {
         </div>
 
         {/* ÁREA IMPRIMIBLE / VISTA PREVIA */}
-        <div className="p-6 md:p-8 flex justify-center items-center bg-slate-100/50">
+        <div className="p-5 sm:p-6 md:p-8 flex justify-center items-center bg-slate-100/50 overflow-x-auto">
           <div
             ref={printRef}
             className={`printable-chapeta-container w-full transition-all ${
-              tagFormat === "arete" ? "max-w-95" : "max-w-lg"
+              tagFormat === "arete" ? "max-w-95" : "max-w-full"
             }`}
           >
             {tagFormat === "arete" ? (
@@ -208,11 +217,16 @@ export default function AnimalQrModal({ animal, isOpen, onClose }) {
                 {/* CÓDIGO DE ARETE GIGANTE */}
                 <div className="w-full bg-amber-50 border-2 border-amber-300 rounded-2xl py-2 px-3 mb-4 shadow-xs">
                   <span className="text-[10px] font-bold uppercase tracking-widest text-amber-800 block">
-                    ID / Arete Oficial
+                    {validArete ? "ID / Arete Oficial" : "Identificación del Ejemplar"}
                   </span>
-                  <p className="text-3xl font-black tracking-tight text-slate-950 font-mono">
-                    #{animalCode}
+                  <p className="text-2xl sm:text-3xl font-black tracking-tight text-slate-950 font-mono truncate">
+                    {displayCode}
                   </p>
+                  {validArete && (animal.nombre_alias || animal.nombre) && (
+                    <span className="text-xs font-bold text-amber-900 block mt-0.5">
+                      &ldquo;{animal.nombre_alias || animal.nombre}&rdquo;
+                    </span>
+                  )}
                 </div>
 
                 {/* CÓDIGO QR VECTORIAL */}
@@ -256,13 +270,13 @@ export default function AnimalQrModal({ animal, isOpen, onClose }) {
 
                 {/* Código de barra estético / Pie */}
                 <div className="w-full mt-3 pt-2 border-t border-dashed border-slate-300 flex items-center justify-between text-[9px] font-mono text-slate-500">
-                  <span>*SIP-{animalCode}*</span>
+                  <span>*SIP-{validArete || "REG"}*</span>
                   <span>CERT-OK</span>
                 </div>
               </div>
             ) : (
               /* DISEÑO RÓTULO DE CORRAL / JAULA */
-              <div className="bg-white border-3 border-slate-900 rounded-3xl p-6 shadow-xl text-slate-900">
+              <div className="bg-white border-3 border-slate-900 rounded-3xl p-5 sm:p-6 shadow-xl text-slate-900">
                 <div className="flex items-center justify-between border-b-2 border-slate-900 pb-3 mb-4">
                   <div>
                     <h3 className="text-xl font-black uppercase tracking-tight italic">
@@ -279,47 +293,52 @@ export default function AnimalQrModal({ animal, isOpen, onClose }) {
                   </div>
                 </div>
 
-                <div className="flex flex-col md:flex-row gap-5 items-center">
+                <div className="flex flex-col sm:flex-row gap-4 items-center">
                   <div className="p-3 bg-white border-2 border-slate-900 rounded-2xl shrink-0 shadow-sm">
                     {mounted ? (
                       <QRCodeSVG
                         value={publicTraceUrl}
-                        size={150}
+                        size={130}
                         level="H"
                         includeMargin={false}
-                        className="w-36 h-36"
+                        className="w-32 h-32"
                       />
                     ) : (
-                      <div className="w-36 h-36 bg-slate-100 animate-pulse rounded-lg" />
+                      <div className="w-32 h-32 bg-slate-100 animate-pulse rounded-lg" />
                     )}
                   </div>
 
-                  <div className="flex-1 space-y-2 text-left w-full">
+                  <div className="flex-1 space-y-2 text-left w-full min-w-0">
                     <div className="bg-slate-900 text-white p-3 rounded-2xl">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-slate-300 block">
-                        Identificador Principal
+                        {validArete ? "Arete Comercial" : "Identificador Principal"}
                       </span>
-                      <p className="text-2xl font-black font-mono tracking-tight">
-                        #{animalCode}
+                      <p className="text-2xl font-black font-mono tracking-tight truncate">
+                        {displayCode}
                       </p>
+                      {validArete && (animal.nombre_alias || animal.nombre) && (
+                        <span className="text-xs font-semibold text-emerald-400 block mt-0.5 truncate">
+                          {animal.nombre_alias || animal.nombre}
+                        </span>
+                      )}
                     </div>
 
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div className="bg-slate-50 p-2 rounded-xl border border-slate-200">
                         <span className="text-[9px] font-bold text-slate-400 uppercase block">Raza</span>
-                        <span className="font-extrabold text-slate-800">{raza}</span>
+                        <span className="font-extrabold text-slate-800 truncate block">{raza}</span>
                       </div>
                       <div className="bg-slate-50 p-2 rounded-xl border border-slate-200">
                         <span className="text-[9px] font-bold text-slate-400 uppercase block">Corral/Lote</span>
-                        <span className="font-extrabold text-slate-800">{lote}</span>
+                        <span className="font-extrabold text-slate-800 truncate block">{lote}</span>
                       </div>
                       <div className="bg-slate-50 p-2 rounded-xl border border-slate-200">
                         <span className="text-[9px] font-bold text-slate-400 uppercase block">Estado</span>
-                        <span className="font-extrabold text-emerald-700">{estado}</span>
+                        <span className="font-extrabold text-emerald-700 truncate block">{estado}</span>
                       </div>
                       <div className="bg-slate-50 p-2 rounded-xl border border-slate-200">
                         <span className="text-[9px] font-bold text-slate-400 uppercase block">Fecha</span>
-                        <span className="font-extrabold text-slate-800">{fechaIngreso}</span>
+                        <span className="font-extrabold text-slate-800 truncate block">{fechaIngreso}</span>
                       </div>
                     </div>
                   </div>
@@ -335,35 +354,34 @@ export default function AnimalQrModal({ animal, isOpen, onClose }) {
         </div>
 
         {/* Pie de Acciones del Modal (no se imprime) */}
-        <div className="p-6 border-t border-slate-100 bg-white flex flex-col sm:flex-row items-center justify-between gap-4 no-print">
-          <div className="flex items-center gap-2 text-xs text-slate-500">
-            <Info size={14} className="text-indigo-500 shrink-0" />
-            <span>
+        <div className="p-5 sm:p-6 bg-slate-50/90 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4 no-print">
+          <div className="flex items-start gap-2.5 text-xs text-slate-500 flex-1 min-w-0 pr-1">
+            <Info size={16} className="text-indigo-500 shrink-0 mt-0.5" />
+            <span className="leading-relaxed">
               Configura tu impresora en escala 100% y activa los gráficos de fondo.
             </span>
           </div>
 
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <Button
+          <div className="flex items-center gap-3 shrink-0 w-full sm:w-auto justify-end">
+            <button
               type="button"
-              tone="soft"
               onClick={onClose}
-              className="flex-1 sm:flex-none font-bold rounded-xl cursor-pointer"
+              className="px-4 py-2.5 rounded-xl font-bold text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 border border-slate-200 transition-colors cursor-pointer"
             >
               Cerrar
-            </Button>
-            <Button
+            </button>
+            <button
               type="button"
-              tone="primary"
               onClick={handlePrint}
-              className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-black px-6 py-2.5 rounded-xl shadow-lg shadow-emerald-600/30 cursor-pointer"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm px-5 py-2.5 rounded-xl shadow-sm inline-flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer transition-colors"
             >
-              <Printer size={18} />
+              <Printer size={18} className="shrink-0" />
               Imprimir Chapeta
-            </Button>
+            </button>
           </div>
         </div>
       </div>
     </div>
-  );
+  </div>
+);
 }

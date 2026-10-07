@@ -1,24 +1,29 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   AlertTriangle,
   Info,
   Bell,
   TrendingUp,
   PieChart,
-  BarChart2,
   ArrowLeft,
   Calendar,
   FileText,
   ShieldCheck,
   Download,
-  Filter,
 } from "lucide-react";
 import Card from "@/components/ui/Card";
 import Table from "@/components/ui/Table";
 import Button from "@/components/ui/Button";
 import ModuleHeader from "@/components/layout/ModuleHeader";
+import Skeleton from "@/components/ui/Skeleton";
+import { getDashboardKPIs, getDashboardAlerts } from "@/services/dashboard/dashboardService";
+import { getAnimales } from "@/services/animalService";
+import { getCorrales } from "@/services/corralService";
+import { getTreatments } from "@/services/healthService";
+import { getItems } from "@/services/inventoryService";
+import { getFarrowings } from "@/services/reproductionService";
 
 const ReportsView = () => {
   // Configuración de Reportes
@@ -29,192 +34,105 @@ const ReportsView = () => {
   // Estado de Generación
   const [activeReport, setActiveReport] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Mocks de Base de Datos para simular reportes reales
-  const dbAlerts = [
+  // Estados dinámicos de base de datos
+  const [dbAlerts, setDbAlerts] = useState([]);
+  const [kpis, setKpis] = useState(null);
+  const [corrales, setCorrales] = useState([]);
+  const [animalsCount, setAnimalsCount] = useState(0);
+  const [stageDistribution, setStageDistribution] = useState({});
+
+  useEffect(() => {
+    async function loadData() {
+      setIsLoading(true);
+      try {
+        const [kpiRes, alertsRes, corralesRes, animalsRes] = await Promise.allSettled([
+          getDashboardKPIs(),
+          getDashboardAlerts(),
+          getCorrales(),
+          getAnimales(),
+        ]);
+
+        if (kpiRes.status === "fulfilled" && kpiRes.value) {
+          setKpis(kpiRes.value);
+          setAnimalsCount(kpiRes.value.total_animales ?? 0);
+          setStageDistribution(kpiRes.value.distribucion_etapas || {});
+        } else if (animalsRes.status === "fulfilled" && Array.isArray(animalsRes.value)) {
+          setAnimalsCount(animalsRes.value.length);
+        }
+
+        if (alertsRes.status === "fulfilled" && Array.isArray(alertsRes.value)) {
+          setDbAlerts(alertsRes.value);
+        }
+
+        if (corralesRes.status === "fulfilled" && Array.isArray(corralesRes.value)) {
+          setCorrales(corralesRes.value);
+        }
+      } catch (err) {
+        console.warn("Error cargando datos para reportes:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadData();
+  }, []);
+
+  const dynamicKpis = [
     {
-      id: 1,
-      type: "critical",
-      title: "Caída de Consumo",
-      desc: "El Lote #42 redujo su consumo diario en un 15%.",
-      time: "Hace 2 horas",
+      metrica: "Total Animales en Granja",
+      actual: String(animalsCount),
+      objetivo: "--",
+      variacion: animalsCount > 0 ? "Activo" : "Sin datos",
+      estado: animalsCount > 0 ? "Óptimo" : "Sin datos",
     },
     {
-      id: 2,
-      type: "preventive",
-      title: "Vacunación Próxima",
-      desc: "14 hembras gestantes requieren vacuna contra Parvovirus.",
-      time: "Hoy",
+      metrica: "Peso Promedio Granja",
+      actual: kpis?.peso_promedio_granja_kg ? `${kpis.peso_promedio_granja_kg} kg` : "0.0 kg",
+      objetivo: "100.0 kg",
+      variacion: kpis?.peso_promedio_granja_kg ? "Estándar" : "--",
+      estado: kpis?.peso_promedio_granja_kg ? "Óptimo" : "Sin datos",
     },
     {
-      id: 3,
-      type: "preventive",
-      title: "Revisión de Inventario",
-      desc: "El alimento Pre-iniciador está por debajo del 20%.",
-      time: "Ayer",
+      metrica: "GMD Promedio Granja",
+      actual: kpis?.gmd_promedio_kg ? `${kpis.gmd_promedio_kg} kg/d` : "-- kg/d",
+      objetivo: "0.80 kg/d",
+      variacion: kpis?.gmd_promedio_kg ? "Zootécnico" : "--",
+      estado: kpis?.gmd_promedio_kg ? "Óptimo" : "Sin datos",
+    },
+    {
+      metrica: "Tasa de Ocupación",
+      actual: `${kpis?.tasa_ocupacion_porcentaje || 0}%`,
+      objetivo: "85%",
+      variacion: `${kpis?.tasa_ocupacion_porcentaje || 0}%`,
+      estado: (kpis?.tasa_ocupacion_porcentaje || 0) > 0 ? "Óptimo" : "Sin datos",
     },
   ];
 
-  const dbKpiData = [
-    {
-      metrica: "Conversión Alimenticia",
-      actual: "2.4",
-      objetivo: "2.3",
-      variacion: "+4.3%",
-      estado: "Regular",
-    },
-    {
-      metrica: "Tasa de Mortalidad",
-      actual: "1.2%",
-      objetivo: "< 2.0%",
-      variacion: "-0.5%",
-      estado: "Óptimo",
-    },
-    {
-      metrica: "Total Nacimientos",
-      actual: "142",
-      objetivo: "135",
-      variacion: "+5.1%",
-      estado: "Óptimo",
-    },
-    {
-      metrica: "GDP Promedio (Ceba)",
-      actual: "910 g/d",
-      objetivo: "900 g/d",
-      variacion: "+1.1%",
-      estado: "Óptimo",
-    },
-  ];
-
-  const dbInventoryData = [
-    {
-      type: "Pre-iniciador",
-      stock: "450 kg",
-      capacity: "500 kg",
-      state: "Óptimo",
-    },
-    {
-      type: "Iniciador",
-      stock: "800 kg",
-      capacity: "1000 kg",
-      state: "Óptimo",
-    },
-    {
-      type: "Levante",
-      stock: "1200 kg",
-      capacity: "2000 kg",
-      state: "Estable",
-    },
-    { type: "Ceba", stock: "300 kg", capacity: "2000 kg", state: "Crítico" },
-  ];
-
-  const dbVaccinationRecords = [
-    {
-      id: "2026-X1",
-      type: "Vacuna",
-      producto: "Peste Porcina Clásica",
-      lote: "Lote B-24 / Corral 01",
-      fecha: "2026-04-20",
-      estado: "APLICADA",
-      responsable: "Dr. Ricardo Gómez",
-    },
-    {
-      id: "2026-X8",
-      type: "Tratamiento",
-      producto: "Complejo B Forte",
-      lote: "Lote A-12 / Corral 05",
-      fecha: "2026-04-22",
-      estado: "EN CURSO",
-      responsable: "Dra. Elena Martínez",
-    },
-    {
-      id: "2026-Y4",
-      type: "Vacuna",
-      producto: "Circovirus Porcino",
-      lote: "Lote C-02 / Corral 02",
-      fecha: "2026-04-28",
-      estado: "PENDIENTE",
-      responsable: "Dr. Carlos Ruiz",
-    },
-  ];
-
-  const dbReproductionEvents = [
-    {
-      id: "H-001",
-      servicio: "2026-01-15",
-      tipo: "Inseminación",
-      partoEst: "2026-05-09",
-      estado: "Gestante",
-      dias: 108,
-    },
-    {
-      id: "H-045",
-      servicio: "2026-02-02",
-      tipo: "Monta Natural",
-      partoEst: "2026-05-27",
-      estado: "Gestante",
-      dias: 90,
-    },
-    {
-      id: "H-112",
-      servicio: "2026-04-10",
-      tipo: "Inseminación",
-      partoEst: "2026-08-02",
-      estado: "Servida",
-      dias: 15,
-    },
-    {
-      id: "H-089",
-      servicio: "2025-12-20",
-      tipo: "Monta Natural",
-      partoEst: "2026-04-12",
-      estado: "Lactante",
-      dias: null,
-    },
-  ];
-
-  const dbWeightData = [
-    {
-      id: "L-001",
-      etapa: "Pre-ceba",
-      pesoInicial: "15.0 kg",
-      pesoActual: "24.0 kg",
-      gdp: "400 g/día",
-      estado: "Óptimo",
-    },
-    {
-      id: "L-002",
-      etapa: "Levante",
-      pesoInicial: "50.0 kg",
-      pesoActual: "68.0 kg",
-      gdp: "900 g/día",
-      estado: "Excelente",
-    },
-    {
-      id: "L-003",
-      etapa: "Ceba",
-      pesoInicial: "90.0 kg",
-      pesoActual: "115.0 kg",
-      gdp: "833 g/día",
-      estado: "Óptimo",
-    },
-    {
-      id: "L-004",
-      etapa: "Pre-ceba",
-      pesoInicial: "12.0 kg",
-      pesoActual: "19.5 kg",
-      gdp: "375 g/día",
-      estado: "Regular",
-    },
-  ];
-
-  // Lógica de Generación de Reporte
-  const handleGenerateReport = () => {
+  // Lógica de Generación de Reporte dinámico
+  const handleGenerateReport = async () => {
     setIsGenerating(true);
 
-    // Simulamos un delay de procesamiento de base de datos
-    setTimeout(() => {
-      let reportData = {
+    try {
+      const selectedCorral = corrales.find((c) => c.id === selectedBatch);
+      const batchLabel =
+        selectedBatch === "todos"
+          ? "Todos los Corrales"
+          : selectedCorral
+            ? `Corral ${selectedCorral.codigo}`
+            : `Corral ${selectedBatch}`;
+
+      const rangeLabel =
+        dateRange === "7dias"
+          ? "Últimos 7 días"
+          : dateRange === "30dias"
+            ? "Últimos 30 días"
+            : dateRange === "trimestre"
+              ? "Este Trimestre (90 días)"
+              : "Histórico Completo";
+
+      const reportData = {
         title: "",
         dateGenerated: new Date().toLocaleDateString("es-CO", {
           year: "numeric",
@@ -223,183 +141,211 @@ const ReportsView = () => {
           hour: "2-digit",
           minute: "2-digit",
         }),
-        rangeLabel:
-          dateRange === "7dias"
-            ? "Últimos 7 días"
-            : dateRange === "30dias"
-              ? "Últimos 30 días"
-              : dateRange === "trimestre"
-                ? "Este Trimestre (90 días)"
-                : "Histórico Completo",
-        batchLabel:
-          selectedBatch === "todos"
-            ? "Todos los Lotes"
-            : `Lote ${selectedBatch.toUpperCase()}`,
-        generatedBy: "Dr. Alejandro Ruiz (Administrador de Granja)",
-        code: `REP-${selectedReportType.toUpperCase().substring(0, 3)}-2026-${Math.floor(1000 + Math.random() * 9000)}`,
+        rangeLabel,
+        batchLabel,
+        code: `REP-${selectedReportType.toUpperCase().substring(0, 3)}-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
         type: selectedReportType,
       };
 
-      switch (selectedReportType) {
-        case "consolidado":
-          reportData.title = "Reporte Consolidado de Desempeño General";
-          reportData.kpis = dbKpiData;
-          reportData.summaryText =
-            "La granja opera bajo estándares de conversión óptimos (2.4 de promedio). Se reporta un incremento en la tasa de nacimientos con una mortalidad estable del 1.2%, cumpliendo las metas biológicas de Porkcolombia.";
-          reportData.complianceNotes =
-            "Se recomienda revisar el nivel del silo de Ceba para evitar interrupciones de suministro.";
-          break;
-        case "produccion":
-          reportData.title = "Reporte de Crecimiento y Producción de Lotes";
-          reportData.kpis = [
-            {
-              metrica: "GDP Promedio",
-              actual: "627 g/día",
-              objetivo: "650 g/día",
-              variacion: "-3.5%",
-              estado: "Regular",
-            },
-            {
-              metrica: "Peso Promedio Final",
-              actual: "115.0 kg",
-              objetivo: "110.0 kg",
-              variacion: "+4.5%",
-              estado: "Óptimo",
-            },
-          ];
-          reportData.tableCols = [
-            { header: "ID Corral/Lote", key: "id" },
-            { header: "Etapa Productiva", key: "etapa" },
-            { header: "Peso Inicial", key: "pesoInicial" },
-            { header: "Peso Actual", key: "pesoActual" },
-            { header: "Ganancia Diaria (GDP)", key: "gdp" },
-            { header: "Desempeño", key: "estado" },
-          ];
-          reportData.tableRows = dbWeightData;
-          reportData.summaryText =
-            "La velocidad de crecimiento en Levante se mantiene en niveles excelentes de 900 g/día. Sin embargo, en el Lote L-004 de Pre-ceba se observa una tasa regular de 375 g/día que requiere monitoreo nutricional.";
-          reportData.complianceNotes =
-            "Estándares cumplidos según guía de manejo zootécnico colombiana.";
-          break;
-        case "salud":
-          reportData.title =
-            "Reporte Sanitario y Control Clínico de Vacunación";
-          reportData.kpis = [
-            {
-              metrica: "Eficacia Sanitaria",
-              actual: "98.2%",
-              objetivo: "95.0%",
-              variacion: "+3.2%",
-              estado: "Óptimo",
-            },
-            {
-              metrica: "Dosis Aplicadas",
-              actual: "18",
-              objetivo: "20",
-              variacion: "90%",
-              estado: "Estable",
-            },
-          ];
-          reportData.tableCols = [
-            { header: "ID Registro", key: "id" },
-            { header: "Procedimiento", key: "producto" },
-            { header: "Lote / Destino", key: "lote" },
-            { header: "Fecha Programada", key: "fecha" },
-            { header: "Responsable", key: "responsable" },
-            { header: "Estado", key: "estado" },
-          ];
-          reportData.tableRows = dbVaccinationRecords;
-          reportData.summaryText =
-            "El plan de inmunidad preventiva se está ejecutando conforme a la resolución ICA 50092. Se aplicó exitosamente la dosis contra Peste Porcina Clásica (PPC) en el corral 01.";
-          reportData.complianceNotes =
-            "Registros oficiales requeridos ante las auditorías del ICA.";
-          break;
-        case "reproduccion":
-          reportData.title = "Reporte de Eficiencia Reproductiva y Farrowing";
-          reportData.kpis = [
-            {
-              metrica: "Tasa de Parición",
-              actual: "91.8%",
-              objetivo: "90.0%",
-              variacion: "+1.8%",
-              estado: "Óptimo",
-            },
-            {
-              metrica: "Tasa de Destete",
-              actual: "92.0%",
-              objetivo: "93.0%",
-              variacion: "-1.0%",
-              estado: "Regular",
-            },
-          ];
-          reportData.tableCols = [
-            { header: "ID Hembra", key: "id" },
-            { header: "Fecha Servicio", key: "servicio" },
-            { header: "Vía Reproductiva", key: "tipo" },
-            { header: "Parto Estimado", key: "partoEst" },
-            { header: "Gestation Days", key: "dias" },
-            { header: "Estado Actual", key: "estado" },
-          ];
-          reportData.tableRows = dbReproductionEvents.map((row) => ({
-            ...row,
-            dias: row.dias ? `${row.dias} días` : "N/A",
-          }));
-          reportData.summaryText =
-            "Se reportan 42 hembras en gestación confirmada. La hembra H-001 se encuentra en día 108 de gestación (parto inminente dentro de la ventana de alerta sanitaria de 7 días).";
-          reportData.complianceNotes =
-            "Ventana de aclimatación de parideras programada al 100%.";
-          break;
-        case "nutricion":
-          reportData.title =
-            "Reporte de Consumo Nutricional e Inventario de Silos";
-          reportData.kpis = [
-            {
-              metrica: "Eficiencia de Conversión",
-              actual: "2.40",
-              objetivo: "2.30",
-              variacion: "+4.3%",
-              estado: "Regular",
-            },
-            {
-              metrica: "Autonomía en Silos",
-              actual: "12 días",
-              objetivo: "15 días",
-              variacion: "-3 días",
-              estado: "Alerta",
-            },
-          ];
-          reportData.tableCols = [
-            { header: "Tipo de Alimento", key: "type" },
-            { header: "Stock Físico", key: "stock" },
-            { header: "Capacidad de Silo", key: "capacity" },
-            { header: "Estado Crítico", key: "state" },
-          ];
-          reportData.tableRows = dbInventoryData;
-          reportData.summaryText =
-            "El silo de alimento 'Ceba' se encuentra en stock crítico (300 kg / 15% de capacidad). Se requiere reabastecimiento urgente de premezclas de engorde antes del fin de semana.";
-          reportData.complianceNotes =
-            "Consumo promedio diario registrado de 455 kg en total de la granja.";
-          break;
-        default:
-          break;
+      if (selectedReportType === "consolidado") {
+        reportData.title = "Reporte Consolidado de Desempeño General";
+        reportData.kpis = dynamicKpis;
+        reportData.summaryText =
+          animalsCount > 0
+            ? `La granja PorciTech reporta actualmente un inventario activo de ${animalsCount} porcinos con una ocupación general del ${kpis?.tasa_ocupacion_porcentaje || 0}%. Los parámetros registrados se encuentran bajo trazabilidad y monitoreo continuo.`
+            : "No se registran porcinos ni eventos zootécnicos en la base de datos oficial. Registre animales e información en los módulos correspondientes para consolidar análisis zootécnicos.";
+        reportData.complianceNotes =
+          "Registros zootécnicos auditables según protocolos ICA y Porkcolombia.";
+      } else if (selectedReportType === "produccion") {
+        reportData.title = "Reporte de Crecimiento y Producción de Lotes";
+        reportData.kpis = [
+          {
+            metrica: "GMD Promedio Granja",
+            actual: kpis?.gmd_promedio_kg ? `${kpis.gmd_promedio_kg} kg/d` : "-- kg/d",
+            objetivo: "0.80 kg/d",
+            variacion: "--",
+            estado: kpis?.gmd_promedio_kg ? "Óptimo" : "Sin datos",
+          },
+          {
+            metrica: "Peso Promedio Granja",
+            actual: kpis?.peso_promedio_granja_kg ? `${kpis.peso_promedio_granja_kg} kg` : "0.0 kg",
+            objetivo: "100.0 kg",
+            variacion: "--",
+            estado: kpis?.peso_promedio_granja_kg ? "Óptimo" : "Sin datos",
+          },
+        ];
+        reportData.tableCols = [
+          { header: "Corral / Arete", key: "id" },
+          { header: "Fase Productiva", key: "etapa" },
+          { header: "Peso Actual", key: "pesoActual" },
+          { header: "Estado", key: "estado" },
+        ];
+        let rows = [];
+        try {
+          const animales = await getAnimales();
+          if (Array.isArray(animales)) {
+            rows = animales.map((a) => ({
+              id: a.codigo_arete ? `#${a.codigo_arete}` : `#${a.id}`,
+              etapa: a.fase || a.etapa || a.estado || "Producción",
+              pesoActual: a.peso_actual_kg ? `${a.peso_actual_kg} kg` : "--",
+              estado: a.estadoSalud || a.estado || "Activo",
+            }));
+          }
+        } catch {
+          rows = [];
+        }
+        reportData.tableRows = rows;
+        reportData.summaryText =
+          rows.length > 0
+            ? `Reporte generado sobre ${rows.length} ejemplares auditados en la base de datos oficial.`
+            : "Sin registros de animales ni lotes disponibles en la base de datos.";
+        reportData.complianceNotes =
+          "Estándares cumplidos según guía de manejo zootécnico colombiana.";
+      } else if (selectedReportType === "salud") {
+        reportData.title = "Reporte Sanitario y Control Clínico de Vacunación";
+        let treatments = [];
+        try {
+          treatments = await getTreatments();
+        } catch {
+          treatments = [];
+        }
+        reportData.kpis = [
+          {
+            metrica: "Tratamientos Aplicados",
+            actual: String(treatments.length),
+            objetivo: "--",
+            variacion: "--",
+            estado: treatments.length > 0 ? "Óptimo" : "Sin datos",
+          },
+          {
+            metrica: "Alertas Sanitarias Activas",
+            actual: String(kpis?.alertas_sanitarias || 0),
+            objetivo: "0",
+            variacion: kpis?.alertas_sanitarias ? "Alerta" : "Normal",
+            estado: kpis?.alertas_sanitarias ? "Atención" : "Óptimo",
+          },
+        ];
+        reportData.tableCols = [
+          { header: "ID / Arete", key: "id" },
+          { header: "Procedimiento", key: "producto" },
+          { header: "Tipo", key: "tipo" },
+          { header: "Fecha", key: "fecha" },
+          { header: "Responsable", key: "responsable" },
+          { header: "Estado", key: "estado" },
+        ];
+        reportData.tableRows = treatments.map((t) => ({
+          id: t.animal_codigo_arete ? `#${t.animal_codigo_arete}` : (t.animal_id ? `#${String(t.animal_id).slice(0, 8)}` : "--"),
+          producto: t.producto_nombre || "Tratamiento Veterinario",
+          tipo: t.tipo_evento || "Clínico",
+          fecha: t.fecha_aplicacion || (t.fecha_tratamiento ? t.fecha_tratamiento.split("T")[0] : "--"),
+          responsable: t.responsable || t.veterinario_nombre || "Médico Veterinario",
+          estado: t.estado || "REGISTRADO",
+        }));
+        reportData.summaryText =
+          treatments.length > 0
+            ? `Se registran ${treatments.length} aplicaciones clínicas y biológicas certificadas en el historial sanitario de la granja.`
+            : "No existen registros de tratamientos clínicos ni vacunaciones en la base de datos sanitaria.";
+        reportData.complianceNotes =
+          "Registros oficiales requeridos ante las auditorías del ICA.";
+      } else if (selectedReportType === "reproduccion") {
+        reportData.title = "Reporte de Eficiencia Reproductiva y Partos";
+        let farrowings = [];
+        try {
+          farrowings = await getFarrowings();
+        } catch {
+          farrowings = [];
+        }
+        reportData.kpis = [
+          {
+            metrica: "Partos Registrados",
+            actual: String(farrowings.length),
+            objetivo: "--",
+            variacion: "--",
+            estado: farrowings.length > 0 ? "Óptimo" : "Sin datos",
+          },
+        ];
+        reportData.tableCols = [
+          { header: "ID Cerda", key: "id" },
+          { header: "Fecha Parto", key: "fecha" },
+          { header: "Nacidos Vivos", key: "vivos" },
+          { header: "Nacidos Muertos", key: "muertos" },
+          { header: "Peso Camada (kg)", key: "peso" },
+        ];
+        reportData.tableRows = farrowings.map((f) => ({
+          id: f.madre_codigo_arete ? `#${f.madre_codigo_arete}` : (f.madre_id ? `#${String(f.madre_id).slice(0, 8)}` : "--"),
+          fecha: f.fecha_parto || "--",
+          vivos: String(f.lechones_vivos ?? "--"),
+          muertos: String(f.lechones_muertos ?? "--"),
+          peso: f.peso_total_camada_kg ? `${f.peso_total_camada_kg} kg` : "--",
+        }));
+        reportData.summaryText =
+          farrowings.length > 0
+            ? `Se registran ${farrowings.length} partos y eventos reproductivos auditados en la base de datos.`
+            : "No se registran eventos reproductivos o partos en la base de datos.";
+        reportData.complianceNotes =
+          "Parámetros zootécnicos evaluados bajo normativa de bienestar porcino.";
+      } else if (selectedReportType === "nutricion") {
+        reportData.title = "Reporte de Consumo Nutricional e Inventario de Insumos";
+        let items = [];
+        try {
+          items = await getItems();
+        } catch {
+          items = [];
+        }
+        reportData.kpis = [
+          {
+            metrica: "Total Insumos en Inventario",
+            actual: String(items.length),
+            objetivo: "--",
+            variacion: "--",
+            estado: items.length > 0 ? "Óptimo" : "Sin datos",
+          },
+          {
+            metrica: "Alertas de Stock Mínimo",
+            actual: String(kpis?.alertas_inventario_stock || 0),
+            objetivo: "0",
+            variacion: kpis?.alertas_inventario_stock ? "Bajo Stock" : "Normal",
+            estado: kpis?.alertas_inventario_stock ? "Atención" : "Óptimo",
+          },
+        ];
+        reportData.tableCols = [
+          { header: "Código / SKU", key: "sku" },
+          { header: "Nombre Insumo", key: "nombre" },
+          { header: "Stock Actual", key: "stock" },
+          { header: "Stock Mínimo", key: "min" },
+          { header: "Estado", key: "estado" },
+        ];
+        reportData.tableRows = items.map((it) => ({
+          sku: it.codigo_sku || "--",
+          nombre: it.nombre,
+          stock: `${it.stock_actual} ${it.unidad_medida || "kg"}`,
+          min: `${it.stock_minimo} ${it.unidad_medida || "kg"}`,
+          estado: it.stock_actual <= it.stock_minimo ? "Bajo Stock" : "Disponible",
+        }));
+        reportData.summaryText =
+          items.length > 0
+            ? `Se cuenta con ${items.length} insumos y alimentos balanceados controlados en bodega.`
+            : "No existen insumos o alimentos registrados en el inventario.";
+        reportData.complianceNotes =
+          "Control de materias primas e insumos balanceados.";
       }
 
       setActiveReport(reportData);
+    } catch (e) {
+      console.error("Error generando reporte:", e);
+    } finally {
       setIsGenerating(false);
-    }, 850);
+    }
   };
 
-  // Función para volver a la configuración
   const handleReset = () => {
     setActiveReport(null);
   };
 
-  // Función nativa para imprimir / Exportar PDF
   const handlePrintPDF = () => {
     window.print();
   };
 
-  // Renderizadores de columnas de tablas
   const kpiCols = [
     {
       header: "Métrica Clave",
@@ -417,11 +363,9 @@ const ReportsView = () => {
     },
     {
       header: "Objetivo",
-      key: "objective",
+      key: "objetivo",
       render: (row) => (
-        <span className="text-slate-505 text-slate-500 font-semibold">
-          {row.objetivo}
-        </span>
+        <span className="text-slate-500 font-semibold">{row.objetivo}</span>
       ),
     },
     {
@@ -429,7 +373,13 @@ const ReportsView = () => {
       key: "variacion",
       render: (row) => (
         <span
-          className={`font-bold ${row.variacion.startsWith("+") && row.metrica !== "Conversión Alimenticia" ? "text-emerald-600" : row.metrica === "Conversión Alimenticia" && row.variacion.startsWith("+") ? "text-rose-600" : "text-emerald-600"}`}
+          className={`font-bold ${
+            row.variacion.startsWith("+")
+              ? "text-emerald-600"
+              : row.variacion === "Sin datos" || row.variacion === "--"
+                ? "text-slate-400"
+                : "text-slate-700"
+          }`}
         >
           {row.variacion}
         </span>
@@ -440,7 +390,13 @@ const ReportsView = () => {
       key: "estado",
       render: (row) => (
         <span
-          className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${row.estado === "Óptimo" || row.estado === "Excelente" ? "bg-emerald-100 text-emerald-700 font-black" : "bg-orange-100 text-orange-700"}`}
+          className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
+            row.estado === "Óptimo"
+              ? "bg-emerald-100 text-emerald-700 font-black"
+              : row.estado === "Atención"
+                ? "bg-orange-100 text-orange-700 font-black"
+                : "bg-slate-100 text-slate-600"
+          }`}
         >
           {row.estado}
         </span>
@@ -448,47 +404,41 @@ const ReportsView = () => {
     },
   ];
 
-  return (
-    <div className="w-full flex flex-col gap-6">
-      {/* HEADER DEL MÓDULO */}
-      {!activeReport && (
-        <ModuleHeader
-          category="REPORTES Y ALERTAS"
-          title="Alertas y Reportes"
-          description="Centro de control y análisis de rendimiento de la granja."
-          actions={
-            <Button
-              onClick={handlePrintPDF}
-              tone="primary"
-              className="flex items-center gap-2 font-bold rounded-xl! no-print"
-            >
-              <Download size={18} />
-              Exportar PDF
-            </Button>
-          }
-        />
-      )}
+  if (isLoading) {
+    return <Skeleton />;
+  }
 
-      {/* RENDERIZADO DORMANT: CONFIGURADOR Y DASHBOARD */}
+  return (
+    <div className="space-y-8 animate-in fade-in duration-300">
+      <ModuleHeader
+        title="Reportes y Analítica Zootécnica"
+        description="Generación de informes de desempeño, trazabilidad sanitaria y métricas operativas."
+      />
+
+      {/* RENDERIZADO ESTÁNDAR: CONFIGURACIÓN Y DASHBOARD */}
       {!activeReport && (
         <div className="space-y-8">
-          {/* Panel de Configuración Horizontal */}
-          <Card className="border border-slate-100 p-6 rounded-3xl bg-white shadow-sm no-print space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b pb-3 border-slate-100">
-              <h3 className="text-lg font-black italic text-slate-800 flex items-center gap-2">
-                <Filter size={18} className="text-indigo-500" />
-                Filtros del Reporte
-              </h3>
-              <span className="text-xs font-semibold text-slate-400">
-                Configure los parámetros y genere el reporte oficial
-              </span>
+          {/* Card de Configuración de Generación */}
+          <Card className="p-6 md:p-8 bg-white border border-slate-100 shadow-sm rounded-4xl">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
+                <FileText size={20} />
+              </div>
+              <div>
+                <h2 className="text-lg font-black text-slate-900">
+                  Generar Nuevo Informe Oficial
+                </h2>
+                <p className="text-xs text-slate-500 font-medium">
+                  Selecciona los parámetros de consulta para emitir el reporte.
+                </p>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end pt-1">
-              {/* 1. Tipo de reporte */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+              {/* 1. Tipo de Reporte */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-                  Tipo de Reporte Técnico
+                  Tipo de Informe
                 </label>
                 <div className="relative">
                   <select
@@ -496,7 +446,9 @@ const ReportsView = () => {
                     onChange={(e) => setSelectedReportType(e.target.value)}
                     className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-semibold focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer appearance-none text-sm"
                   >
-                    <option value="consolidado">Consolidado General</option>
+                    <option value="consolidado">
+                      Consolidado General (KPIs)
+                    </option>
                     <option value="produccion">
                       Crecimiento y Peso de Lotes
                     </option>
@@ -504,7 +456,7 @@ const ReportsView = () => {
                       Sanitario (Clínico y Vacunación)
                     </option>
                     <option value="reproduccion">Reproducción y Partos</option>
-                    <option value="nutricion">Alimentación y Silos</option>
+                    <option value="nutricion">Alimentación e Inventario</option>
                   </select>
                   <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
                     ▼
@@ -534,10 +486,10 @@ const ReportsView = () => {
                 </div>
               </div>
 
-              {/* 3. Lote */}
+              {/* 3. Corral / Lote */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-                  Foco por Lote
+                  Foco por Corral
                 </label>
                 <div className="relative">
                   <select
@@ -545,10 +497,12 @@ const ReportsView = () => {
                     onChange={(e) => setSelectedBatch(e.target.value)}
                     className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-semibold focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer appearance-none text-sm"
                   >
-                    <option value="todos">Todos los Lotes</option>
-                    <option value="42">Lote #42 (Ceba)</option>
-                    <option value="15">Lote #15 (Levante)</option>
-                    <option value="12">Sector A-12</option>
+                    <option value="todos">Todos los Corrales</option>
+                    {corrales.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        Corral {c.codigo} ({c.fase || "Producción"})
+                      </option>
+                    ))}
                   </select>
                   <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
                     ▼
@@ -588,45 +542,57 @@ const ReportsView = () => {
               </h3>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {dbAlerts.map((alert) => (
-                <div
-                  key={alert.id}
-                  className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden flex relative group hover:shadow-md transition-shadow"
-                >
+            {dbAlerts.length === 0 ? (
+              <div className="bg-white rounded-3xl p-6 text-center border border-slate-100 shadow-xs text-slate-500">
+                <ShieldCheck className="w-8 h-8 mx-auto text-emerald-500 mb-2" />
+                <p className="font-bold text-slate-700">Sin notificaciones pendientes</p>
+                <p className="text-xs text-slate-400 mt-1">
+                  El sistema no reporta alertas sanitarias, de inventario o zootécnicas activas en este momento.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {dbAlerts.map((alert, idx) => (
                   <div
-                    className={`w-2 shrink-0 ${alert.type === "critical" ? "bg-rose-500" : "bg-amber-400"}`}
-                  ></div>
-                  <div className="p-5 flex-1">
-                    <div className="flex justify-between items-start">
-                      <div
-                        className={`p-2 rounded-xl ${alert.type === "critical" ? "bg-rose-50 text-rose-600" : "bg-amber-50 text-amber-600"}`}
-                      >
-                        {alert.type === "critical" ? (
-                          <AlertTriangle size={18} />
-                        ) : (
-                          <Info size={18} />
-                        )}
+                    key={alert.id || idx}
+                    className="bg-white rounded-3xl shadow-xs border border-slate-100 overflow-hidden flex relative group hover:shadow-md transition-shadow"
+                  >
+                    <div
+                      className={`w-2 shrink-0 ${alert.nivel === "danger" ? "bg-rose-500" : "bg-amber-400"}`}
+                    ></div>
+                    <div className="p-5 flex-1">
+                      <div className="flex justify-between items-start">
+                        <div
+                          className={`p-2 rounded-xl ${alert.nivel === "danger" ? "bg-rose-50 text-rose-600" : "bg-amber-50 text-amber-600"}`}
+                        >
+                          {alert.nivel === "danger" ? (
+                            <AlertTriangle size={18} />
+                          ) : (
+                            <Info size={18} />
+                          )}
+                        </div>
+                        <span className="text-[10px] font-bold text-slate-400">
+                          {alert.modulo || "Sistema"}
+                        </span>
                       </div>
-                      <span className="text-[10px] font-bold text-slate-400">
-                        {alert.time}
-                      </span>
+                      <h4 className="font-bold text-slate-900 mt-4">
+                        {alert.mensaje}
+                      </h4>
+                      {alert.accion_sugerida && (
+                        <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                          {alert.accion_sugerida}
+                        </p>
+                      )}
                     </div>
-                    <h4 className="font-bold text-slate-900 mt-4">
-                      {alert.title}
-                    </h4>
-                    <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
-                      {alert.desc}
-                    </p>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
 
             {/* Graficos Dashboard */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
               {/* Gráfica de Crecimiento */}
-              <Card className="p-6 border border-slate-100 flex flex-col justify-between rounded-4xl bg-white shadow-sm">
+              <Card className="p-6 border border-slate-100 flex flex-col justify-between rounded-4xl bg-white shadow-xs">
                 <div>
                   <div className="flex justify-between items-center mb-6">
                     <h3 className="text-xl font-black italic text-slate-800 flex items-center gap-2">
@@ -634,62 +600,71 @@ const ReportsView = () => {
                       Crecimiento Global
                     </h3>
                     <span className="text-xs font-bold bg-slate-100 text-slate-600 px-3 py-1 rounded-lg">
-                      Últimos 6 meses
+                      {animalsCount > 0 ? "Activo" : "Sin registros"}
                     </span>
                   </div>
-                  {/* Placeholder SVG para Gráfica de Líneas */}
-                  <div className="h-64 w-full relative">
-                    <div className="absolute inset-0 flex flex-col justify-between">
-                      {[1, 2, 3, 4, 5].map((i) => (
-                        <div
-                          key={i}
-                          className="border-t border-slate-100 w-full h-0"
-                        ></div>
-                      ))}
+                  {animalsCount === 0 ? (
+                    <div className="h-64 flex flex-col items-center justify-center text-slate-400 text-xs text-center p-4">
+                      <TrendingUp className="w-10 h-10 text-slate-200 mb-2" />
+                      <p className="font-bold text-slate-600">Sin lecturas de peso registradas</p>
+                      <p className="text-slate-400 mt-0.5">Las curvas de crecimiento se graficarán conforme se registren pesajes.</p>
                     </div>
-                    <svg
-                      className="w-full h-full relative z-10"
-                      viewBox="0 0 100 100"
-                      preserveAspectRatio="none"
-                    >
-                      <polyline
-                        points="0,80 20,65 40,55 60,35 80,25 100,10"
-                        fill="none"
-                        stroke="#3b82f6"
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                      <polyline
-                        points="0,85 20,70 40,60 60,45 80,30 100,20"
-                        fill="none"
-                        stroke="#10b981"
-                        strokeWidth="2"
-                        strokeDasharray="4 4"
-                        className="opacity-50"
-                      />
-                    </svg>
+                  ) : (
+                    <div className="h-64 w-full relative">
+                      <div className="absolute inset-0 flex flex-col justify-between">
+                        {[1, 2, 3, 4, 5].map((i) => (
+                          <div
+                            key={i}
+                            className="border-t border-slate-100 w-full h-0"
+                          ></div>
+                        ))}
+                      </div>
+                      <svg
+                        className="w-full h-full relative z-10"
+                        viewBox="0 0 100 100"
+                        preserveAspectRatio="none"
+                      >
+                        <polyline
+                          points="0,80 20,65 40,55 60,35 80,25 100,10"
+                          fill="none"
+                          stroke="#3b82f6"
+                          strokeWidth="3"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                        <polyline
+                          points="0,85 20,70 40,60 60,45 80,30 100,20"
+                          fill="none"
+                          stroke="#10b981"
+                          strokeWidth="2"
+                          strokeDasharray="4 4"
+                          className="opacity-50"
+                        />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+                {animalsCount > 0 && (
+                  <div className="flex gap-4 mt-4 justify-center text-sm font-bold text-slate-500">
+                    <span className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-blue-500"></div>{" "}
+                      Real
+                    </span>
+                    <span className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-emerald-500 opacity-50"></div>{" "}
+                      Ideal
+                    </span>
                   </div>
-                </div>
-                <div className="flex gap-4 mt-4 justify-center text-sm font-bold text-slate-500">
-                  <span className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-blue-500"></div>{" "}
-                    Real
-                  </span>
-                  <span className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-emerald-500 opacity-50"></div>{" "}
-                    Ideal
-                  </span>
-                </div>
+                )}
               </Card>
 
-              {/* Distribución de Lotes */}
-              <Card className="p-6 border border-slate-100 flex flex-col justify-between rounded-4xl bg-white shadow-sm">
+              {/* Distribución del Inventario */}
+              <Card className="p-6 border border-slate-100 flex flex-col justify-between rounded-4xl bg-white shadow-xs">
                 <div>
                   <div className="flex justify-between items-center mb-6">
                     <h3 className="text-xl font-black italic text-slate-800 flex items-center gap-2">
-                      <PieChart className="text-fuchsia-500 h-6 w-6" />{" "}
-                      Distribución del Inventario
+                      <PieChart className="text-emerald-500 h-6 w-6" />{" "}
+                      Distribución del Plantel
                     </h3>
                   </div>
                   <div className="flex justify-center items-center h-64">
@@ -703,81 +678,46 @@ const ReportsView = () => {
                           cy="50"
                           r="40"
                           fill="transparent"
-                          stroke="#e2e8f0"
+                          stroke="#f1f5f9"
                           strokeWidth="20"
                         />
-                        <circle
-                          cx="50"
-                          cy="50"
-                          r="40"
-                          fill="transparent"
-                          stroke="#10b981"
-                          strokeWidth="20"
-                          strokeDasharray="251.2"
-                          strokeDashoffset="138.16"
-                        />
-                        <circle
-                          cx="50"
-                          cy="50"
-                          r="40"
-                          fill="transparent"
-                          stroke="#f59e0b"
-                          strokeWidth="20"
-                          strokeDasharray="251.2"
-                          strokeDashoffset="175.84"
-                          className="origin-center rotate-162"
-                        />
-                        <circle
-                          cx="50"
-                          cy="50"
-                          r="40"
-                          fill="transparent"
-                          stroke="#3b82f6"
-                          strokeWidth="20"
-                          strokeDasharray="251.2"
-                          strokeDashoffset="213.52"
-                          className="origin-center rotate-270"
-                        />
-                        <circle
-                          cx="50"
-                          cy="50"
-                          r="40"
-                          fill="transparent"
-                          stroke="#8b5cf6"
-                          strokeWidth="20"
-                          strokeDasharray="251.2"
-                          strokeDashoffset="226.08"
-                          className="origin-center rotate-324"
-                        />
+                        {animalsCount > 0 && (
+                          <circle
+                            cx="50"
+                            cy="50"
+                            r="40"
+                            fill="transparent"
+                            stroke="#10b981"
+                            strokeWidth="20"
+                            strokeDasharray="251.2"
+                            strokeDashoffset="60"
+                          />
+                        )}
                       </svg>
                       <div className="absolute inset-0 flex flex-col items-center justify-center">
                         <span className="text-3xl font-black text-slate-900">
-                          1.5k
+                          {animalsCount}
                         </span>
                         <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                          Cerdos
+                          Porcinos
                         </span>
                       </div>
                     </div>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4 mt-4 text-xs font-bold text-slate-600">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-emerald-500"></div>{" "}
-                    Ceba (45%)
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-amber-500"></div>{" "}
-                    Levante (30%)
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-blue-500"></div>{" "}
-                    Pre-cebo (15%)
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-purple-500"></div>{" "}
-                    Lactancia (10%)
-                  </div>
+                <div className="grid grid-cols-2 gap-3 mt-4 text-xs font-bold text-slate-600">
+                  {Object.keys(stageDistribution).length === 0 ? (
+                    <div className="col-span-2 text-center text-slate-400 font-semibold py-2">
+                      Sin porcinos clasificados por etapas en el sistema.
+                    </div>
+                  ) : (
+                    Object.entries(stageDistribution).map(([stage, count], idx) => (
+                      <div key={idx} className="flex items-center gap-2">
+                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-500"></div>{" "}
+                        {stage}: {count}
+                      </div>
+                    ))
+                  )}
                 </div>
               </Card>
             </div>
@@ -785,10 +725,10 @@ const ReportsView = () => {
             {/* KPIs del mes */}
             <div className="mt-8">
               <h3 className="text-lg font-black italic text-slate-800 mb-4">
-                KPIs del Mes
+                Indicadores del Sistema
               </h3>
-              <div className="bg-white rounded-4xl shadow-sm overflow-hidden border border-slate-100 p-2">
-                <Table columns={kpiCols} rows={dbKpiData} />
+              <div className="bg-white rounded-4xl shadow-xs overflow-hidden border border-slate-100 p-2">
+                <Table columns={kpiCols} rows={dynamicKpis} />
               </div>
             </div>
           </div>
@@ -798,7 +738,7 @@ const ReportsView = () => {
       {/* RENDERIZADO ACTIVO: VISTA PREVIA IMPRIMIBLE DEL REPORTE GENERADO */}
       {activeReport && (
         <div className="space-y-6">
-          {/* Barra de Acciones del Reporte (Oculta al imprimir) */}
+          {/* Barra de Acciones del Reporte */}
           <div className="flex justify-between items-center bg-slate-900 text-white p-4 rounded-2xl shadow-md no-print">
             <button
               onClick={handleReset}
@@ -809,7 +749,7 @@ const ReportsView = () => {
             </button>
             <Button
               onClick={handlePrintPDF}
-              className="bg-sena-green hover:bg-sena-green/80 border-none text-white font-black px-6 py-3 rounded-xl flex items-center gap-2 cursor-pointer shadow-md shadow-sena-green/30"
+              className="bg-emerald-600 hover:bg-emerald-500 border-none text-white font-black px-6 py-3 rounded-xl flex items-center gap-2 cursor-pointer shadow-md shadow-emerald-600/30"
             >
               <Download size={18} />
               Exportar a PDF / Imprimir
@@ -817,18 +757,18 @@ const ReportsView = () => {
           </div>
 
           {/* Plantilla A4 / Printable Document Container */}
-          <Card className="printable-report bg-white text-slate-900 p-12 shadow-xl border border-slate-200 rounded-[2.5rem] max-w-225 mx-auto space-y-8 font-sans">
+          <Card className="printable-report bg-white text-slate-900 p-8 sm:p-12 shadow-xl border border-slate-200 rounded-[2.5rem] max-w-225 mx-auto space-y-8 font-sans">
             {/* Header del Documento PDF */}
             <div className="flex justify-between items-start border-b-4 border-slate-900 pb-6">
               <div className="space-y-1">
-                <h1 className="text-3xl font-black tracking-tight text-slate-955 uppercase italic">
-                  Porci<span className="text-sena-green">Tech</span>
+                <h1 className="text-3xl font-black tracking-tight text-slate-950 uppercase italic">
+                  Porci<span className="text-emerald-600">Tech</span>
                 </h1>
                 <p className="text-xs font-black uppercase text-slate-500 tracking-widest">
                   Tecnología de Precisión Porcina
                 </p>
                 <p className="text-[10px] text-slate-400 font-semibold mt-1">
-                  Alineado con estándares Porkcolombia e ICA
+                  Alineado con estándares de bioseguridad ICA
                 </p>
               </div>
               <div className="text-right space-y-1 text-xs">
@@ -839,7 +779,7 @@ const ReportsView = () => {
                   <strong>Emisión:</strong> {activeReport.dateGenerated}
                 </p>
                 <p className="text-slate-500 font-medium">
-                  <strong>Autor:</strong> Alejandro Ruiz
+                  <strong>Granja:</strong> PorciTech Cloud
                 </p>
               </div>
             </div>
@@ -863,8 +803,8 @@ const ReportsView = () => {
 
             {/* Texto de Resumen Ejecutivo */}
             <div className="space-y-3">
-              <h3 className="text-base font-black uppercase text-slate-955 tracking-wider flex items-center gap-2">
-                <div className="w-1.5 h-4 bg-sena-green rounded-full"></div>
+              <h3 className="text-base font-black uppercase text-slate-950 tracking-wider flex items-center gap-2">
+                <div className="w-1.5 h-4 bg-emerald-600 rounded-full"></div>
                 1. Resumen Ejecutivo
               </h3>
               <p className="text-sm leading-relaxed text-slate-700 font-medium bg-slate-50/50 p-4 rounded-xl border border-slate-100">
@@ -875,8 +815,8 @@ const ReportsView = () => {
             {/* KPIs del Reporte */}
             {activeReport.kpis && (
               <div className="space-y-4">
-                <h3 className="text-base font-black uppercase text-slate-955 tracking-wider flex items-center gap-2">
-                  <div className="w-1.5 h-4 bg-sena-green rounded-full"></div>
+                <h3 className="text-base font-black uppercase text-slate-950 tracking-wider flex items-center gap-2">
+                  <div className="w-1.5 h-4 bg-emerald-600 rounded-full"></div>
                   2. Indicadores Clave de Desempeño (KPIs)
                 </h3>
                 <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white p-1">
@@ -888,88 +828,49 @@ const ReportsView = () => {
             {/* Detalle de Datos en Tabla si Aplica */}
             {activeReport.tableRows && (
               <div className="space-y-4">
-                <h3 className="text-base font-black uppercase text-slate-955 tracking-wider flex items-center gap-2">
-                  <div className="w-1.5 h-4 bg-sena-green rounded-full"></div>
+                <h3 className="text-base font-black uppercase text-slate-950 tracking-wider flex items-center gap-2">
+                  <div className="w-1.5 h-4 bg-emerald-600 rounded-full"></div>
                   3. Detalle y Registros del Periodo
                 </h3>
-                <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white p-1">
-                  <table className="w-full text-left border-collapse text-xs font-medium">
-                    <thead>
-                      <tr className="bg-slate-50 text-slate-600 font-black uppercase tracking-wider border-b border-slate-200 text-[10px]">
-                        {activeReport.tableCols.map((col, idx) => (
-                          <th
-                            key={idx}
-                            className="p-3.5 border-r border-slate-100 last:border-0"
-                          >
-                            {col.header}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-150">
-                      {activeReport.tableRows.map((row, rIdx) => (
-                        <tr
-                          key={rIdx}
-                          className="hover:bg-slate-50 transition-colors"
-                        >
-                          {activeReport.tableCols.map((col, cIdx) => (
-                            <td
-                              key={cIdx}
-                              className="p-3.5 border-r border-slate-100 last:border-0 text-slate-700"
+                {activeReport.tableRows.length === 0 ? (
+                  <div className="p-6 text-center text-xs font-semibold text-slate-500 bg-slate-50 rounded-2xl border border-slate-200">
+                    Sin registros disponibles para el criterio o periodo seleccionado en la base de datos oficial.
+                  </div>
+                ) : (
+                  <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white p-1">
+                    <table className="w-full text-left border-collapse text-xs font-medium">
+                      <thead>
+                        <tr className="bg-slate-50 text-slate-600 font-black uppercase tracking-wider border-b border-slate-200 text-[10px]">
+                          {activeReport.tableCols.map((col, idx) => (
+                            <th
+                              key={idx}
+                              className="p-3.5 border-r border-slate-100 last:border-0"
                             >
-                              {row[col.key]}
-                            </td>
+                              {col.header}
+                            </th>
                           ))}
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-
-            {/* Gráfica de Líneas si es Reporte Consolidado o Producción */}
-            {(activeReport.type === "consolidado" ||
-              activeReport.type === "produccion") && (
-              <div className="space-y-4">
-                <h3 className="text-base font-black uppercase text-slate-955 tracking-wider flex items-center gap-2">
-                  <div className="w-1.5 h-4 bg-sena-green rounded-full"></div>
-                  4. Curva Comparativa de Rendimiento y Conversión
-                </h3>
-                <div className="border border-slate-200 rounded-2xl p-4 bg-slate-50/20">
-                  <div className="h-44 w-full relative">
-                    <svg
-                      className="w-full h-full"
-                      viewBox="0 0 100 100"
-                      preserveAspectRatio="none"
-                    >
-                      <polyline
-                        points="0,80 20,65 40,55 60,35 80,25 100,10"
-                        fill="none"
-                        stroke="#3b82f6"
-                        strokeWidth="3"
-                      />
-                      <polyline
-                        points="0,85 20,70 40,60 60,45 80,30 100,20"
-                        fill="none"
-                        stroke="#10b981"
-                        strokeWidth="2"
-                        strokeDasharray="4 4"
-                        className="opacity-50"
-                      />
-                    </svg>
+                      </thead>
+                      <tbody className="divide-y divide-slate-150">
+                        {activeReport.tableRows.map((row, rIdx) => (
+                          <tr
+                            key={rIdx}
+                            className="hover:bg-slate-50 transition-colors"
+                          >
+                            {activeReport.tableCols.map((col, cIdx) => (
+                              <td
+                                key={cIdx}
+                                className="p-3.5 border-r border-slate-100 last:border-0 text-slate-700"
+                              >
+                                {row[col.key]}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
-                  <div className="flex gap-6 mt-4 justify-center text-xs font-black text-slate-500">
-                    <span className="flex items-center gap-2">
-                      <div className="w-4 h-1 bg-blue-500 rounded-full"></div>{" "}
-                      Curva Real Obtenida
-                    </span>
-                    <span className="flex items-center gap-2">
-                      <div className="w-4 h-1 bg-emerald-500 opacity-50 rounded-full border border-dashed border-emerald-500"></div>{" "}
-                      Estándar Ideal Porkcolombia
-                    </span>
-                  </div>
-                </div>
+                )}
               </div>
             )}
 
@@ -978,7 +879,7 @@ const ReportsView = () => {
               <h3 className="text-xs font-black uppercase text-slate-500 tracking-wider">
                 Control Regulatorio y Bioseguridad
               </h3>
-              <div className="p-4 bg-amber-50/50 border border-amber-200 rounded-2xl flex items-start gap-3">
+              <div className="p-4 bg-emerald-50/50 border border-emerald-200 rounded-2xl flex items-start gap-3">
                 <ShieldCheck
                   size={20}
                   className="text-emerald-600 shrink-0 mt-0.5"
@@ -989,9 +890,7 @@ const ReportsView = () => {
                   </p>
                   <p className="text-slate-600 leading-relaxed font-medium">
                     {activeReport.complianceNotes} Todos los datos contenidos en
-                    este reporte han sido calculados de acuerdo a las variables
-                    directas de pesaje, control clínico y consumo de alimento
-                    balanceado diario. Granja registrada ante el ICA.
+                    este reporte son consultados directamente desde la base de datos de producción de la granja.
                   </p>
                 </div>
               </div>
@@ -1005,14 +904,14 @@ const ReportsView = () => {
                   Firma Responsable Técnico
                 </p>
                 <p className="text-slate-400 font-semibold uppercase text-[9px] tracking-wider">
-                  Dr. Ricardo Gómez (MVZ)
+                  Médico Veterinario Zootecnista
                 </p>
               </div>
               <div className="space-y-2">
                 <div className="border-b border-slate-400 mx-auto w-48 h-8"></div>
                 <p className="font-bold text-slate-800">Firma Administrador</p>
                 <p className="text-slate-400 font-semibold uppercase text-[9px] tracking-wider">
-                  Dr. Alejandro Ruiz
+                  Administrador de Granja
                 </p>
               </div>
             </div>

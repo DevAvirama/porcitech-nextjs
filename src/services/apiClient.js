@@ -1,4 +1,24 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+/**
+ * Resuelve dinámicamente la URL base de la API backend de PorciTech.
+ * En el cliente, si se accede por IP de red (ej: 192.168.32.134), apunta al mismo host en el puerto 8000.
+ */
+export const getApiBaseUrl = () => {
+  // En el navegador (cliente), apuntar dinámicamente al mismo host/IP que abrió la página pero en el puerto 8000
+  if (typeof window !== "undefined") {
+    const { hostname } = window.location;
+    if (hostname) {
+      return `http://${hostname}:8000/api/v1`;
+    }
+  }
+  // Si hay una variable explícita definida en build time que no sea localhost, usarla
+  if (process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes("localhost")) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
+  // Fallback para ejecución en servidor (SSR/Next.js interno)
+  return process.env.INTERNAL_API_URL || "http://127.0.0.1:8000/api/v1";
+};
+
+export const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 /**
  * Cliente HTTP centralizado para comunicación con la API backend de PorciTech (FastAPI).
@@ -40,8 +60,9 @@ export async function apiFetch(endpoint, options = {}) {
     }
   }
 
-  // Construir la URL completa asegurando formato limpio
-  const cleanBase = BASE_URL.replace(/\/+$/, '');
+  // Construir la URL completa asegurando formato limpio y host dinámico
+  const base = getApiBaseUrl();
+  const cleanBase = base.replace(/\/+$/, '');
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   const url = endpoint.startsWith('http://') || endpoint.startsWith('https://')
     ? endpoint

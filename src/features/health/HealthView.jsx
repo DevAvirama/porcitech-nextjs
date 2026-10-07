@@ -25,7 +25,7 @@ import Table from "@/components/ui/Table";
 import Input from "@/components/ui/Input";
 import EmptyState from "@/components/ui/EmptyState";
 import ModuleHeader from "@/components/layout/ModuleHeader";
-import { formatDateTime } from "@/utils/formatters";
+import { formatDateTime, getAnimalDisplayName, UUID_REGEX } from "@/utils/formatters";
 import AddHealthRecordModal from "./components/AddHealthRecordModal";
 import BiosecurityView from "./BiosecurityView";
 import {
@@ -144,26 +144,35 @@ export default function HealthView() {
     {
       key: "animal",
       header: "Animal / Arete",
-      render: (row) => (
-        <div>
-          <div className="flex items-center gap-1.5">
-            <span className="font-mono text-xs font-black text-slate-800 bg-slate-100 px-2 py-0.5 rounded-lg">
-              {row.animal_arete || "Sin arete"}
-            </span>
-            {row.animal_alias && (
+      render: (row) => {
+        const rawArete = row.animal_arete;
+        const hasValidArete =
+          rawArete && !UUID_REGEX.test(String(rawArete).trim());
+        const displayName =
+          row.animal_alias ||
+          (hasValidArete ? `#${String(rawArete).trim()}` : "Porcino");
+
+        return (
+          <div>
+            <div className="flex items-center gap-1.5">
+              {hasValidArete && (
+                <span className="font-mono text-xs font-black text-slate-800 bg-slate-100 px-2 py-0.5 rounded-lg">
+                  #{String(rawArete).trim()}
+                </span>
+              )}
               <span className="font-bold text-sm text-slate-900">
-                {row.animal_alias}
+                {displayName}
+              </span>
+            </div>
+            {row.corral_codigo && (
+              <span className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
+                <Warehouse className="h-3 w-3" />
+                Corral: {row.corral_codigo}
               </span>
             )}
           </div>
-          {row.corral_codigo && (
-            <span className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
-              <Warehouse className="h-3 w-3" />
-              Corral: {row.corral_codigo}
-            </span>
-          )}
-        </div>
-      ),
+        );
+      },
     },
     {
       key: "tipo_evento",
@@ -382,14 +391,24 @@ export default function HealthView() {
                     key={alert.id || alert.animal_id || idx}
                     className="p-3.5 bg-white/90 border border-rose-200 rounded-2xl shadow-2xs flex flex-col justify-between"
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="font-mono text-xs font-black text-slate-800 bg-slate-100 px-2 py-0.5 rounded">
-                        {alert.animal_arete || "Cerdo"}
-                      </span>
-                      <span className="text-[10px] font-bold text-slate-400">
-                        {alert.corral_codigo ? `Corral: ${alert.corral_codigo}` : ""}
-                      </span>
-                    </div>
+                    {(() => {
+                      const rawArete = alert.animal_arete;
+                      const hasValidArete =
+                        rawArete && !UUID_REGEX.test(String(rawArete).trim());
+                      const displayName =
+                        alert.animal_alias ||
+                        (hasValidArete ? `#${String(rawArete).trim()}` : "Cerdo en retiro");
+                      return (
+                        <div className="flex items-center justify-between">
+                          <span className="font-mono text-xs font-black text-slate-800 bg-slate-100 px-2 py-0.5 rounded">
+                            {hasValidArete ? `#${String(rawArete).trim()}` : displayName}
+                          </span>
+                          <span className="text-[10px] font-bold text-slate-400">
+                            {alert.corral_codigo ? `Corral: ${alert.corral_codigo}` : ""}
+                          </span>
+                        </div>
+                      );
+                    })()}
 
                     <div className="my-2">
                       <p className="text-xs font-black text-slate-900">
@@ -509,7 +528,7 @@ export default function HealthView() {
                 Buscar por Arete, Alias o Producto
               </label>
               <Input
-                placeholder="Ej: PT-2026-001, Ivermectina, Titan..."
+                placeholder="Ej: Código de arete, alias o medicamento..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full shadow-sm text-sm"

@@ -23,7 +23,7 @@ import Table from "@/components/ui/Table";
 import Input from "@/components/ui/Input";
 import EmptyState from "@/components/ui/EmptyState";
 import ModuleHeader from "@/components/layout/ModuleHeader";
-import { formatDateTime } from "@/utils/formatters";
+import { formatDateTime, getAnimalDisplayName, UUID_REGEX } from "@/utils/formatters";
 import {
   getServices,
   createService,
@@ -148,15 +148,16 @@ export default function ReproductionView() {
       setWeanings(Array.isArray(weaningsData) ? weaningsData : []);
 
       const allAnimals = Array.isArray(animalsData) ? animalsData : [];
+      // Segregación zootécnica estricta por sexo biológico
       const sows = allAnimals.filter(
-        (a) => a.sexo === "hembra" || a.sexo === "Hembra"
+        (a) => (a.sexo || "").toLowerCase().trim() === "hembra"
       );
       const boars = allAnimals.filter(
-        (a) => a.sexo === "macho" || a.sexo === "Macho"
+        (a) => (a.sexo || "").toLowerCase().trim() === "macho"
       );
 
-      setFemales(sows.length > 0 ? sows : allAnimals);
-      setMales(boars.length > 0 ? boars : allAnimals);
+      setFemales(sows);
+      setMales(boars);
       setCorrales(Array.isArray(corralesData) ? corralesData : []);
     } catch (err) {
       console.error("Error al cargar ciclo reproductivo:", err);
@@ -181,6 +182,31 @@ export default function ReproductionView() {
     date.setDate(date.getDate() + GESTATION_DAYS);
     return date.toISOString().split("T")[0];
   }, [serviceForm.fecha_servicio]);
+
+  // Filtrar sementales activos (excluir machos en línea de ceba/engorde)
+  const breedingMales = useMemo(() => {
+    return males.filter((m) => {
+      const isMacho = (m.sexo || "").toLowerCase().trim() === "macho";
+      if (!isMacho) return false;
+      const estado = (m.estado || "").toLowerCase();
+      const estadoRep = (m.estado_reproductivo || m.estadoReproductivo || "").toLowerCase();
+      if (estadoRep.includes("no reproductor") || estadoRep.includes("ceba")) return false;
+      if (estado === "engorde" || estado === "ceba") return false;
+      return true;
+    });
+  }, [males]);
+
+  // Hembras con servicio previo confirmado positivo (requisito biológico para registrar parto)
+  const confirmedFemales = useMemo(() => {
+    return females.filter((f) => {
+      if ((f.sexo || "").toLowerCase().trim() !== "hembra") return false;
+      return services.some(
+        (s) =>
+          (s.hembra_id === f.id || s.id_cerda === f.id) &&
+          s.estado_confirmacion === "positiva"
+      );
+    });
+  }, [females, services]);
 
   // KPIs reactivos
   const gestacionesConfirmadas = useMemo(() => {
@@ -270,6 +296,11 @@ export default function ReproductionView() {
 
   // Abrir Modal de Diagnóstico de Gestación
   const handleOpenDiagnoseModal = (service) => {
+    // Validación estricta: diagnóstico de preñez solo aplica a hembras
+    if (service.hembra_sexo && service.hembra_sexo.toLowerCase() !== "hembra") {
+      toast.error("El diagnóstico de preñez solo es aplicable a hembras reproductoras.");
+      return;
+    }
     setSelectedServiceForDiagnose(service);
     setDiagnoseForm({
       estado_confirmacion: "positiva",
@@ -291,7 +322,13 @@ export default function ReproductionView() {
         observaciones: diagnoseForm.observaciones?.trim() || undefined,
       });
 
-      const hembraStr = selectedServiceForDiagnose.hembra_arete || "la cerda";
+      const validArete =
+        selectedServiceForDiagnose.hembra_arete &&
+        !UUID_REGEX.test(selectedServiceForDiagnose.hembra_arete)
+          ? `#${selectedServiceForDiagnose.hembra_arete}`
+          : null;
+      const hembraStr =
+        selectedServiceForDiagnose.hembra_alias || validArete || "la cerda";
       toast.success(
         `Servicio diagnosticado como "${diagnoseForm.estado_confirmacion.toUpperCase()}". ${
           diagnoseForm.estado_confirmacion === "positiva"
@@ -315,6 +352,19 @@ export default function ReproductionView() {
 
     if (!farrowingForm.hembra_id) {
       toast.error("Seleccione la cerda madre");
+      return;
+    }
+
+    // Validación biológica estricta: solo hembras con servicio previo confirmado positivo
+    const hasConfirmedService = services.some(
+      (s) =>
+        (s.hembra_id === farrowingForm.hembra_id || s.id_cerda === farrowingForm.hembra_id) &&
+        s.estado_confirmacion === "positiva"
+    );
+    if (!hasConfirmedService) {
+      toast.error(
+        "Validación Zootécnica: Solo se pueden registrar partos para hembras con servicio previo confirmado positivo."
+      );
       return;
     }
     const vivos = parseInt(farrowingForm.nacidos_vivos, 10);
@@ -430,18 +480,26 @@ export default function ReproductionView() {
     {
       key: "hembra",
       header: "Cerda Madre / Arete",
-      render: (row) => (
-        <div className="flex items-center gap-2">
-          <span className="font-mono text-xs font-black text-slate-800 bg-slate-100 px-2 py-0.5 rounded">
-            {row.hembra_arete || "Hembra"}
-          </span>
-          {row.hembra_alias && (
+      render: (row) => {
+        const rawArete = row.hembra_arete;
+        const hasValidArete =
+          rawArete && !UUID_REGEX.test(String(rawArete).trim());
+        const displayName =
+          row.hembra_alias ||
+          (hasValidArete ? `#${String(rawArete).trim()}` : "Cerda Madre");
+        return (
+          <div className="flex items-center gap-2">
+            {hasValidArete && (
+              <span className="font-mono text-xs font-black text-slate-800 bg-slate-100 px-2 py-0.5 rounded">
+                #{String(rawArete).trim()}
+              </span>
+            )}
             <span className="font-bold text-sm text-slate-900">
-              {row.hembra_alias}
+              {displayName}
             </span>
-          )}
-        </div>
-      ),
+          </div>
+        );
+      },
     },
     {
       key: "tipo_servicio",
@@ -538,11 +596,16 @@ export default function ReproductionView() {
     {
       key: "hembra",
       header: "Cerda Madre",
-      render: (row) => (
-        <span className="font-mono text-xs font-black text-slate-800 bg-slate-100 px-2.5 py-1 rounded">
-          {row.hembra_arete || "Cerda"}
-        </span>
-      ),
+      render: (row) => {
+        const rawArete = row.hembra_arete;
+        const hasValidArete =
+          rawArete && !UUID_REGEX.test(String(rawArete).trim());
+        return (
+          <span className="font-mono text-xs font-black text-slate-800 bg-slate-100 px-2.5 py-1 rounded">
+            {hasValidArete ? `#${String(rawArete).trim()}` : (row.hembra_alias || "Cerda")}
+          </span>
+        );
+      },
     },
     {
       key: "corral",
@@ -612,11 +675,16 @@ export default function ReproductionView() {
     {
       key: "hembra",
       header: "Cerda Madre",
-      render: (row) => (
-        <span className="font-mono text-xs font-black text-slate-800 bg-slate-100 px-2.5 py-1 rounded">
-          {row.hembra_arete || "Madre"}
-        </span>
-      ),
+      render: (row) => {
+        const rawArete = row.hembra_arete;
+        const hasValidArete =
+          rawArete && !UUID_REGEX.test(String(rawArete).trim());
+        return (
+          <span className="font-mono text-xs font-black text-slate-800 bg-slate-100 px-2.5 py-1 rounded">
+            {hasValidArete ? `#${String(rawArete).trim()}` : (row.hembra_alias || "Madre")}
+          </span>
+        );
+      },
     },
     {
       key: "fecha",
@@ -954,12 +1022,21 @@ export default function ReproductionView() {
                   className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-semibold focus:ring-2 focus:ring-fuchsia-500 outline-none text-sm cursor-pointer"
                   required
                 >
-                  <option value="">Seleccione hembra...</option>
-                  {females.map((f) => (
-                    <option key={f.id} value={f.id}>
-                      {f.codigo_arete} - {f.nombre_alias || "Sin alias"} ({f.raza || "Cerda"})
-                    </option>
-                  ))}
+                  <option value="">Seleccione hembra reproductora...</option>
+                  {females
+                    .filter((f) => (f.sexo || "").toLowerCase().trim() === "hembra")
+                    .map((f) => {
+                      const displayName = getAnimalDisplayName(f);
+                      const validArete =
+                        f.codigo_arete && !UUID_REGEX.test(f.codigo_arete)
+                          ? `#${f.codigo_arete} · `
+                          : "";
+                      return (
+                        <option key={f.id} value={f.id}>
+                          {validArete ? `${validArete}${displayName}` : displayName} ({f.raza || "Cerda"})
+                        </option>
+                      );
+                    })}
                 </select>
               </div>
 
@@ -1019,12 +1096,22 @@ export default function ReproductionView() {
                     className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-semibold focus:ring-2 focus:ring-fuchsia-500 outline-none text-sm cursor-pointer"
                     required
                   >
-                    <option value="">Seleccione macho...</option>
-                    {males.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.codigo_arete} - {m.nombre_alias || "Sin alias"} ({m.raza || "Macho"})
-                      </option>
-                    ))}
+                    <option value="">Seleccione macho semental...</option>
+                    {(breedingMales.length > 0
+                      ? breedingMales
+                      : males.filter((m) => (m.sexo || "").toLowerCase().trim() === "macho")
+                    ).map((m) => {
+                      const displayName = getAnimalDisplayName(m);
+                      const validArete =
+                        m.codigo_arete && !UUID_REGEX.test(m.codigo_arete)
+                          ? `#${m.codigo_arete} · `
+                          : "";
+                      return (
+                        <option key={m.id} value={m.id}>
+                          {validArete ? `${validArete}${displayName}` : displayName} ({m.raza || "Macho Semental"})
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
               ) : (
@@ -1131,26 +1218,52 @@ export default function ReproductionView() {
             <div className="space-y-4">
               <div>
                 <label className="text-xs font-bold text-slate-700 uppercase block mb-1.5">
-                  Cerda Madre *
+                  Cerda Madre (Gestación Confirmada) *
                 </label>
-                <select
-                  value={farrowingForm.hembra_id}
-                  onChange={(e) =>
-                    setFarrowingForm({
-                      ...farrowingForm,
-                      hembra_id: e.target.value,
-                    })
-                  }
-                  className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-semibold focus:ring-2 focus:ring-emerald-500 outline-none text-sm cursor-pointer"
-                  required
-                >
-                  <option value="">Seleccione madre...</option>
-                  {females.map((f) => (
-                    <option key={f.id} value={f.id}>
-                      {f.codigo_arete} - {f.nombre_alias || "Sin alias"} ({f.raza || "Cerda"})
-                    </option>
-                  ))}
-                </select>
+                {confirmedFemales.length > 0 ? (
+                  <select
+                    value={farrowingForm.hembra_id}
+                    onChange={(e) => {
+                      const selId = e.target.value;
+                      const matchingService = services.find(
+                        (s) =>
+                          (s.hembra_id === selId || s.id_cerda === selId) &&
+                          s.estado_confirmacion === "positiva"
+                      );
+                      setFarrowingForm({
+                        ...farrowingForm,
+                        hembra_id: selId,
+                        servicio_id: matchingService ? matchingService.id : "",
+                      });
+                    }}
+                    className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-semibold focus:ring-2 focus:ring-emerald-500 outline-none text-sm cursor-pointer"
+                    required
+                  >
+                    <option value="">Seleccione madre con servicio confirmado...</option>
+                    {confirmedFemales.map((f) => {
+                      const displayName = getAnimalDisplayName(f);
+                      const validArete =
+                        f.codigo_arete && !UUID_REGEX.test(f.codigo_arete)
+                          ? `#${f.codigo_arete} · `
+                          : "";
+                      return (
+                        <option key={f.id} value={f.id}>
+                          {validArete ? `${validArete}${displayName}` : displayName} ({f.raza || "Cerda"}) - Gestación Confirmada
+                        </option>
+                      );
+                    })}
+                  </select>
+                ) : (
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900">
+                    <p className="font-bold flex items-center gap-1.5 mb-1 text-amber-800">
+                      <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                      Sin hembras con servicio confirmado positivo
+                    </p>
+                    <p className="text-slate-600 leading-relaxed">
+                      Para registrar un parto, la cerda debe contar previamente con un servicio registrado y diagnóstico de preñez confirmado como <strong>positiva</strong> (+114 días).
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -1355,11 +1468,18 @@ export default function ReproductionView() {
                   required
                 >
                   <option value="">Seleccione madre...</option>
-                  {females.map((f) => (
-                    <option key={f.id} value={f.id}>
-                      {f.codigo_arete} - {f.nombre_alias || "Sin alias"} ({f.raza || "Cerda"})
-                    </option>
-                  ))}
+                  {females.map((f) => {
+                    const displayName = getAnimalDisplayName(f);
+                    const validArete =
+                      f.codigo_arete && !UUID_REGEX.test(f.codigo_arete)
+                        ? `#${f.codigo_arete} · `
+                        : "";
+                    return (
+                      <option key={f.id} value={f.id}>
+                        {validArete ? `${validArete}${displayName}` : displayName} ({f.raza || "Cerda"})
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
 
@@ -1515,9 +1635,14 @@ export default function ReproductionView() {
             <p className="text-xs text-slate-500 font-semibold mb-5">
               Confirmación clínica o ecográfica para la cerda{" "}
               <strong className="text-slate-900 font-black">
-                {selectedServiceForDiagnose.hembra_arete}
+                {selectedServiceForDiagnose.hembra_arete &&
+                !UUID_REGEX.test(selectedServiceForDiagnose.hembra_arete)
+                  ? `#${selectedServiceForDiagnose.hembra_arete}`
+                  : (selectedServiceForDiagnose.hembra_alias || "Cerda Madre")}
               </strong>
-              {selectedServiceForDiagnose.hembra_alias
+              {selectedServiceForDiagnose.hembra_alias &&
+              selectedServiceForDiagnose.hembra_arete &&
+              !UUID_REGEX.test(selectedServiceForDiagnose.hembra_arete)
                 ? ` ("${selectedServiceForDiagnose.hembra_alias}")`
                 : ""}
             </p>

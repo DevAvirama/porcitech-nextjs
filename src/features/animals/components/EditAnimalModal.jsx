@@ -7,6 +7,21 @@ import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { updateAnimal } from "@/services/animalService";
+import { getAnimalDisplayName, UUID_REGEX } from "@/utils/formatters";
+
+const ESTADOS_REPRODUCTIVOS_MACHO = [
+  "No reproductor / Ceba",
+  "Semental activo",
+  "En descanso",
+];
+
+const ESTADOS_REPRODUCTIVOS_HEMBRA = [
+  "Vacía",
+  "Inseminada / Servida",
+  "Gestante",
+  "Lactante",
+  "Descarte",
+];
 
 export default function EditAnimalModal({
   isOpen,
@@ -18,6 +33,8 @@ export default function EditAnimalModal({
   const [formData, setFormData] = useState({
     codigo_arete: "",
     nombre_alias: "",
+    sexo: "hembra",
+    estado_reproductivo: "Vacía",
     corral_id: "",
     estado: "activo",
     peso_actual_kg: "",
@@ -26,9 +43,13 @@ export default function EditAnimalModal({
 
   useEffect(() => {
     if (animal) {
+      const isMale = (animal.sexo || "").toLowerCase() === "macho";
+      const defaultRep = isMale ? "No reproductor / Ceba" : "Vacía";
       setFormData({
         codigo_arete: animal.codigo_arete || "",
         nombre_alias: animal.nombre_alias || "",
+        sexo: isMale ? "macho" : "hembra",
+        estado_reproductivo: animal.estado_reproductivo || animal.estadoReproductivo || defaultRep,
         corral_id: animal.corral_id || animal.corral?.id || "",
         estado: animal.estado || "activo",
         peso_actual_kg: animal.peso_actual_kg ?? "",
@@ -46,6 +67,8 @@ export default function EditAnimalModal({
       const payload = {
         codigo_arete: formData.codigo_arete.trim(),
         nombre_alias: formData.nombre_alias.trim() || null,
+        sexo: formData.sexo,
+        estado_reproductivo: formData.estado_reproductivo,
         corral_id: formData.corral_id && formData.corral_id !== "none" ? formData.corral_id : null,
         estado: formData.estado,
       };
@@ -55,7 +78,31 @@ export default function EditAnimalModal({
       }
 
       await updateAnimal(animal.id, payload);
-      toast.success(`Animal #${payload.codigo_arete} actualizado y reubicado con éxito.`);
+
+      // Sincronizar en cache offline si aplica
+      try {
+        const stored = localStorage.getItem("sip_animals");
+        if (stored) {
+          const list = JSON.parse(stored);
+          const updatedList = list.map((a) =>
+            a.id === animal.id
+              ? {
+                  ...a,
+                  ...payload,
+                  sexo: formData.sexo,
+                  estado_reproductivo: formData.estado_reproductivo,
+                }
+              : a
+          );
+          localStorage.setItem("sip_animals", JSON.stringify(updatedList));
+        }
+      } catch {}
+      const validCode =
+        payload.codigo_arete && !UUID_REGEX.test(payload.codigo_arete)
+          ? `#${payload.codigo_arete}`
+          : null;
+      const displayUpdated = payload.nombre_alias || validCode || "Ejemplar";
+      toast.success(`Animal ${displayUpdated} actualizado y reubicado con éxito.`);
       if (onAnimalUpdated) onAnimalUpdated();
       onClose();
     } catch (err) {
@@ -114,6 +161,56 @@ export default function EditAnimalModal({
                 setFormData({ ...formData, nombre_alias: e.target.value })
               }
             />
+          </div>
+
+          {/* Sexo Biológico y Estado Reproductivo */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-sm font-semibold text-slate-700 block">
+                Sexo Biológico *
+              </label>
+              <select
+                value={formData.sexo}
+                onChange={(e) => {
+                  const newSexo = e.target.value;
+                  setFormData({
+                    ...formData,
+                    sexo: newSexo,
+                    estado_reproductivo:
+                      newSexo === "macho" ? "No reproductor / Ceba" : "Vacía",
+                  });
+                }}
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-950 font-semibold outline-none text-sm cursor-pointer"
+              >
+                <option value="hembra">♀ Hembra</option>
+                <option value="macho">♂ Macho</option>
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-semibold text-slate-700 block">
+                Estado Reproductivo *
+              </label>
+              <select
+                value={formData.estado_reproductivo}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    estado_reproductivo: e.target.value,
+                  })
+                }
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-950 font-semibold outline-none text-sm cursor-pointer"
+              >
+                {(formData.sexo === "macho"
+                  ? ESTADOS_REPRODUCTIVOS_MACHO
+                  : ESTADOS_REPRODUCTIVOS_HEMBRA
+                ).map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {/* Corral de Ubicación */}

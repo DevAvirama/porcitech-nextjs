@@ -5,6 +5,7 @@ import Table from "../../../components/ui/Table";
 import AnimalStatusBadge from "./AnimalStatusBadge";
 import { QrCode, FileText, ArrowRightLeft } from "lucide-react";
 import Link from "next/link";
+import { getAnimalDisplayName, UUID_REGEX } from "@/utils/formatters";
 
 const AnimalTable = ({
   animals = [],
@@ -20,17 +21,21 @@ const AnimalTable = ({
       key: "arete",
       header: "ARETE / IDENTIFICACIÓN",
       render: (row) => {
-        const arete =
+        const rawArete =
           row.codigo_arete ||
-          (row.codigo_qr ? row.codigo_qr.replace(/^QR-/, "") : "S/A");
+          (row.codigo_qr ? row.codigo_qr.replace(/^QR-/, "") : null);
+        const hasValidArete =
+          rawArete && !UUID_REGEX.test(String(rawArete).trim());
+        const displayName = getAnimalDisplayName(row);
+
         return (
           <div className="flex flex-col">
             <span className="font-extrabold text-slate-900 tracking-tight text-sm">
-              #{arete}
+              {hasValidArete ? `#${String(rawArete).trim()}` : displayName}
             </span>
-            {row.nombre_alias && (
+            {hasValidArete && (row.nombre_alias || row.nombre) && (
               <span className="text-xs font-semibold text-slate-500 italic">
-                &ldquo;{row.nombre_alias}&rdquo;
+                &ldquo;{row.nombre_alias || row.nombre}&rdquo;
               </span>
             )}
           </div>

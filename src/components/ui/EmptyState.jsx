@@ -15,7 +15,7 @@ export default function EmptyState({
   return (
     <Card className={`flex flex-col items-center justify-center p-12 text-center bg-white border border-slate-100 rounded-3xl ${className}`}>
       {Icon && (
-        <div className="p-4 bg-slate-50 text-slate-400 rounded-2xl mb-4">
+        <div className="p-4 bg-emerald-50 text-emerald-600 rounded-2xl mb-4 border border-emerald-100/80 shadow-2xs">
           <Icon className="h-10 w-10" />
         </div>
       )}

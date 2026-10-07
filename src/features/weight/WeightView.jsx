@@ -35,6 +35,7 @@ import {
   getAnimalWeightHistory,
   registerManualWeight,
 } from "@/services/weightService";
+import { getAnimalDisplayName, UUID_REGEX } from "@/utils/formatters";
 
 export default function WeightView() {
   // Pestaña activa: 'ia_vision' | 'manual' | 'analytics' | 'history'
@@ -176,9 +177,14 @@ export default function WeightView() {
         // Agregar al historial de la sesión
         const chosen = animals.find((a) => a.id === selectedAnimalId);
         const corralObj = corrales.find((c) => c.id === selectedCorralId);
+        const validArete =
+          chosen?.codigo_arete && !UUID_REGEX.test(chosen.codigo_arete)
+            ? chosen.codigo_arete
+            : null;
         const newLog = {
           id: result.id_registro_persistido || `AI-${Date.now()}`,
-          animalCode: chosen?.codigo_arete || chosen?.id || selectedAnimalId,
+          animalCode: validArete,
+          animalDisplayName: getAnimalDisplayName(chosen),
           animalAlias: chosen?.nombre_alias,
           corralCodigo: corralObj?.codigo || "N/A",
           peso: result.peso_estimado_kg,
@@ -227,9 +233,14 @@ export default function WeightView() {
 
       const chosen = animals.find((a) => a.id === manualForm.animalId);
       const corralObj = corrales.find((c) => c.id === manualForm.corralId);
+      const validArete =
+        chosen?.codigo_arete && !UUID_REGEX.test(chosen.codigo_arete)
+          ? chosen.codigo_arete
+          : null;
       const newLog = {
         id: result?.id || `MAN-${Date.now()}`,
-        animalCode: chosen?.codigo_arete || chosen?.id || manualForm.animalId,
+        animalCode: validArete,
+        animalDisplayName: getAnimalDisplayName(chosen),
         animalAlias: chosen?.nombre_alias,
         corralCodigo: corralObj?.codigo || "N/A",
         peso: parseFloat(manualForm.peso_kg),
@@ -461,11 +472,18 @@ export default function WeightView() {
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-indigo-500 cursor-pointer"
                 >
                   <option value="">-- Elige un ejemplar --</option>
-                  {animals.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.codigo_arete} - {a.nombre_alias || "Sin alias"} ({a.raza || "Porcino"})
-                    </option>
-                  ))}
+                  {animals.map((a) => {
+                    const displayName = getAnimalDisplayName(a);
+                    const validArete =
+                      a.codigo_arete && !UUID_REGEX.test(a.codigo_arete)
+                        ? `#${a.codigo_arete} · `
+                        : "";
+                    return (
+                      <option key={a.id} value={a.id}>
+                        {validArete ? `${validArete}${displayName}` : displayName} ({a.raza || "Porcino"})
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
 
@@ -807,11 +825,18 @@ export default function WeightView() {
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-emerald-500 cursor-pointer"
                 >
                   <option value="">-- Seleccionar cerdo --</option>
-                  {animals.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.codigo_arete} - {a.nombre_alias || "Sin alias"} ({a.raza || "Porcino"})
-                    </option>
-                  ))}
+                  {animals.map((a) => {
+                    const displayName = getAnimalDisplayName(a);
+                    const validArete =
+                      a.codigo_arete && !UUID_REGEX.test(a.codigo_arete)
+                        ? `#${a.codigo_arete} · `
+                        : "";
+                    return (
+                      <option key={a.id} value={a.id}>
+                        {validArete ? `${validArete}${displayName}` : displayName} ({a.raza || "Porcino"})
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
 
@@ -949,9 +974,9 @@ export default function WeightView() {
           ) : gmdData.length === 0 ? (
             <EmptyState
               icon={Activity}
-              title="Sin registros de serie temporal para este corral"
-              description="Aún no se han acumulado suficientes pesajes en TimescaleDB para calcular la curva de Ganancia Media Diaria en este corral."
-              actionLabel="Registrar Pesaje Ahora"
+              title="Sin lecturas de peso registradas"
+              description="Aún no se han acumulado lecturas de peso en TimescaleDB para calcular la curva de Ganancia Media Diaria en este corral."
+              actionLabel="Registrar Primer Pesaje"
               onAction={() => setActiveTab("ia_vision")}
             />
           ) : (
@@ -1022,7 +1047,7 @@ export default function WeightView() {
             <div>
               <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
                 <History size={18} className="text-slate-700" />
-                Historial de Pesajes de la Sesión
+                Historial de Pesajes
               </h3>
               <p className="text-xs text-slate-500">
                 Registros emitidos en la hipertabla de pesajes en TimescaleDB.
@@ -1035,10 +1060,10 @@ export default function WeightView() {
 
           {recentLogs.length === 0 ? (
             <EmptyState
-              icon={Inbox}
-              title="Aún no hay pesajes registrados en esta sesión"
-              description="Realiza una estimación dorsal con la cámara o un registro manual para visualizar el log."
-              actionLabel="Realizar Pesaje IA"
+              icon={Scale}
+              title="Sin lecturas de peso registradas"
+              description="Comienza registrando el primer pesaje físico en báscula o mediante visión artificial."
+              actionLabel="Registrar Primer Pesaje"
               onAction={() => setActiveTab("ia_vision")}
             />
           ) : (
@@ -1057,8 +1082,8 @@ export default function WeightView() {
                   {recentLogs.map((log) => (
                     <tr key={log.id} className="hover:bg-slate-50">
                       <td className="py-3 px-3 font-mono font-bold text-slate-900">
-                        #{log.animalCode}
-                        {log.animalAlias && (
+                        {log.animalCode ? `#${log.animalCode}` : (log.animalDisplayName || "Ejemplar")}
+                        {log.animalCode && log.animalAlias && (
                           <span className="text-slate-500 italic block text-[11px]">
                             {log.animalAlias}
                           </span>

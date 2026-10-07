@@ -19,9 +19,11 @@ import EditAnimalModal from "./components/EditAnimalModal";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import EmptyState from "@/components/ui/EmptyState";
+import Skeleton from "@/components/ui/Skeleton";
 import ModuleHeader from "@/components/layout/ModuleHeader";
 import { getAnimales, deleteAnimal } from "@/services/animalService";
 import { getCorrales } from "@/services/corralService";
+import { getAnimalDisplayName } from "@/utils/formatters";
 
 const AnimalsView = () => {
   const [animals, setAnimals] = useState([]);
@@ -109,7 +111,7 @@ const AnimalsView = () => {
     if (animal) {
       setTrash((prev) => [animal, ...prev]);
       setAnimals((prev) => prev.filter((a) => a.id !== id));
-      toast.success(`Animal #${animal.codigo_arete || animal.id} movido a la papelera`);
+      toast.success(`${getAnimalDisplayName(animal)} movido a la papelera`);
     }
   };
 
@@ -119,12 +121,13 @@ const AnimalsView = () => {
     if (animal) {
       setAnimals((prev) => [animal, ...prev]);
       setTrash((prev) => prev.filter((a) => a.id !== id));
-      toast.success("Animal restaurado a la lista activa");
+      toast.success(`${getAnimalDisplayName(animal)} restaurado a la lista activa`);
     }
   };
 
   // Eliminar definitivamente
   const permanentDelete = async (id) => {
+    const animal = trash.find((a) => a.id === id);
     if (
       window.confirm(
         "¿Eliminar permanentemente este registro? Esta acción intentará removerlo de la base de datos.",
@@ -136,7 +139,7 @@ const AnimalsView = () => {
         console.warn("Aviso al eliminar en backend:", err.message);
       }
       setTrash((prev) => prev.filter((a) => a.id !== id));
-      toast.success("Animal eliminado de forma permanente");
+      toast.success(`${getAnimalDisplayName(animal)} eliminado de forma permanente`);
     }
   };
 
@@ -273,27 +276,32 @@ const AnimalsView = () => {
 
         {/* TABLA PRINCIPAL DE ANIMALES O ESTADOS */}
         {isLoading ? (
-          <div className="bg-white rounded-3xl border border-slate-100 p-8 shadow-sm">
-            <div className="flex flex-col items-center justify-center py-12 gap-3 text-slate-400">
-              <RefreshCw size={28} className="animate-spin text-emerald-500" />
-              <p className="text-sm font-bold text-slate-600">
-                Consultando inventario en PostgreSQL...
-              </p>
+          <div className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm space-y-4">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+              <Skeleton className="h-6 w-48" />
+              <Skeleton className="h-6 w-24" />
             </div>
+            {[1, 2, 3, 4, 5].map((i) => (
+              <Skeleton key={i} className="h-16 w-full rounded-2xl" />
+            ))}
           </div>
         ) : animals.length === 0 ? (
           <EmptyState
             icon={Inbox}
-            title="No se encontraron animales registrados"
+            title={
+              searchTerm || selectedCorral !== "all" || selectedEstado !== "all"
+                ? "No se encontraron animales con los filtros aplicados"
+                : "Sin animales registrados en la base de datos"
+            }
             description={
               searchTerm || selectedCorral !== "all" || selectedEstado !== "all"
                 ? "No hay resultados para los filtros seleccionados. Intenta restablecer los filtros."
-                : "Aún no hay cerdos registrados en la base de datos. Haz clic en 'Añadir Cerdo' para registrar el primero."
+                : "Aún no hay cerdos registrados en la base de datos de PostgreSQL. Comienza añadiendo el primer ejemplar al sistema."
             }
             actionLabel={
               searchTerm || selectedCorral !== "all" || selectedEstado !== "all"
                 ? "Restablecer Filtros"
-                : "+ Registrar Cerdo"
+                : "+ Registrar Primer Animal"
             }
             onAction={
               searchTerm || selectedCorral !== "all" || selectedEstado !== "all"

@@ -65,11 +65,14 @@ export async function createAnimal(animalData) {
     throw new Error('El sexo debe ser "macho" o "hembra".');
   }
 
-  // Si no se especificó código QR, autogenerar uno con base en el arete
+  // Desacoplamiento sanitario: el historial médico y tratamientos inicializan estrictamente vacíos.
+  // Las vacunas NUNCA se asumen por edad del animal.
   const payload = {
     ...animalData,
     codigo_qr: animalData.codigo_qr?.trim() || `QR-${animalData.codigo_arete.trim()}`,
     corral_id: animalData.corral_id && animalData.corral_id !== '' ? animalData.corral_id : null,
+    tratamientos_aplicados: [],
+    historial_medico: [],
   };
 
   return await apiFetch('/animales', {
