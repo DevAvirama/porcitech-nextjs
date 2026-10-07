@@ -1,0 +1,9 @@
+node_modules
+.next
+.git
+.idea
+.vscode
+Dockerfile
+.dockerignore
+npm-debug.log
+pnpm-debug.log
