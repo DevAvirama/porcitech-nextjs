@@ -44,14 +44,36 @@ export async function getCategories() {
 export async function getItems(params = {}) {
   const query = new URLSearchParams();
 
-  if (params.categoria_id && params.categoria_id !== 'all') {
-    query.append('categoria_id', params.categoria_id);
-  }
-  if (params.search && params.search.trim()) {
-    query.append('search', params.search.trim());
-  }
-  if (params.bajo_stock !== undefined && params.bajo_stock !== false && params.bajo_stock !== '') {
-    query.append('bajo_stock', String(params.bajo_stock));
+  if (params && typeof params === 'object') {
+    if (
+      params.categoria_id &&
+      params.categoria_id !== 'all' &&
+      params.categoria_id !== 'undefined' &&
+      params.categoria_id !== 'null' &&
+      String(params.categoria_id).trim() !== ''
+    ) {
+      query.append('categoria_id', String(params.categoria_id).trim());
+    }
+    if (
+      params.search &&
+      typeof params.search === 'string' &&
+      params.search.trim() !== '' &&
+      params.search.trim() !== 'undefined' &&
+      params.search.trim() !== 'null'
+    ) {
+      query.append('search', params.search.trim());
+    }
+    if (
+      params.bajo_stock !== undefined &&
+      params.bajo_stock !== null &&
+      params.bajo_stock !== false &&
+      params.bajo_stock !== '' &&
+      params.bajo_stock !== 'false' &&
+      params.bajo_stock !== 'undefined' &&
+      params.bajo_stock !== 'null'
+    ) {
+      query.append('bajo_stock', 'true');
+    }
   }
 
   const queryString = query.toString();
@@ -111,14 +133,36 @@ export async function createItem(itemData) {
  *   usuario_nombre: string
  * }>>}
  */
-export async function getMovements(params = { limite: 20 }) {
+export async function getMovements(params = {}) {
   const query = new URLSearchParams();
 
-  if (params.limite) {
-    query.append('limite', String(params.limite));
-  }
-  if (params.item_id) {
-    query.append('item_id', params.item_id);
+  if (params && typeof params === 'object') {
+    const limit = params.limite !== undefined && params.limite !== null && params.limite !== '' && !isNaN(Number(params.limite))
+      ? Number(params.limite)
+      : 20;
+    query.append('limite', String(limit));
+
+    if (
+      params.item_id &&
+      params.item_id !== 'all' &&
+      params.item_id !== 'undefined' &&
+      params.item_id !== 'null' &&
+      String(params.item_id).trim() !== ''
+    ) {
+      query.append('item_id', String(params.item_id).trim());
+    }
+
+    if (
+      params.tipo &&
+      params.tipo !== 'all' &&
+      params.tipo !== 'undefined' &&
+      params.tipo !== 'null' &&
+      String(params.tipo).trim() !== ''
+    ) {
+      query.append('tipo', String(params.tipo).trim());
+    }
+  } else {
+    query.append('limite', '20');
   }
 
   const queryString = query.toString();

@@ -90,18 +90,29 @@ export default function InventoryProfileView() {
     setIsLoading(true);
     setError(null);
     try {
-      const [itemData, movementsData] = await Promise.all([
+      const [itemRes, movementsRes] = await Promise.allSettled([
         getItemById(itemId),
         getMovements({ item_id: itemId, limite: 20 }),
       ]);
-      setItem(itemData);
-      setMovements(Array.isArray(movementsData) ? movementsData : []);
-      setMovementForm((prev) => ({
-        ...prev,
-        costo_unitario: itemData?.costo_unitario
-          ? String(itemData.costo_unitario)
-          : "",
-      }));
+
+      if (itemRes.status === "fulfilled" && itemRes.value) {
+        const itemData = itemRes.value;
+        setItem(itemData);
+        setMovementForm((prev) => ({
+          ...prev,
+          costo_unitario: itemData?.costo_unitario
+            ? String(itemData.costo_unitario)
+            : "",
+        }));
+      } else {
+        throw new Error(itemRes.reason?.message || "No fue posible cargar el detalle del insumo.");
+      }
+
+      if (movementsRes.status === "fulfilled" && Array.isArray(movementsRes.value)) {
+        setMovements(movementsRes.value);
+      } else {
+        setMovements([]);
+      }
     } catch (err) {
       console.error("Error al cargar ficha de insumo:", err);
       setError(

@@ -139,16 +139,37 @@ export default function InventoryView() {
     setError(null);
 
     try {
-      const [categoriesData, itemsData, movementsData] = await Promise.all([
+      const [categoriesRes, itemsRes, movementsRes] = await Promise.allSettled([
         getCategories(),
         getItems(),
         getMovements({ limite: 20 }),
       ]);
 
-      const cats = Array.isArray(categoriesData) ? categoriesData : [];
-      setCategories(cats);
-      setItems(Array.isArray(itemsData) ? itemsData : []);
-      setMovements(Array.isArray(movementsData) ? movementsData : []);
+      const errors = [];
+
+      let cats = [];
+      if (categoriesRes.status === "fulfilled" && Array.isArray(categoriesRes.value)) {
+        cats = categoriesRes.value;
+        setCategories(cats);
+      } else if (categoriesRes.status === "rejected") {
+        errors.push(`Categorías: ${categoriesRes.reason?.message || "Error al cargar"}`);
+      }
+
+      if (itemsRes.status === "fulfilled" && Array.isArray(itemsRes.value)) {
+        setItems(itemsRes.value);
+      } else if (itemsRes.status === "rejected") {
+        errors.push(`Insumos: ${itemsRes.reason?.message || "Error al cargar"}`);
+      }
+
+      if (movementsRes.status === "fulfilled" && Array.isArray(movementsRes.value)) {
+        setMovements(movementsRes.value);
+      } else if (movementsRes.status === "rejected") {
+        errors.push(`Movimientos: ${movementsRes.reason?.message || "Error al cargar"}`);
+      }
+
+      if (errors.length > 0) {
+        setError(errors.join(" | "));
+      }
 
       // Si el form de nuevo insumo no tiene categoría asignada por defecto, usar la primera
       if (cats.length > 0 && !newSupply.categoria_id) {

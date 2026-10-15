@@ -8,11 +8,11 @@ RUN pnpm install --frozen-lockfile --dangerously-allow-all-builds
 
 COPY . .
 
-ARG NEXT_PUBLIC_API_URL=http://192.168.32.134:8000/api/v1
+ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NODE_ENV=production
 
-RUN pnpm build
+RUN pnpm run build
 
 EXPOSE 3000
 ENV PORT=3000

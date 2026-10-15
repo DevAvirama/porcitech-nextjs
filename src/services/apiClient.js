@@ -3,22 +3,32 @@
  * En el cliente, si se accede por IP de red (ej: 192.168.32.134), apunta al mismo host en el puerto 8000.
  */
 export const getApiBaseUrl = () => {
-  // En el navegador (cliente), apuntar dinámicamente al mismo host/IP que abrió la página pero en el puerto 8000
+  // En el navegador (cliente)
   if (typeof window !== "undefined") {
     const { hostname } = window.location;
+    const envUrl = process.env.NEXT_PUBLIC_API_URL;
+    // Si process.env.NEXT_PUBLIC_API_URL no está definida o contiene localhost/127.0.0.1 mientras se accede desde IP de VM
+    if (!envUrl || envUrl.includes("localhost") || envUrl.includes("127.0.0.1")) {
+      if (hostname) {
+        return `http://${hostname}:8000/api/v1`;
+      }
+    }
+    if (envUrl) {
+      return envUrl;
+    }
     if (hostname) {
       return `http://${hostname}:8000/api/v1`;
     }
   }
   // Si hay una variable explícita definida en build time que no sea localhost, usarla
-  if (process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes("localhost")) {
+  if (process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes("localhost") && !process.env.NEXT_PUBLIC_API_URL.includes("127.0.0.1")) {
     return process.env.NEXT_PUBLIC_API_URL;
   }
   // Fallback para ejecución en servidor (SSR/Next.js interno)
   return process.env.INTERNAL_API_URL || "http://127.0.0.1:8000/api/v1";
 };
 
-export const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+export const BASE_URL = typeof window !== "undefined" ? getApiBaseUrl() : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1');
 
 /**
  * Cliente HTTP centralizado para comunicación con la API backend de PorciTech (FastAPI).
