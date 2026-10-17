@@ -21,6 +21,9 @@ import {
   Eye,
   History,
   Tag,
+  Trash2,
+  Video,
+  Wifi,
 } from "lucide-react";
 import { toast } from "sonner";
 import Button from "@/components/ui/Button";
@@ -31,11 +34,17 @@ import { getAnimales } from "@/services/animalService";
 import { getCorrales } from "@/services/corralService";
 import {
   estimateWeightWithAI,
+  estimarPesoCamaraRTSP,
+  deletePesaje,
   getCorralGMD,
   getAnimalWeightHistory,
   registerManualWeight,
 } from "@/services/weightService";
 import { getAnimalDisplayName, UUID_REGEX } from "@/utils/formatters";
+
+const DEFAULT_RTSP_URL = "rtsp://admin:123456@192.168.32.200:554/live/ch00_1";
+const DEFAULT_PIXELS_PER_CM = "15.2";
+const UUID_ID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export default function WeightView() {
   // Pestaña activa: 'ia_vision' | 'manual' | 'analytics' | 'history'
@@ -57,6 +66,13 @@ export default function WeightView() {
   const [aiResult, setAiResult] = useState(null);
   const fileInputRef = useRef(null);
 
+  // Fuente de captura: 'upload' (foto/móvil) | 'rtsp' (cámara cenital V380 Pro)
+  const [captureMode, setCaptureMode] = useState("upload");
+  const [rtspUrl, setRtspUrl] = useState(DEFAULT_RTSP_URL);
+  const [pixelsPerCm, setPixelsPerCm] = useState(DEFAULT_PIXELS_PER_CM);
+  const [validarBordes, setValidarBordes] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
+
   // Estados del Flujo de Pesaje Manual
   const [manualForm, setManualForm] = useState({
     animalId: "",
@@ -72,8 +88,11 @@ export default function WeightView() {
   const [gmdData, setGmdData] = useState([]);
   const [isLoadingGMD, setIsLoadingGMD] = useState(false);
 
-  // Historial de pesajes combinados
+  // Historial de pesajes combinados y desde base de datos
   const [recentLogs, setRecentLogs] = useState([]);
+  const [historyAnimalId, setHistoryAnimalId] = useState("");
+  const [dbHistoryLogs, setDbHistoryLogs] = useState([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
   // Cargar animales y corrales al montar el componente
   useEffect(() => {
@@ -141,7 +160,123 @@ export default function WeightView() {
     }
   };
 
-  // Ejecutar inferencia de peso por visión artificial
+  // Recargar datos maestros y GMD tras persistir o anular un pesaje
+  const refreshViewData = async () => {
+    try {
+      const animalsRes = await getAnimales();
+      setAnimals(Array.isArray(animalsRes) ? animalsRes : []);
+    } catch (err) {
+      console.warn("No se pudo recargar la lista de animales:", err.message);
+    }
+    if (analyticsCorralId) {
+      try {
+        const data = await getCorralGMD(analyticsCorralId, 30);
+        setGmdData(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.warn("No se pudo recargar la GMD:", err.message);
+      }
+    }
+    if (historyAnimalId) {
+      try {
+        const res = await getAnimalWeightHistory(historyAnimalId);
+        const list = Array.isArray(res) ? res : [];
+        const chosen = animals.find((a) => a.id === historyAnimalId);
+        const mapped = list.map((reg) => ({
+          id: reg.id_registro || reg.id,
+          id_registro: reg.id_registro || reg.id,
+          animalCode: reg.cerdo_arete || (chosen?.codigo_arete && !UUID_REGEX.test(chosen.codigo_arete) ? chosen.codigo_arete : null),
+          animalDisplayName: chosen ? getAnimalDisplayName(chosen) : (reg.cerdo_alias || "Ejemplar"),
+          animalAlias: reg.cerdo_alias || chosen?.nombre_alias,
+          corralCodigo: reg.corral_codigo || "N/A",
+          peso: reg.peso_kg,
+          metodo: reg.metodo === "vision_ai" ? "ia_vision" : reg.metodo,
+          confianza: reg.confianza_ia,
+          fecha: reg.tiempo || reg.created_at,
+        }));
+        setDbHistoryLogs(mapped);
+      } catch (err) {
+        console.warn("No se pudo recargar el historial del animal:", err.message);
+      }
+    }
+  };
+
+  // Cargar historial de un animal individual al seleccionarlo en la pestaña de historial
+  useEffect(() => {
+    if (historyAnimalId) {
+      setIsLoadingHistory(true);
+      getAnimalWeightHistory(historyAnimalId)
+        .then((res) => {
+          const list = Array.isArray(res) ? res : [];
+          const chosen = animals.find((a) => a.id === historyAnimalId);
+          const mapped = list.map((reg) => ({
+            id: reg.id_registro || reg.id,
+            id_registro: reg.id_registro || reg.id,
+            animalCode: reg.cerdo_arete || (chosen?.codigo_arete && !UUID_REGEX.test(chosen.codigo_arete) ? chosen.codigo_arete : null),
+            animalDisplayName: chosen ? getAnimalDisplayName(chosen) : (reg.cerdo_alias || "Ejemplar"),
+            animalAlias: reg.cerdo_alias || chosen?.nombre_alias,
+            corralCodigo: reg.corral_codigo || "N/A",
+            peso: reg.peso_kg,
+            metodo: reg.metodo === "vision_ai" ? "ia_vision" : reg.metodo,
+            confianza: reg.confianza_ia,
+            fecha: reg.tiempo || reg.created_at,
+          }));
+          setDbHistoryLogs(mapped);
+        })
+        .catch((err) => {
+          console.warn("Aviso al obtener historial del animal:", err.message);
+          setDbHistoryLogs([]);
+        })
+        .finally(() => setIsLoadingHistory(false));
+    } else {
+      setDbHistoryLogs([]);
+    }
+  }, [historyAnimalId, animals]);
+
+  // Procesar respuesta de inferencia (común a archivo y RTSP)
+  const procesarResultadoIA = (result) => {
+    setAiResult(result);
+
+    if (result?.imagen_anotada_base64) {
+      setImagePreview(result.imagen_anotada_base64);
+    }
+
+    if (result?.detectado) {
+      toast.success(
+        `¡Estimación exitosa! Peso: ${result.peso_estimado_kg?.toFixed(2)} kg`,
+      );
+
+      // Agregar al historial de la sesión
+      const chosen = animals.find((a) => a.id === selectedAnimalId);
+      const corralObj = corrales.find((c) => c.id === selectedCorralId);
+      const validArete =
+        chosen?.codigo_arete && !UUID_REGEX.test(chosen.codigo_arete)
+          ? chosen.codigo_arete
+          : null;
+      const newLog = {
+        id: result.id_registro_persistido || `AI-${Date.now()}`,
+        id_registro: result.id_registro_persistido || null,
+        animalCode: validArete,
+        animalDisplayName: getAnimalDisplayName(chosen),
+        animalAlias: chosen?.nombre_alias,
+        corralCodigo: corralObj?.codigo || "N/A",
+        peso: result.peso_estimado_kg,
+        metodo: "ia_vision",
+        confianza: result.confianza,
+        fecha: result.tiempo_registro || new Date().toISOString(),
+      };
+      setRecentLogs((prev) => [newLog, ...prev]);
+
+      if (result.id_registro_persistido) {
+        refreshViewData();
+      }
+    } else {
+      toast.warning(
+        result?.mensaje || "No se detectó el animal en el plano dorsal.",
+      );
+    }
+  };
+
+  // Ejecutar inferencia de peso por visión artificial (archivo / móvil)
   const handleRunAiEstimation = async () => {
     if (!selectedAnimalId) {
       toast.error("Selecciona el cerdo a evaluar.");
@@ -166,45 +301,74 @@ export default function WeightView() {
         corralId: selectedCorralId,
         persist: persistAI,
       });
-
-      setAiResult(result);
-
-      if (result.detectado) {
-        toast.success(
-          `¡Estimación exitosa! Peso: ${result.peso_estimado_kg?.toFixed(2)} kg`,
-        );
-
-        // Agregar al historial de la sesión
-        const chosen = animals.find((a) => a.id === selectedAnimalId);
-        const corralObj = corrales.find((c) => c.id === selectedCorralId);
-        const validArete =
-          chosen?.codigo_arete && !UUID_REGEX.test(chosen.codigo_arete)
-            ? chosen.codigo_arete
-            : null;
-        const newLog = {
-          id: result.id_registro_persistido || `AI-${Date.now()}`,
-          animalCode: validArete,
-          animalDisplayName: getAnimalDisplayName(chosen),
-          animalAlias: chosen?.nombre_alias,
-          corralCodigo: corralObj?.codigo || "N/A",
-          peso: result.peso_estimado_kg,
-          metodo: "ia_vision",
-          confianza: result.confianza,
-          fecha: result.tiempo_registro || new Date().toISOString(),
-        };
-        setRecentLogs((prev) => [newLog, ...prev]);
-      } else {
-        toast.warning(
-          result.mensaje || "No se detectó el animal en el plano dorsal.",
-        );
-      }
+      procesarResultadoIA(result);
     } catch (err) {
       console.error("Error en inferencia de visión IA:", err);
+      setAiResult({ detectado: false, mensaje: err.message });
       toast.error(
         err.message || "Error al procesar la imagen en el microservicio Docker.",
       );
     } finally {
       setIsProcessingAI(false);
+    }
+  };
+
+  // Capturar fotograma desde la cámara cenital V380 Pro (RTSP/TCP) y estimar peso
+  const handleRunRtspEstimation = async () => {
+    if (!selectedAnimalId) {
+      toast.error("Selecciona el cerdo a evaluar.");
+      return;
+    }
+    if (!selectedCorralId) {
+      toast.error("Selecciona el corral de procedencia.");
+      return;
+    }
+
+    setIsProcessingAI(true);
+    setAiResult(null);
+
+    try {
+      const result = await estimarPesoCamaraRTSP({
+        id_cerdo: selectedAnimalId,
+        corral_id: selectedCorralId,
+        rtsp_url: rtspUrl || DEFAULT_RTSP_URL,
+        pixels_per_cm: Number(pixelsPerCm) || 15.2,
+        validar_bordes: validarBordes,
+        persistir: persistAI,
+      });
+      procesarResultadoIA(result);
+    } catch (err) {
+      console.error("Error en captura RTSP V380 Pro:", err);
+      setAiResult({ detectado: false, mensaje: err.message });
+      toast.error(err.message || "No se pudo capturar desde la cámara Wi-Fi.");
+    } finally {
+      setIsProcessingAI(false);
+    }
+  };
+
+  // Anular un pesaje anómalo del historial
+  const handleDeletePesaje = async (log) => {
+    const targetId = log?.id_registro || log?.id;
+    if (!targetId || !UUID_ID_REGEX.test(targetId)) {
+      setRecentLogs((prev) => prev.filter((l) => (l.id_registro || l.id) !== targetId));
+      setDbHistoryLogs((prev) => prev.filter((l) => (l.id_registro || l.id) !== targetId));
+      toast.info("Registro local retirado del historial.");
+      return;
+    }
+    setDeletingId(targetId);
+    try {
+      const res = await deletePesaje(targetId);
+      setRecentLogs((prev) => prev.filter((l) => (l.id_registro || l.id) !== targetId));
+      setDbHistoryLogs((prev) => prev.filter((l) => (l.id_registro || l.id) !== targetId));
+      toast.success(
+        res?.mensaje || `Pesaje anulado. Peso actual recalculado: ${Number(res?.peso_actual_kg ?? 0).toFixed(2)} kg`,
+      );
+      await refreshViewData();
+    } catch (err) {
+      console.error("Error al anular pesaje:", err);
+      toast.error(err.message || "No se pudo anular el pesaje.");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -238,7 +402,7 @@ export default function WeightView() {
           ? chosen.codigo_arete
           : null;
       const newLog = {
-        id: result?.id || `MAN-${Date.now()}`,
+        id: result?.id_registro || result?.id || `MAN-${Date.now()}`,
         animalCode: validArete,
         animalDisplayName: getAnimalDisplayName(chosen),
         animalAlias: chosen?.nombre_alias,
@@ -525,7 +689,49 @@ export default function WeightView() {
               </div>
             </label>
 
+            {/* Selector de Fuente de Captura */}
+            <div className="flex flex-col gap-2">
+              <span className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                Fuente de Captura
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-1.5 bg-slate-100 rounded-2xl">
+                <button
+                  type="button"
+                  id="capture-mode-upload"
+                  onClick={() => {
+                    setCaptureMode("upload");
+                    setAiResult(null);
+                  }}
+                  disabled={isProcessingAI}
+                  className={`px-4 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${
+                    captureMode === "upload"
+                      ? "bg-white text-indigo-700 shadow-sm"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  📁 Subir Fotografía Local
+                </button>
+                <button
+                  type="button"
+                  id="capture-mode-rtsp"
+                  onClick={() => {
+                    setCaptureMode("rtsp");
+                    setAiResult(null);
+                  }}
+                  disabled={isProcessingAI}
+                  className={`px-4 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${
+                    captureMode === "rtsp"
+                      ? "bg-white text-indigo-700 shadow-sm"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  📹 Cámara Cenital Wi-Fi (V380 Pro RTSP)
+                </button>
+              </div>
+            </div>
+
             {/* Área de Captura / Subida de Imagen con Cámara Responsive */}
+            {captureMode === "upload" && (
             <div className="flex flex-col gap-3">
               <input
                 ref={fileInputRef}
@@ -541,7 +747,7 @@ export default function WeightView() {
                 <div className="relative w-full rounded-2xl overflow-hidden border-2 border-slate-200 bg-slate-950 flex items-center justify-center group min-h-64 max-h-96">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={imagePreview}
+                    src={aiResult?.imagen_anotada_base64 || imagePreview}
                     alt="Previsualización dorsal"
                     onLoad={(e) => {
                       setImageDimensions({
@@ -552,8 +758,8 @@ export default function WeightView() {
                     className="max-h-96 w-auto object-contain"
                   />
 
-                  {/* Overlay SVG del Bounding Box de la IA si fue detectado */}
-                  {aiResult?.detectado && aiResult?.bbox && imageDimensions.width > 0 && (
+                  {/* Overlay SVG del Bounding Box (solo si el backend no envió imagen anotada) */}
+                  {aiResult?.detectado && !aiResult?.imagen_anotada_base64 && aiResult?.bbox?.x_min !== undefined && imageDimensions.width > 0 && (
                     <svg
                       viewBox={`0 0 ${imageDimensions.width} ${imageDimensions.height}`}
                       className="absolute inset-0 w-full h-full pointer-events-none"
@@ -629,25 +835,143 @@ export default function WeightView() {
                 </div>
               )}
             </div>
+            )}
+
+            {/* Panel de Cámara Cenital Wi-Fi (V380 Pro RTSP) */}
+            {captureMode === "rtsp" && (
+              <div className="flex flex-col gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="sm:col-span-2">
+                    <label
+                      htmlFor="rtsp-url-input"
+                      className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5"
+                    >
+                      URL RTSP de la Cámara
+                    </label>
+                    <input
+                      id="rtsp-url-input"
+                      type="text"
+                      value={rtspUrl}
+                      onChange={(e) => setRtspUrl(e.target.value)}
+                      placeholder={DEFAULT_RTSP_URL}
+                      disabled={isProcessingAI}
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-900 outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="pixels-per-cm-input"
+                      className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5"
+                    >
+                      Factor de Calibración (px/cm base 1280p)
+                    </label>
+                    <input
+                      id="pixels-per-cm-input"
+                      type="number"
+                      step="0.1"
+                      min="1.1"
+                      max="100"
+                      value={pixelsPerCm}
+                      onChange={(e) => setPixelsPerCm(e.target.value)}
+                      placeholder={DEFAULT_PIXELS_PER_CM}
+                      disabled={isProcessingAI}
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold font-mono text-slate-900 outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                </div>
+
+                <label className="flex items-center gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-200 cursor-pointer select-none">
+                  <input
+                    id="validar-bordes-checkbox"
+                    type="checkbox"
+                    checked={validarBordes}
+                    onChange={(e) => setValidarBordes(e.target.checked)}
+                    className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                  />
+                  <div className="text-xs">
+                    <span className="font-bold text-slate-800">
+                      Validar que el porcino no toque los bordes
+                    </span>
+                    <p className="text-slate-500 text-[11px]">
+                      Rechaza capturas donde el animal sale parcialmente del encuadre cenital.
+                    </p>
+                  </div>
+                </label>
+
+                <div className="relative w-full rounded-2xl overflow-hidden border-2 border-slate-200 bg-slate-950 flex items-center justify-center min-h-64 max-h-96">
+                  {aiResult?.imagen_anotada_base64 ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={aiResult.imagen_anotada_base64}
+                      alt="Fotograma cenital anotado por YOLO"
+                      className="max-h-96 w-auto object-contain"
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center gap-3 text-center p-8 text-slate-400">
+                      <div className="w-14 h-14 rounded-2xl bg-slate-800 text-indigo-300 flex items-center justify-center">
+                        {isProcessingAI ? (
+                          <RefreshCw size={26} className="animate-spin" />
+                        ) : (
+                          <Video size={26} />
+                        )}
+                      </div>
+                      <p className="text-sm font-black text-slate-200">
+                        {isProcessingAI
+                          ? "Drenando buffer RTSP y capturando fotograma en vivo..."
+                          : "Sin captura de la cámara aún"}
+                      </p>
+                      <p className="text-xs max-w-sm">
+                        El fotograma se toma vía RTSP sobre TCP desde la V380 Pro y se procesa en el servidor sin bloquear la API.
+                      </p>
+                    </div>
+                  )}
+                  <span className="absolute top-3 left-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-slate-900/80 text-emerald-300 backdrop-blur-md">
+                    <Wifi size={12} /> V380 Pro · RTSP/TCP
+                  </span>
+                </div>
+              </div>
+            )}
 
             {/* Botón de Ejecución de Inferencia */}
-            <Button
-              type="button"
-              tone="primary"
-              onClick={handleRunAiEstimation}
-              isLoading={isProcessingAI}
-              disabled={isProcessingAI || !imageFile || !selectedAnimalId || !selectedCorralId}
-              className="w-full py-4 rounded-2xl font-black text-sm shadow-xl shadow-indigo-600/20 bg-indigo-600 hover:bg-indigo-700 cursor-pointer"
-            >
-              {isProcessingAI ? (
-                "Iniciando Inferencia en Microservicio YOLO..."
-              ) : (
-                <span className="flex items-center justify-center gap-2">
-                  <Sparkles size={18} />
-                  Calcular Peso con Visión Artificial
-                </span>
-              )}
-            </Button>
+            {captureMode === "upload" ? (
+              <Button
+                type="button"
+                tone="primary"
+                id="run-ai-file-button"
+                onClick={handleRunAiEstimation}
+                isLoading={isProcessingAI}
+                disabled={isProcessingAI || !imageFile || !selectedAnimalId || !selectedCorralId}
+                className="w-full py-4 rounded-2xl font-black text-sm shadow-xl shadow-indigo-600/20 bg-indigo-600 hover:bg-indigo-700 cursor-pointer"
+              >
+                {isProcessingAI ? (
+                  "Iniciando Inferencia en Microservicio YOLO..."
+                ) : (
+                  <span className="flex items-center justify-center gap-2">
+                    <Sparkles size={18} />
+                    Calcular Peso con Visión Artificial
+                  </span>
+                )}
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                tone="primary"
+                id="run-ai-rtsp-button"
+                onClick={handleRunRtspEstimation}
+                isLoading={isProcessingAI}
+                disabled={isProcessingAI || !selectedAnimalId || !selectedCorralId}
+                className="w-full py-4 rounded-2xl font-black text-sm shadow-xl shadow-indigo-600/20 bg-indigo-600 hover:bg-indigo-700 cursor-pointer"
+              >
+                {isProcessingAI ? (
+                  "Capturando fotograma desde la cámara Wi-Fi..."
+                ) : (
+                  <span className="flex items-center justify-center gap-2">
+                    <Video size={18} />
+                    Capturar y Calcular Peso desde Cámara Wi-Fi
+                  </span>
+                )}
+              </Button>
+            )}
           </Card>
 
           {/* Panel Derecho: Resultados Morfométricos en Tiempo Real */}
@@ -1043,7 +1367,7 @@ export default function WeightView() {
           ======================================================== */}
       {activeTab === "history" && (
         <Card className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-5 border-b border-slate-100 pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5 border-b border-slate-100 pb-4">
             <div>
               <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
                 <History size={18} className="text-slate-700" />
@@ -1053,12 +1377,31 @@ export default function WeightView() {
                 Registros emitidos en la hipertabla de pesajes en TimescaleDB.
               </p>
             </div>
-            <span className="text-xs font-bold px-3 py-1 bg-slate-100 text-slate-700 rounded-full">
-              {recentLogs.length} tomas registradas
-            </span>
+            <div className="flex flex-wrap items-center gap-3">
+              <select
+                value={historyAnimalId}
+                onChange={(e) => setHistoryAnimalId(e.target.value)}
+                className="px-3.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-indigo-500 cursor-pointer"
+              >
+                <option value="">-- Ver tomas de la sesión --</option>
+                {animals.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {getAnimalDisplayName(a)} ({a.peso_actual_kg || 0} kg)
+                  </option>
+                ))}
+              </select>
+              <span className="text-xs font-bold px-3 py-1 bg-slate-100 text-slate-700 rounded-full">
+                {(historyAnimalId ? dbHistoryLogs : recentLogs).length} tomas
+              </span>
+            </div>
           </div>
 
-          {recentLogs.length === 0 ? (
+          {isLoadingHistory ? (
+            <div className="p-8 text-center text-slate-400 flex flex-col items-center justify-center gap-2">
+              <RefreshCw size={22} className="animate-spin text-indigo-600" />
+              <p className="text-xs font-bold text-slate-600">Consultando historial en TimescaleDB...</p>
+            </div>
+          ) : (historyAnimalId ? dbHistoryLogs : recentLogs).length === 0 ? (
             <EmptyState
               icon={Scale}
               title="Sin lecturas de peso registradas"
@@ -1076,10 +1419,11 @@ export default function WeightView() {
                     <th className="py-3 px-3">Método</th>
                     <th className="py-3 px-3">Peso</th>
                     <th className="py-3 px-3">Fecha y Hora</th>
+                    <th className="py-3 px-3 text-right">Acciones</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {recentLogs.map((log) => (
+                  {(historyAnimalId ? dbHistoryLogs : recentLogs).map((log) => (
                     <tr key={log.id} className="hover:bg-slate-50">
                       <td className="py-3 px-3 font-mono font-bold text-slate-900">
                         {log.animalCode ? `#${log.animalCode}` : (log.animalDisplayName || "Ejemplar")}
@@ -1108,6 +1452,23 @@ export default function WeightView() {
                       </td>
                       <td className="py-3 px-3 text-slate-500 font-mono">
                         {new Date(log.fecha).toLocaleString()}
+                      </td>
+                      <td className="py-3 px-3 text-right">
+                        <button
+                          type="button"
+                          id={`delete-pesaje-${log.id}`}
+                          onClick={() => handleDeletePesaje(log)}
+                          disabled={deletingId === log.id}
+                          title="Anular pesaje"
+                          aria-label="Anular pesaje"
+                          className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-all cursor-pointer disabled:opacity-50"
+                        >
+                          {deletingId === log.id ? (
+                            <RefreshCw size={14} className="animate-spin" />
+                          ) : (
+                            <Trash2 size={14} />
+                          )}
+                        </button>
                       </td>
                     </tr>
                   ))}

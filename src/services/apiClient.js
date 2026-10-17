@@ -3,21 +3,12 @@
  * En el cliente, si se accede por IP de red (ej: 192.168.32.134), apunta al mismo host en el puerto 8000.
  */
 export const getApiBaseUrl = () => {
-  // En el navegador (cliente)
+  // En el navegador (cliente), apuntar dinámicamente al mismo host/IP que abrió la página pero en el puerto 8000
   if (typeof window !== "undefined") {
-    const { hostname } = window.location;
-    const envUrl = process.env.NEXT_PUBLIC_API_URL;
-    // Si process.env.NEXT_PUBLIC_API_URL no está definida o contiene localhost/127.0.0.1 mientras se accede desde IP de VM
-    if (!envUrl || envUrl.includes("localhost") || envUrl.includes("127.0.0.1")) {
-      if (hostname) {
-        return `http://${hostname}:8000/api/v1`;
-      }
-    }
-    if (envUrl) {
-      return envUrl;
-    }
+    const { hostname, protocol } = window.location;
     if (hostname) {
-      return `http://${hostname}:8000/api/v1`;
+      const proto = protocol === 'https:' ? 'https:' : 'http:';
+      return `${proto}//${hostname}:8000/api/v1`;
     }
   }
   // Si hay una variable explícita definida en build time que no sea localhost, usarla

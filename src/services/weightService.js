@@ -7,7 +7,7 @@ import { apiFetch } from './apiClient.js';
 
 /**
  * Envía una imagen dorsal a la API de visión artificial para estimación morfométrica y de peso.
- * Endpoint: POST /api/v1/vision/estimate-weight (multipart/form-data)
+ * Endpoint: POST /api/v1/pesajes/vision (multipart/form-data)
  *
  * @param {object} params
  * @param {File | Blob} params.imageFile - Archivo binario de imagen (JPEG/PNG).
@@ -27,7 +27,7 @@ import { apiFetch } from './apiClient.js';
  *   tiempo_registro?: string
  * }>}
  */
-export async function estimateWeightWithAI({ imageFile, animalId, corralId, persist = true }) {
+export async function estimateWeightWithAI({ imageFile, animalId, corralId, persist = true, pixelsPerCm = null }) {
   if (!imageFile) {
     throw new Error('Se requiere un archivo de imagen para la estimación biométrica.');
   }
@@ -43,10 +43,45 @@ export async function estimateWeightWithAI({ imageFile, animalId, corralId, pers
   formData.append('id_cerdo', animalId);
   formData.append('corral_id', corralId);
   formData.append('persistir', String(persist));
+  if (pixelsPerCm && Number(pixelsPerCm) > 0) {
+    formData.append('pixels_per_cm', String(pixelsPerCm));
+  }
 
-  return await apiFetch('/vision/estimate-weight', {
+  return await apiFetch('/pesajes/vision', {
     method: 'POST',
     body: formData,
+  });
+}
+
+/**
+ * Captura un fotograma en vivo desde la cámara cenital V380 Pro (RTSP/TCP) y estima el peso.
+ * Endpoint: POST /api/v1/pesajes/camara-rtsp (JSON)
+ *
+ * @param {object} payload
+ * @param {string} payload.id_cerdo
+ * @param {string} payload.corral_id
+ * @param {string} [payload.rtsp_url]
+ * @param {number} [payload.pixels_per_cm]
+ * @param {boolean} [payload.validar_bordes=false]
+ * @param {boolean} [payload.persistir=true]
+ */
+export async function estimarPesoCamaraRTSP(payload) {
+  return await apiFetch('/pesajes/camara-rtsp', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+/**
+ * Anula un pesaje anómalo y recalcula el peso actual del cerdo.
+ * Endpoint: DELETE /api/v1/pesajes/{id_registro}
+ *
+ * @param {string} idRegistro - UUID del registro en registro_pesos.
+ */
+export async function deletePesaje(idRegistro) {
+  if (!idRegistro) throw new Error('Se requiere el ID del registro de pesaje.');
+  return await apiFetch(`/pesajes/${idRegistro}`, {
+    method: 'DELETE',
   });
 }
 
@@ -126,6 +161,8 @@ export async function registerManualWeight(data) {
 
 const weightService = {
   estimateWeightWithAI,
+  estimarPesoCamaraRTSP,
+  deletePesaje,
   getCorralGMD,
   getAnimalWeightHistory,
   registerManualWeight,
