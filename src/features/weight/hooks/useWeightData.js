@@ -49,7 +49,7 @@ export function useWeightData() {
     const pesosValidos = animals
       .map((a) => a.peso_actual_kg)
       .filter((p) => p !== null && p !== undefined && p > 0);
-    if (pesosValidos.length === 0) return "78.5";
+    if (pesosValidos.length === 0) return "0.0";
     const sum = pesosValidos.reduce((acc, curr) => acc + curr, 0);
     return (sum / pesosValidos.length).toFixed(1);
   }, [animals]);

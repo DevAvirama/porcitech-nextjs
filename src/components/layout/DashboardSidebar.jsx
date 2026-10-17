@@ -7,7 +7,11 @@ import Button from "../ui/Button.jsx";
 import { getCurrentUser, logout } from "../../services/auth/authService.js";
 import { useEffect, useState } from "react";
 import { QrCode } from "lucide-react";
-import QrQuickSearchModal from "./QrQuickSearchModal.jsx";
+import dynamic from "next/dynamic";
+
+const QrQuickSearchModal = dynamic(() => import("./QrQuickSearchModal.jsx"), {
+  ssr: false,
+});
 
 export default function DashboardSidebar({ items = [] }) {
   const pathname = usePathname();
@@ -41,23 +45,21 @@ export default function DashboardSidebar({ items = [] }) {
           { name: "Configuración de usuarios", path: "/dashboard/settings" },
         ];
 
-  // Lógica de filtrado basada en el rol
+  // Lógica de filtrado basada en el rol (todos los roles tienen acceso a Configuración para editar su propio perfil y contraseña)
   const filteredItems = menuItems.filter((item) => {
     if (userRole === "veterinario") {
-      // Veterinario no ve Alimentación, Peso ni Configuración de usuarios
+      // Veterinario no ve Alimentación ni Peso
       return ![
         "/dashboard/feeding",
         "/dashboard/weight",
-        "/dashboard/settings",
       ].includes(item.path);
     }
     if (userRole === "operativo" || userRole === "operario") {
-      // Operario no ve Salud (Vacunación), Reproducción, Reportes ni Configuración
+      // Operario no ve Salud (Vacunación), Reproducción ni Reportes
       return ![
         "/dashboard/health",
         "/dashboard/reproduction",
         "/dashboard/reports",
-        "/dashboard/settings",
       ].includes(item.path);
     }
     // Administrador u otros ven todo

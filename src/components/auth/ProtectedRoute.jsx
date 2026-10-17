@@ -14,6 +14,8 @@ export default function ProtectedRoute({ children, allowedRoles, requiredRole })
   useEffect(() => {
     // 1. Validar autenticación estricta: debe existir token y usuario en sesión
     if (!isAuthenticated() || !getCurrentUser()) {
+      document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
+      document.cookie = "porcitech_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
       setIsUnauthenticated(true);
       router.replace("/login");
       return;

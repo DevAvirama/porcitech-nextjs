@@ -79,24 +79,6 @@ export default function EditAnimalModal({
 
       await updateAnimal(animal.id, payload);
 
-      // Sincronizar en cache offline si aplica
-      try {
-        const stored = localStorage.getItem("sip_animals");
-        if (stored) {
-          const list = JSON.parse(stored);
-          const updatedList = list.map((a) =>
-            a.id === animal.id
-              ? {
-                  ...a,
-                  ...payload,
-                  sexo: formData.sexo,
-                  estado_reproductivo: formData.estado_reproductivo,
-                }
-              : a
-          );
-          localStorage.setItem("sip_animals", JSON.stringify(updatedList));
-        }
-      } catch {}
       const validCode =
         payload.codigo_arete && !UUID_REGEX.test(payload.codigo_arete)
           ? `#${payload.codigo_arete}`

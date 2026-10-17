@@ -4,13 +4,15 @@ import React, { useMemo } from "react";
 import { Plus, Activity, ShieldCheck, RefreshCw, AlertTriangle } from "lucide-react";
 import Button from "@/components/ui/Button";
 import ModuleHeader from "@/components/layout/ModuleHeader";
+import dynamic from "next/dynamic";
 import { useHealthData } from "./hooks/useHealthData";
-import BiosecurityView from "./BiosecurityView";
 import WithdrawalAlertsBanner from "./components/WithdrawalAlertsBanner";
 import HealthKPIs from "./components/HealthKPIs";
 import HealthFiltersCard from "./components/HealthFiltersCard";
 import HealthTreatmentsTable from "./components/HealthTreatmentsTable";
-import AddHealthRecordModal from "./components/AddHealthRecordModal";
+
+const BiosecurityView = dynamic(() => import("./BiosecurityView"), { ssr: false });
+const AddHealthRecordModal = dynamic(() => import("./components/AddHealthRecordModal"), { ssr: false });
 
 export default function HealthView() {
   const {

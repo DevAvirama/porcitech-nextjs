@@ -13,12 +13,14 @@ import Button from "@/components/ui/Button";
 import ModuleHeader from "@/components/layout/ModuleHeader";
 import { createItem, registerMovement } from "@/services/inventoryService";
 
+import dynamic from "next/dynamic";
 import { useInventoryData } from "./hooks/useInventoryData";
 import InventoryKPIs from "./components/InventoryKPIs";
 import InventoryItemsTab from "./components/InventoryItemsTab";
 import InventoryMovementsTab from "./components/InventoryMovementsTab";
-import NewSupplyModal from "./components/NewSupplyModal";
-import KardexMovementModal from "./components/KardexMovementModal";
+
+const NewSupplyModal = dynamic(() => import("./components/NewSupplyModal"), { ssr: false });
+const KardexMovementModal = dynamic(() => import("./components/KardexMovementModal"), { ssr: false });
 
 export default function InventoryView() {
   const [activeTab, setActiveTab] = useState("items");

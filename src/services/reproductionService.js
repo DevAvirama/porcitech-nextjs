@@ -27,6 +27,7 @@ import { apiFetch } from './apiClient.js';
 export async function getServices(params = {}) {
   const searchParams = new URLSearchParams();
   if (params.hembra_id) searchParams.set('hembra_id', params.hembra_id);
+  if (params.macho_id) searchParams.set('macho_id', params.macho_id);
   if (params.estado) searchParams.set('estado', params.estado);
   if (params.limite) searchParams.set('limite', String(params.limite));
   const qs = searchParams.toString();

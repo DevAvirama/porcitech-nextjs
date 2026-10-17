@@ -20,15 +20,17 @@ import {
   createWeaning,
 } from "@/services/reproductionService";
 
+import dynamic from "next/dynamic";
 import { useReproductionData } from "./hooks/useReproductionData";
 import ReproductionKPIs from "./components/ReproductionKPIs";
 import ServicesTab from "./components/ServicesTab";
 import FarrowingsTab from "./components/FarrowingsTab";
 import WeaningsTab from "./components/WeaningsTab";
-import ServiceModal from "./components/ServiceModal";
-import DiagnoseModal from "./components/DiagnoseModal";
-import FarrowingModal from "./components/FarrowingModal";
-import WeaningModal from "./components/WeaningModal";
+
+const ServiceModal = dynamic(() => import("./components/ServiceModal"), { ssr: false });
+const DiagnoseModal = dynamic(() => import("./components/DiagnoseModal"), { ssr: false });
+const FarrowingModal = dynamic(() => import("./components/FarrowingModal"), { ssr: false });
+const WeaningModal = dynamic(() => import("./components/WeaningModal"), { ssr: false });
 
 export default function ReproductionView() {
   const [activeTab, setActiveTab] = useState("services");

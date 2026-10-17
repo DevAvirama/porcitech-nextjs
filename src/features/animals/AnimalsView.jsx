@@ -11,11 +11,13 @@ import {
   Layers,
   Inbox,
 } from "lucide-react";
+import dynamic from "next/dynamic";
 import AnimalTable from "./components/AnimalTable";
-import AddAnimalModal from "./components/AddAnimalModal";
-import AnimalQrModal from "./components/AnimalQrModal";
-import ManageCorralsModal from "./components/ManageCorralsModal";
-import EditAnimalModal from "./components/EditAnimalModal";
+
+const AddAnimalModal = dynamic(() => import("./components/AddAnimalModal"), { ssr: false });
+const AnimalQrModal = dynamic(() => import("./components/AnimalQrModal"), { ssr: false });
+const ManageCorralsModal = dynamic(() => import("./components/ManageCorralsModal"), { ssr: false });
+const EditAnimalModal = dynamic(() => import("./components/EditAnimalModal"), { ssr: false });
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import EmptyState from "@/components/ui/EmptyState";
