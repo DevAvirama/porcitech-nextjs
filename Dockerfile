@@ -5,21 +5,21 @@ FROM node:20-alpine AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-RUN npm install -g pnpm@9 && \
+RUN npm install -g pnpm@10 && \
     pnpm config set network-timeout 600000 && \
     pnpm config set fetch-retries 5 && \
     pnpm config set fetch-retry-mintimeout 20000 && \
     pnpm config set fetch-retry-maxtimeout 120000
 
 COPY package.json pnpm-lock.yaml* ./
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile --dangerously-allow-all-builds
 
 # =============================================================
 # ETAPA 2: Compilación de Next.js (Standalone)
 # =============================================================
 FROM node:20-alpine AS builder
 WORKDIR /app
-RUN npm install -g pnpm@9
+RUN npm install -g pnpm@10
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
