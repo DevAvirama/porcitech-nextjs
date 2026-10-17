@@ -67,12 +67,12 @@ export function useFeedingData() {
       setFeedItems(availableFeeds);
 
       // Auto-asignar primer alimento y corral si existen
-      if (corralesData?.length > 0 && !form.corral_id) {
-        setForm((prev) => ({ ...prev, corral_id: corralesData[0].id }));
-      }
-      if (availableFeeds.length > 0 && !form.alimento_item_id) {
-        setForm((prev) => ({ ...prev, alimento_item_id: availableFeeds[0].id }));
-      }
+      setForm((prev) => ({
+        ...prev,
+        corral_id: prev.corral_id || (corralesData?.length > 0 ? corralesData[0].id : ""),
+        alimento_item_id:
+          prev.alimento_item_id || (availableFeeds.length > 0 ? availableFeeds[0].id : ""),
+      }));
     } catch (err) {
       console.error("Error al cargar datos de alimentación:", err);
       setError(
@@ -83,7 +83,7 @@ export function useFeedingData() {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [form.alimento_item_id, form.corral_id]);
+  }, []);
 
   useEffect(() => {
     loadFeedingData(true);

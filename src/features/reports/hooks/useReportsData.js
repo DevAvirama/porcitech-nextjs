@@ -274,14 +274,17 @@ export function useReportsData() {
           { header: "Responsable", key: "responsable" },
           { header: "Estado", key: "estado" },
         ];
-        reportData.tableRows = treatments.map((t) => ({
-          id: t.animal_codigo_arete ? `#${t.animal_codigo_arete}` : (t.animal_id ? `#${String(t.animal_id).slice(0, 8)}` : "--"),
-          producto: t.producto_nombre || "Tratamiento Veterinario",
-          tipo: t.tipo_evento || "Clínico",
-          fecha: t.fecha_aplicacion || (t.fecha_tratamiento ? t.fecha_tratamiento.split("T")[0] : "--"),
-          responsable: t.responsable || t.veterinario_nombre || "Médico Veterinario",
-          estado: t.estado || "REGISTRADO",
-        }));
+        reportData.tableRows = treatments.map((t) => {
+          const arete = t.animal_arete || t.animal_codigo_arete;
+          return {
+            id: arete ? `#${arete}` : (t.animal_id ? `#${String(t.animal_id).slice(0, 8)}` : "--"),
+            producto: t.producto_nombre || "Tratamiento Veterinario",
+            tipo: t.tipo_evento || "Clínico",
+            fecha: t.fecha_aplicacion || (t.fecha_tratamiento ? t.fecha_tratamiento.split("T")[0] : "--"),
+            responsable: t.responsable || t.veterinario_nombre || "Médico Veterinario",
+            estado: t.estado || "REGISTRADO",
+          };
+        });
         reportData.summaryText =
           treatments.length > 0
             ? `Se registran ${treatments.length} aplicaciones clínicas y biológicas certificadas en el historial sanitario de la granja.`
@@ -312,13 +315,20 @@ export function useReportsData() {
           { header: "Nacidos Muertos", key: "muertos" },
           { header: "Peso Camada (kg)", key: "peso" },
         ];
-        reportData.tableRows = farrowings.map((f) => ({
-          id: f.madre_codigo_arete ? `#${f.madre_codigo_arete}` : (f.madre_id ? `#${String(f.madre_id).slice(0, 8)}` : "--"),
-          fecha: f.fecha_parto || "--",
-          vivos: String(f.lechones_vivos ?? "--"),
-          muertos: String(f.lechones_muertos ?? "--"),
-          peso: f.peso_total_camada_kg ? `${f.peso_total_camada_kg} kg` : "--",
-        }));
+        reportData.tableRows = farrowings.map((f) => {
+          const madreArete = f.hembra_arete || f.madre_codigo_arete;
+          const madreId = f.hembra_id || f.madre_id;
+          const vivos = f.nacidos_vivos ?? f.lechones_vivos;
+          const muertos = f.nacidos_muertos ?? f.lechones_muertos;
+          const pesoCamada = f.peso_camada_total_kg ?? f.peso_total_camada_kg;
+          return {
+            id: madreArete ? `#${madreArete}` : (madreId ? `#${String(madreId).slice(0, 8)}` : "--"),
+            fecha: f.fecha_parto ? String(f.fecha_parto).split("T")[0] : "--",
+            vivos: String(vivos ?? "--"),
+            muertos: String(muertos ?? "--"),
+            peso: pesoCamada != null ? `${pesoCamada} kg` : "--",
+          };
+        });
         reportData.summaryText =
           farrowings.length > 0
             ? `Se registran ${farrowings.length} partos y eventos reproductivos auditados en la base de datos.`

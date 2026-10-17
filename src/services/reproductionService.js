@@ -24,8 +24,13 @@ import { apiFetch } from './apiClient.js';
  *   fecha_diagnostico?: string
  * }>>}
  */
-export async function getServices() {
-  return await apiFetch('/reproduccion/servicios');
+export async function getServices(params = {}) {
+  const searchParams = new URLSearchParams();
+  if (params.hembra_id) searchParams.set('hembra_id', params.hembra_id);
+  if (params.estado) searchParams.set('estado', params.estado);
+  if (params.limite) searchParams.set('limite', String(params.limite));
+  const qs = searchParams.toString();
+  return await apiFetch(`/reproduccion/servicios${qs ? `?${qs}` : ''}`);
 }
 
 /**
@@ -85,8 +90,12 @@ export async function updateService(id, serviceData) {
  *   observaciones?: string
  * }>>}
  */
-export async function getFarrowings() {
-  return await apiFetch('/reproduccion/partos');
+export async function getFarrowings(params = {}) {
+  const searchParams = new URLSearchParams();
+  if (params.hembra_id) searchParams.set('hembra_id', params.hembra_id);
+  if (params.limite) searchParams.set('limite', String(params.limite));
+  const qs = searchParams.toString();
+  return await apiFetch(`/reproduccion/partos${qs ? `?${qs}` : ''}`);
 }
 
 /**

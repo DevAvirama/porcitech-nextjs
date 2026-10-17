@@ -64,7 +64,20 @@ const AnimalsView = () => {
       if (selectedEstado && selectedEstado !== "all") params.estado = selectedEstado;
 
       const data = await getAnimales(params);
-      setAnimals(Array.isArray(data) ? data : []);
+      const list = Array.isArray(data) ? data : [];
+      let trashedIds = new Set();
+      try {
+        const rawTrash = localStorage.getItem("sip_animals_trash");
+        if (rawTrash) {
+          const parsedTrash = JSON.parse(rawTrash);
+          if (Array.isArray(parsedTrash)) {
+            trashedIds = new Set(parsedTrash.map((item) => item.id));
+          }
+        }
+      } catch {
+        // Ignorar errores de lectura de localStorage
+      }
+      setAnimals(list.filter((a) => !trashedIds.has(a.id)));
     } catch (err) {
       console.error("Error al obtener animales de la API:", err);
       setError(

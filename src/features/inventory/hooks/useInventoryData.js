@@ -146,12 +146,18 @@ export function useInventoryData() {
     }
   }, [filterCategory, searchTerm, filterLowStockOnly]);
 
+  const isFirstFilterRender = useMemo(() => ({ current: true }), []);
+
   useEffect(() => {
+    if (isFirstFilterRender.current) {
+      isFirstFilterRender.current = false;
+      return;
+    }
     const timer = setTimeout(() => {
       handleApplyFilters();
     }, 250);
     return () => clearTimeout(timer);
-  }, [handleApplyFilters]);
+  }, [handleApplyFilters, isFirstFilterRender]);
 
   // KPIs reactivos calculados
   const totalValue = useMemo(() => {

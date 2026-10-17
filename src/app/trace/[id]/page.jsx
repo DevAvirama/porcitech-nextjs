@@ -240,7 +240,7 @@ export default function AnimalTracePassportPage({ params }) {
 
           <div className="pt-4 w-full flex flex-col sm:flex-row gap-3">
             <button
-              onClick={() => router.push("/animals")}
+              onClick={() => router.push("/dashboard/animals")}
               className="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold text-sm transition-colors cursor-pointer shadow-lg shadow-emerald-600/20"
             >
               <ArrowLeft size={16} />

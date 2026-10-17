@@ -45,71 +45,63 @@ export function useAnimalProfile(animalId) {
     }
 
     const targetId = found.id || animalId;
-
-    // Cargar tratamientos clínicos reales desde FastAPI
-    let realTreatments = [];
-    try {
-      const tData = await getTreatments({ animal_id: targetId });
-      if (Array.isArray(tData)) {
-        realTreatments = tData;
-        setTratamientos(tData);
-      }
-    } catch (err) {
-      console.warn("Aviso al cargar tratamientos clínicos:", err.message);
-    }
-
-    // Cargar pesajes reales desde FastAPI / TimescaleDB
-    try {
-      const wData = await getAnimalWeightHistory(targetId);
-      if (Array.isArray(wData)) {
-        setPesajes(wData);
-      }
-    } catch (err) {
-      console.warn("Aviso al cargar pesajes del animal:", err.message);
-    }
-
     const isMale = (found.sexo || "").toLowerCase() === "macho";
 
-    // Cargar coberturas / servicios reproductivos
-    try {
-      const allServices = await getServices();
-      if (Array.isArray(allServices)) {
-        if (isMale) {
-          const maleServices = allServices.filter(
-            (s) => s.macho_id === found.id || s.macho_id === animalId
-          );
-          setCoberturas(maleServices);
-        } else {
-          const femaleServices = allServices.filter(
-            (s) => s.hembra_id === found.id || s.hembra_id === animalId
-          );
-          setCoberturas(femaleServices);
-          const activeGest = femaleServices.find(
-            (s) => s.estado_confirmacion === "positiva" && s.fecha_servicio
-          );
-          if (activeGest) {
-            const diffTime = Math.abs(new Date() - new Date(activeGest.fecha_servicio));
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            found._diasGestacion = Math.min(114, Math.max(1, diffDays));
-          }
-        }
-      }
-    } catch (err) {
-      console.warn("Aviso al consultar servicios reproductivos:", err.message);
+    // Cargar tratamientos, pesajes, servicios y partos en paralelo
+    const [treatmentsRes, weightsRes, servicesRes, partosRes] = await Promise.allSettled([
+      getTreatments({ animal_id: targetId }),
+      getAnimalWeightHistory(targetId),
+      getServices(isMale ? {} : { hembra_id: targetId }),
+      isMale ? Promise.resolve([]) : getFarrowings({ hembra_id: targetId }),
+    ]);
+
+    let realTreatments = [];
+    if (treatmentsRes.status === "fulfilled" && Array.isArray(treatmentsRes.value)) {
+      realTreatments = treatmentsRes.value;
+      setTratamientos(treatmentsRes.value);
+    } else if (treatmentsRes.status === "rejected") {
+      console.warn("Aviso al cargar tratamientos clínicos:", treatmentsRes.reason?.message);
     }
 
-    // Cargar partos si es hembra
-    if (!isMale) {
-      try {
-        const allPartos = await getFarrowings();
-        if (Array.isArray(allPartos)) {
-          const femalePartos = allPartos.filter(
-            (p) => p.hembra_id === found.id || p.hembra_id === animalId
-          );
-          setPartos(femalePartos);
+    if (weightsRes.status === "fulfilled" && Array.isArray(weightsRes.value)) {
+      setPesajes(weightsRes.value);
+    } else if (weightsRes.status === "rejected") {
+      console.warn("Aviso al cargar pesajes del animal:", weightsRes.reason?.message);
+    }
+
+    if (servicesRes.status === "fulfilled" && Array.isArray(servicesRes.value)) {
+      const allServices = servicesRes.value;
+      if (isMale) {
+        const maleServices = allServices.filter(
+          (s) => s.macho_id === found.id || s.macho_id === animalId
+        );
+        setCoberturas(maleServices);
+      } else {
+        const femaleServices = allServices.filter(
+          (s) => s.hembra_id === found.id || s.hembra_id === animalId
+        );
+        setCoberturas(femaleServices);
+        const activeGest = femaleServices.find(
+          (s) => s.estado_confirmacion === "positiva" && s.fecha_servicio
+        );
+        if (activeGest) {
+          const diffTime = Math.abs(new Date() - new Date(activeGest.fecha_servicio));
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          found._diasGestacion = Math.min(114, Math.max(1, diffDays));
         }
-      } catch (err) {
-        console.warn("Aviso al consultar partos de la hembra:", err.message);
+      }
+    } else if (servicesRes.status === "rejected") {
+      console.warn("Aviso al consultar servicios reproductivos:", servicesRes.reason?.message);
+    }
+
+    if (!isMale) {
+      if (partosRes.status === "fulfilled" && Array.isArray(partosRes.value)) {
+        const femalePartos = partosRes.value.filter(
+          (p) => p.hembra_id === found.id || p.hembra_id === animalId
+        );
+        setPartos(femalePartos);
+      } else if (partosRes.status === "rejected") {
+        console.warn("Aviso al consultar partos de la hembra:", partosRes.reason?.message);
       }
     }
 

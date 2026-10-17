@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Camera,
   Upload,
@@ -39,6 +39,14 @@ export default function WeightAICard({
   const [isProcessingAI, setIsProcessingAI] = useState(false);
   const [aiResult, setAiResult] = useState(null);
   const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (imagePreview && imagePreview.startsWith("blob:")) {
+        URL.revokeObjectURL(imagePreview);
+      }
+    };
+  }, [imagePreview]);
 
   // Fuente de captura: 'upload' (foto/móvil) | 'rtsp' (cámara cenital V380 Pro)
   const [captureMode, setCaptureMode] = useState("upload");

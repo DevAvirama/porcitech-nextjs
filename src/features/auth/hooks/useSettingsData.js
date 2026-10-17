@@ -121,8 +121,8 @@ export function useSettingsData() {
         telefono: telefono.trim(),
       };
 
-      // Si el usuario tiene id y es administrador, actualizar vía backend
-      if (currentUser?.id && isAdmin) {
+      // Si el usuario tiene id, sincronizar perfil con el backend
+      if (currentUser?.id) {
         try {
           await userService.updateUsuario(currentUser.id, {
             nombre: nombre.trim(),
@@ -166,7 +166,7 @@ export function useSettingsData() {
 
     setIsSavingPassword(true);
     try {
-      if (currentUser?.id && isAdmin) {
+      if (currentUser?.id) {
         await userService.updateUsuario(currentUser.id, {
           password: newPassword,
         });

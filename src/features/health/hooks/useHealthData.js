@@ -85,7 +85,7 @@ export function useHealthData() {
   // Recarga filtrada de tratamientos
   const handleApplyFilters = useCallback(async () => {
     try {
-      const params = {};
+      const params = { limite: 50 };
       if (filterType !== "all") params.tipo_evento = filterType;
       if (filterCorral !== "all") params.corral_id = filterCorral;
 
@@ -110,12 +110,18 @@ export function useHealthData() {
     }
   }, [filterType, filterCorral, searchTerm]);
 
+  const isFirstFilterRender = useMemo(() => ({ current: true }), []);
+
   useEffect(() => {
+    if (isFirstFilterRender.current) {
+      isFirstFilterRender.current = false;
+      return;
+    }
     const timer = setTimeout(() => {
       handleApplyFilters();
     }, 250);
     return () => clearTimeout(timer);
-  }, [handleApplyFilters]);
+  }, [handleApplyFilters, isFirstFilterRender]);
 
   // Columnas para la tabla clínica
   const columns = useMemo(
