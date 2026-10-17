@@ -3,23 +3,32 @@
  * En el cliente, si se accede por IP de red (ej: 192.168.32.134), apunta al mismo host en el puerto 8000.
  */
 export const getApiBaseUrl = () => {
-  // En el navegador (cliente), apuntar dinámicamente al mismo host/IP que abrió la página pero en el puerto 8000
+  // 1. En el navegador (cliente)
   if (typeof window !== "undefined") {
+    // Si hay un dominio de producción explícito configurado (no localhost ni IP cruda), respetarlo
+    const envApi = process.env.NEXT_PUBLIC_API_URL;
+    if (envApi && !envApi.includes("localhost") && !envApi.includes("127.0.0.1") && !/^https?:\/\/\d+\.\d+\.\d+\.\d+/.test(envApi)) {
+      return envApi.replace(/\/+$/, "");
+    }
+
+    // En entorno de desarrollo, VM o red local: apuntar dinámicamente al host actual en el puerto 8000
     const { hostname, protocol } = window.location;
     if (hostname) {
-      const proto = protocol === 'https:' ? 'https:' : 'http:';
+      const proto = protocol === "https:" ? "https:" : "http:";
       return `${proto}//${hostname}:8000/api/v1`;
     }
   }
-  // Si hay una variable explícita definida en build time que no sea localhost, usarla
-  if (process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes("localhost") && !process.env.NEXT_PUBLIC_API_URL.includes("127.0.0.1")) {
-    return process.env.NEXT_PUBLIC_API_URL;
+
+  // 2. Si hay una variable explícita definida en build time (Next.js server-side)
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, "");
   }
-  // Fallback para ejecución en servidor (SSR/Next.js interno)
-  return process.env.INTERNAL_API_URL || "http://127.0.0.1:8000/api/v1";
+
+  // 3. Fallback para SSR dentro de la red Docker Compose o localhost
+  return process.env.INTERNAL_API_URL || "http://api:8000/api/v1";
 };
 
-export const BASE_URL = typeof window !== "undefined" ? getApiBaseUrl() : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1');
+export const BASE_URL = typeof window !== "undefined" ? getApiBaseUrl() : (process.env.NEXT_PUBLIC_API_URL || "http://api:8000/api/v1");
 
 /**
  * Cliente HTTP centralizado para comunicación con la API backend de PorciTech (FastAPI).

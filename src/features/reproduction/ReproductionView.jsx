@@ -1,79 +1,59 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState } from "react";
 import {
   Heart,
   Baby,
   Activity,
-  CalendarDays,
   Plus,
   RefreshCw,
   AlertTriangle,
-  Warehouse,
-  CheckCircle2,
-  Clock,
-  Sparkles,
-  ArrowRight,
-  ShieldAlert,
 } from "lucide-react";
 import { toast } from "sonner";
 import Button from "@/components/ui/Button";
-import Card from "@/components/ui/Card";
-import Table from "@/components/ui/Table";
-import Input from "@/components/ui/Input";
-import EmptyState from "@/components/ui/EmptyState";
 import ModuleHeader from "@/components/layout/ModuleHeader";
-import { formatDateTime, getAnimalDisplayName, UUID_REGEX } from "@/utils/formatters";
+import { UUID_REGEX } from "@/utils/formatters";
 import {
-  getServices,
   createService,
   updateService,
-  getFarrowings,
   createFarrowing,
-  getWeanings,
   createWeaning,
 } from "@/services/reproductionService";
-import { getAnimales } from "@/services/animalService";
-import { getCorrales } from "@/services/corralService";
 
-const GESTATION_DAYS = 114; // Duración fisiológica estándar de gestación porcina
-
-const SERVICE_STATUS_BADGES = {
-  pendiente: {
-    label: "Pendiente Diagnóstico",
-    className: "bg-amber-100 text-amber-700 border-amber-200",
-  },
-  positiva: {
-    label: "Gestante (Confirmada)",
-    className: "bg-fuchsia-100 text-fuchsia-700 border-fuchsia-200",
-  },
-  negativa: {
-    label: "No Gestante (Vacía)",
-    className: "bg-rose-100 text-rose-700 border-rose-200",
-  },
-  repetida: {
-    label: "Celo Repetido",
-    className: "bg-purple-100 text-purple-700 border-purple-200",
-  },
-};
+import { useReproductionData } from "./hooks/useReproductionData";
+import ReproductionKPIs from "./components/ReproductionKPIs";
+import ServicesTab from "./components/ServicesTab";
+import FarrowingsTab from "./components/FarrowingsTab";
+import WeaningsTab from "./components/WeaningsTab";
+import ServiceModal from "./components/ServiceModal";
+import DiagnoseModal from "./components/DiagnoseModal";
+import FarrowingModal from "./components/FarrowingModal";
+import WeaningModal from "./components/WeaningModal";
 
 export default function ReproductionView() {
-  // Pestañas activas: 'services' | 'farrowings' | 'weanings'
   const [activeTab, setActiveTab] = useState("services");
 
-  // Estados de datos API
-  const [services, setServices] = useState([]);
-  const [farrowings, setFarrowings] = useState([]);
-  const [weanings, setWeanings] = useState([]);
-  const [females, setFemales] = useState([]);
-  const [males, setMales] = useState([]);
-  const [corrales, setCorrales] = useState([]);
+  // Hook maestro de datos y KPIs
+  const {
+    services,
+    farrowings,
+    weanings,
+    females,
+    males,
+    corrales,
+    breedingMales,
+    confirmedFemales,
+    isLoading,
+    isRefreshing,
+    error,
+    gestacionesConfirmadas,
+    proximosPartos,
+    totalNacidosVivos,
+    totalDestetados,
+    loadReproductionData,
+  } = useReproductionData();
 
-  const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [error, setError] = useState(null);
-
-  // Modales
+  // Estados de Modales
   const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
   const [isFarrowingModalOpen, setIsFarrowingModalOpen] = useState(false);
   const [isWeaningModalOpen, setIsWeaningModalOpen] = useState(false);
@@ -81,178 +61,20 @@ export default function ReproductionView() {
 
   // Modal Diagnosticar Gestación
   const [selectedServiceForDiagnose, setSelectedServiceForDiagnose] = useState(null);
-  const [diagnoseForm, setDiagnoseForm] = useState({
-    estado_confirmacion: "positiva",
-    fecha_diagnostico: new Date().toISOString().split("T")[0],
-    observaciones: "",
-  });
   const [isDiagnosing, setIsDiagnosing] = useState(false);
 
-  // Formulario de Nuevo Servicio
-  const [serviceForm, setServiceForm] = useState({
-    hembra_id: "",
-    macho_id: "",
-    tipo_servicio: "inseminacion_artificial",
-    codigo_pajilla_macho: "",
-    fecha_servicio: new Date().toISOString().split("T")[0],
-    estado_confirmacion: "pendiente",
-  });
-
-  // Formulario de Parto
-  const [farrowingForm, setFarrowingForm] = useState({
-    servicio_id: "",
-    hembra_id: "",
-    corral_maternidad_id: "",
-    fecha_parto: new Date().toISOString().split("T")[0],
-    nacidos_vivos: "",
-    nacidos_muertos: "0",
-    momias: "0",
-    peso_camada_total_kg: "",
-    observaciones: "",
-  });
-
-  // Formulario de Destete
-  const [weaningForm, setWeaningForm] = useState({
-    parto_id: "",
-    hembra_id: "",
-    corral_destino_id: "",
-    fecha_destete: new Date().toISOString().split("T")[0],
-    lechones_destetados: "",
-    peso_total_kg: "",
-    dias_lactancia: "21",
-  });
-
-  // Carga concurrente inicial
-  const loadReproductionData = useCallback(async (showFullLoader = true) => {
-    if (showFullLoader) setIsLoading(true);
-    else setIsRefreshing(true);
-    setError(null);
-
-    try {
-      const [
-        servicesData,
-        farrowingsData,
-        weaningsData,
-        animalsData,
-        corralesData,
-      ] = await Promise.all([
-        getServices(),
-        getFarrowings(),
-        getWeanings(),
-        getAnimales(),
-        getCorrales(true),
-      ]);
-
-      setServices(Array.isArray(servicesData) ? servicesData : []);
-      setFarrowings(Array.isArray(farrowingsData) ? farrowingsData : []);
-      setWeanings(Array.isArray(weaningsData) ? weaningsData : []);
-
-      const allAnimals = Array.isArray(animalsData) ? animalsData : [];
-      // Segregación zootécnica estricta por sexo biológico
-      const sows = allAnimals.filter(
-        (a) => (a.sexo || "").toLowerCase().trim() === "hembra"
-      );
-      const boars = allAnimals.filter(
-        (a) => (a.sexo || "").toLowerCase().trim() === "macho"
-      );
-
-      setFemales(sows);
-      setMales(boars);
-      setCorrales(Array.isArray(corralesData) ? corralesData : []);
-    } catch (err) {
-      console.error("Error al cargar ciclo reproductivo:", err);
-      setError(
-        err.message ||
-          "No se pudieron sincronizar los datos de reproducción con el backend de FastAPI."
-      );
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadReproductionData(true);
-  }, [loadReproductionData]);
-
-  // Cálculo en vivo de fecha probable de parto para el modal (+114 días)
-  const estimatedFarrowingDate = useMemo(() => {
-    if (!serviceForm.fecha_servicio) return "";
-    const date = new Date(serviceForm.fecha_servicio);
-    date.setDate(date.getDate() + GESTATION_DAYS);
-    return date.toISOString().split("T")[0];
-  }, [serviceForm.fecha_servicio]);
-
-  // Filtrar sementales activos (excluir machos en línea de ceba/engorde)
-  const breedingMales = useMemo(() => {
-    return males.filter((m) => {
-      const isMacho = (m.sexo || "").toLowerCase().trim() === "macho";
-      if (!isMacho) return false;
-      const estado = (m.estado || "").toLowerCase();
-      const estadoRep = (m.estado_reproductivo || m.estadoReproductivo || "").toLowerCase();
-      if (estadoRep.includes("no reproductor") || estadoRep.includes("ceba")) return false;
-      if (estado === "engorde" || estado === "ceba") return false;
-      return true;
-    });
-  }, [males]);
-
-  // Hembras con servicio previo confirmado positivo (requisito biológico para registrar parto)
-  const confirmedFemales = useMemo(() => {
-    return females.filter((f) => {
-      if ((f.sexo || "").toLowerCase().trim() !== "hembra") return false;
-      return services.some(
-        (s) =>
-          (s.hembra_id === f.id || s.id_cerda === f.id) &&
-          s.estado_confirmacion === "positiva"
-      );
-    });
-  }, [females, services]);
-
-  // KPIs reactivos
-  const gestacionesConfirmadas = useMemo(() => {
-    return services.filter((s) => s.estado_confirmacion === "positiva").length;
-  }, [services]);
-
-  const proximosPartos = useMemo(() => {
-    const today = new Date();
-    return services.filter((s) => {
-      if (s.estado_confirmacion !== "positiva" || !s.fecha_probable_parto) {
-        return false;
-      }
-      const partDate = new Date(s.fecha_probable_parto);
-      const diffDays = Math.ceil((partDate - today) / (1000 * 60 * 60 * 24));
-      return diffDays >= 0 && diffDays <= 14;
-    }).length;
-  }, [services]);
-
-  const totalNacidosVivos = useMemo(() => {
-    return farrowings.reduce(
-      (acc, curr) => acc + (Number(curr.nacidos_vivos) || 0),
-      0
-    );
-  }, [farrowings]);
-
-  const totalDestetados = useMemo(() => {
-    return weanings.reduce(
-      (acc, curr) => acc + (Number(curr.lechones_destetados) || 0),
-      0
-    );
-  }, [weanings]);
-
-  // Envío de Nuevo Servicio
-  const handleCreateServiceSubmit = async (e) => {
-    e.preventDefault();
-
+  // 1. Envío de Nuevo Servicio
+  const handleCreateServiceSubmit = async (serviceForm) => {
     if (!serviceForm.hembra_id) {
       toast.error("Seleccione la cerda reproductora");
-      return;
+      return false;
     }
     if (
       serviceForm.tipo_servicio === "monta_natural" &&
       !serviceForm.macho_id
     ) {
       toast.error("Seleccione el macho semental para la monta natural");
-      return;
+      return false;
     }
 
     setIsSubmitting(true);
@@ -277,58 +99,43 @@ export default function ReproductionView() {
       await createService(payload);
       toast.success("Servicio reproductivo registrado exitosamente");
       setIsServiceModalOpen(false);
-      setServiceForm({
-        hembra_id: "",
-        macho_id: "",
-        tipo_servicio: "inseminacion_artificial",
-        codigo_pajilla_macho: "",
-        fecha_servicio: new Date().toISOString().split("T")[0],
-        estado_confirmacion: "pendiente",
-      });
       await loadReproductionData(false);
+      return true;
     } catch (err) {
       console.error("Error al registrar servicio:", err);
       toast.error(err.message || "Fallo al registrar el servicio reproductivo");
+      return false;
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Abrir Modal de Diagnóstico de Gestación
+  // 2. Abrir Modal de Diagnóstico
   const handleOpenDiagnoseModal = (service) => {
-    // Validación estricta: diagnóstico de preñez solo aplica a hembras
     if (service.hembra_sexo && service.hembra_sexo.toLowerCase() !== "hembra") {
       toast.error("El diagnóstico de preñez solo es aplicable a hembras reproductoras.");
       return;
     }
     setSelectedServiceForDiagnose(service);
-    setDiagnoseForm({
-      estado_confirmacion: "positiva",
-      fecha_diagnostico: new Date().toISOString().split("T")[0],
-      observaciones: "",
-    });
   };
 
-  // Enviar Diagnóstico de Gestación
-  const handleDiagnoseSubmit = async (e) => {
-    e.preventDefault();
-    if (!selectedServiceForDiagnose) return;
+  // 3. Enviar Diagnóstico de Gestación
+  const handleDiagnoseSubmit = async (service, diagnoseForm) => {
+    if (!service) return;
 
     setIsDiagnosing(true);
     try {
-      await updateService(selectedServiceForDiagnose.id, {
+      await updateService(service.id, {
         estado_confirmacion: diagnoseForm.estado_confirmacion,
         fecha_diagnostico: diagnoseForm.fecha_diagnostico,
         observaciones: diagnoseForm.observaciones?.trim() || undefined,
       });
 
       const validArete =
-        selectedServiceForDiagnose.hembra_arete &&
-        !UUID_REGEX.test(selectedServiceForDiagnose.hembra_arete)
-          ? `#${selectedServiceForDiagnose.hembra_arete}`
+        service.hembra_arete && !UUID_REGEX.test(service.hembra_arete)
+          ? `#${service.hembra_arete}`
           : null;
-      const hembraStr =
-        selectedServiceForDiagnose.hembra_alias || validArete || "la cerda";
+      const hembraStr = service.hembra_alias || validArete || "la cerda";
       toast.success(
         `Servicio diagnosticado como "${diagnoseForm.estado_confirmacion.toUpperCase()}". ${
           diagnoseForm.estado_confirmacion === "positiva"
@@ -346,16 +153,13 @@ export default function ReproductionView() {
     }
   };
 
-  // Envío de Registro de Parto
-  const handleCreateFarrowingSubmit = async (e) => {
-    e.preventDefault();
-
+  // 4. Envío de Registro de Parto
+  const handleCreateFarrowingSubmit = async (farrowingForm) => {
     if (!farrowingForm.hembra_id) {
       toast.error("Seleccione la cerda madre");
-      return;
+      return false;
     }
 
-    // Validación biológica estricta: solo hembras con servicio previo confirmado positivo
     const hasConfirmedService = services.some(
       (s) =>
         (s.hembra_id === farrowingForm.hembra_id || s.id_cerda === farrowingForm.hembra_id) &&
@@ -365,17 +169,17 @@ export default function ReproductionView() {
       toast.error(
         "Validación Zootécnica: Solo se pueden registrar partos para hembras con servicio previo confirmado positivo."
       );
-      return;
+      return false;
     }
     const vivos = parseInt(farrowingForm.nacidos_vivos, 10);
     if (isNaN(vivos) || vivos < 0) {
       toast.error("Ingrese una cantidad válida de lechones vivos (>= 0)");
-      return;
+      return false;
     }
     const pesoTotal = parseFloat(farrowingForm.peso_camada_total_kg);
     if (isNaN(pesoTotal) || pesoTotal <= 0) {
       toast.error("El peso total de la camada debe ser mayor a 0 kg");
-      return;
+      return false;
     }
 
     setIsSubmitting(true);
@@ -398,47 +202,36 @@ export default function ReproductionView() {
       await createFarrowing(payload);
       toast.success("Parto y camada registrados en PostgreSQL");
       setIsFarrowingModalOpen(false);
-      setFarrowingForm({
-        servicio_id: "",
-        hembra_id: "",
-        corral_maternidad_id: "",
-        fecha_parto: new Date().toISOString().split("T")[0],
-        nacidos_vivos: "",
-        nacidos_muertos: "0",
-        momias: "0",
-        peso_camada_total_kg: "",
-        observaciones: "",
-      });
       await loadReproductionData(false);
+      return true;
     } catch (err) {
       console.error("Error al registrar parto:", err);
       toast.error(err.message || "Fallo al registrar el parto");
+      return false;
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Envío de Registro de Destete
-  const handleCreateWeaningSubmit = async (e) => {
-    e.preventDefault();
-
+  // 5. Envío de Registro de Destete
+  const handleCreateWeaningSubmit = async (weaningForm) => {
     if (!weaningForm.hembra_id) {
       toast.error("Seleccione la cerda madre");
-      return;
+      return false;
     }
     if (!weaningForm.corral_destino_id) {
       toast.error("Seleccione el corral de destino para los lechones");
-      return;
+      return false;
     }
     const lechones = parseInt(weaningForm.lechones_destetados, 10);
     if (isNaN(lechones) || lechones <= 0) {
       toast.error("La cantidad de lechones destetados debe ser mayor a 0");
-      return;
+      return false;
     }
     const peso = parseFloat(weaningForm.peso_total_kg);
     if (isNaN(peso) || peso <= 0) {
       toast.error("El peso total de los lechones destetados debe ser mayor a 0");
-      return;
+      return false;
     }
 
     setIsSubmitting(true);
@@ -457,289 +250,16 @@ export default function ReproductionView() {
       await createWeaning(payload);
       toast.success("Destete registrado y lote asignado al corral");
       setIsWeaningModalOpen(false);
-      setWeaningForm({
-        parto_id: "",
-        hembra_id: "",
-        corral_destino_id: "",
-        fecha_destete: new Date().toISOString().split("T")[0],
-        lechones_destetados: "",
-        peso_total_kg: "",
-        dias_lactancia: "21",
-      });
       await loadReproductionData(false);
+      return true;
     } catch (err) {
       console.error("Error al registrar destete:", err);
       toast.error(err.message || "Fallo al registrar el destete");
+      return false;
     } finally {
       setIsSubmitting(false);
     }
   };
-
-  // Columnas: Servicios Reproductivos
-  const serviceColumns = [
-    {
-      key: "hembra",
-      header: "Cerda Madre / Arete",
-      render: (row) => {
-        const rawArete = row.hembra_arete;
-        const hasValidArete =
-          rawArete && !UUID_REGEX.test(String(rawArete).trim());
-        const displayName =
-          row.hembra_alias ||
-          (hasValidArete ? `#${String(rawArete).trim()}` : "Cerda Madre");
-        return (
-          <div className="flex items-center gap-2">
-            {hasValidArete && (
-              <span className="font-mono text-xs font-black text-slate-800 bg-slate-100 px-2 py-0.5 rounded">
-                #{String(rawArete).trim()}
-              </span>
-            )}
-            <span className="font-bold text-sm text-slate-900">
-              {displayName}
-            </span>
-          </div>
-        );
-      },
-    },
-    {
-      key: "tipo_servicio",
-      header: "Modalidad",
-      render: (row) => (
-        <span
-          className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold border ${
-            row.tipo_servicio === "inseminacion_artificial"
-              ? "bg-purple-100 text-purple-700 border-purple-200"
-              : "bg-blue-100 text-blue-700 border-blue-200"
-          }`}
-        >
-          {row.tipo_servicio === "inseminacion_artificial"
-            ? "Inseminación Artificial"
-            : "Monta Natural"}
-        </span>
-      ),
-    },
-    {
-      key: "macho",
-      header: "Semental / Pajilla",
-      render: (row) => (
-        <span className="font-mono text-xs font-bold text-slate-700">
-          {row.macho_arete || row.codigo_pajilla_macho || "No especificado"}
-        </span>
-      ),
-    },
-    {
-      key: "fecha_servicio",
-      header: "Fecha Servicio",
-      render: (row) => (
-        <span className="text-xs text-slate-600 font-medium">
-          {row.fecha_servicio}
-        </span>
-      ),
-    },
-    {
-      key: "fecha_probable_parto",
-      header: "Parto Probable (+114d)",
-      render: (row) => (
-        <div>
-          <span className="text-xs font-black text-fuchsia-700 bg-fuchsia-50 border border-fuchsia-200 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
-            <Clock className="h-3 w-3" />
-            {row.fecha_probable_parto}
-          </span>
-        </div>
-      ),
-    },
-    {
-      key: "estado",
-      header: "Estado Confirmación",
-      render: (row) => {
-        const config =
-          SERVICE_STATUS_BADGES[row.estado_confirmacion] || {
-            label: row.estado_confirmacion || "Pendiente",
-            className: "bg-slate-100 text-slate-700 border-slate-200",
-          };
-        return (
-          <span
-            className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold border ${config.className}`}
-          >
-            {config.label}
-          </span>
-        );
-      },
-    },
-    {
-      key: "acciones",
-      header: "Acciones",
-      render: (row) => (
-        <div className="flex items-center gap-1.5">
-          {row.estado_confirmacion === "pendiente" ? (
-            <button
-              type="button"
-              onClick={() => handleOpenDiagnoseModal(row)}
-              className="px-3 py-1.5 rounded-xl bg-fuchsia-50 text-fuchsia-700 hover:bg-fuchsia-600 hover:text-white border border-fuchsia-200 transition-all font-bold text-xs flex items-center gap-1 cursor-pointer shadow-xs"
-              title="Confirmar diagnóstico de gestación"
-            >
-              <CheckCircle2 size={13} />
-              Diagnosticar / Confirmar
-            </button>
-          ) : (
-            <span className="text-[11px] font-semibold text-slate-400 italic">
-              {row.fecha_diagnostico ? `Diag: ${row.fecha_diagnostico}` : "Confirmado"}
-            </span>
-          )}
-        </div>
-      ),
-    },
-  ];
-
-  // Columnas: Partos
-  const farrowingColumns = [
-    {
-      key: "hembra",
-      header: "Cerda Madre",
-      render: (row) => {
-        const rawArete = row.hembra_arete;
-        const hasValidArete =
-          rawArete && !UUID_REGEX.test(String(rawArete).trim());
-        return (
-          <span className="font-mono text-xs font-black text-slate-800 bg-slate-100 px-2.5 py-1 rounded">
-            {hasValidArete ? `#${String(rawArete).trim()}` : (row.hembra_alias || "Cerda")}
-          </span>
-        );
-      },
-    },
-    {
-      key: "corral",
-      header: "Corral Maternidad",
-      render: (row) => (
-        <span className="text-xs font-bold text-slate-700">
-          {row.corral_maternidad_codigo || "Paridera"}
-        </span>
-      ),
-    },
-    {
-      key: "fecha_parto",
-      header: "Fecha de Parto (COT)",
-      render: (row) => (
-        <span className="text-xs text-slate-600 font-medium">
-          {formatDateTime(row.fecha_parto)}
-        </span>
-      ),
-    },
-    {
-      key: "lechones",
-      header: "Camada (V / M / Mom)",
-      render: (row) => (
-        <div className="flex items-center gap-1.5 text-xs font-bold">
-          <span className="text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded font-black">
-            {row.nacidos_vivos} vivos
-          </span>
-          <span className="text-rose-700 bg-rose-100 px-1.5 py-0.5 rounded">
-            {row.nacidos_muertos || 0} m
-          </span>
-          <span className="text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">
-            {row.momias || 0} mom
-          </span>
-        </div>
-      ),
-    },
-    {
-      key: "peso",
-      header: "Peso Camada Total",
-      render: (row) => {
-        const peso = Number(row.peso_camada_total_kg) || 0;
-        const vivos = Number(row.nacidos_vivos) || 1;
-        const promedio = vivos > 0 ? (peso / vivos).toFixed(2) : "0.00";
-        return (
-          <div>
-            <span className="font-black text-slate-900 text-sm">{peso} kg</span>
-            <span className="block text-[10px] text-slate-400">
-              Prom: {promedio} kg/lechón
-            </span>
-          </div>
-        );
-      },
-    },
-    {
-      key: "observaciones",
-      header: "Observaciones",
-      render: (row) => (
-        <span className="text-xs text-slate-500 line-clamp-1">
-          {row.observaciones || "Sin novedades"}
-        </span>
-      ),
-    },
-  ];
-
-  // Columnas: Destetes
-  const weaningColumns = [
-    {
-      key: "hembra",
-      header: "Cerda Madre",
-      render: (row) => {
-        const rawArete = row.hembra_arete;
-        const hasValidArete =
-          rawArete && !UUID_REGEX.test(String(rawArete).trim());
-        return (
-          <span className="font-mono text-xs font-black text-slate-800 bg-slate-100 px-2.5 py-1 rounded">
-            {hasValidArete ? `#${String(rawArete).trim()}` : (row.hembra_alias || "Madre")}
-          </span>
-        );
-      },
-    },
-    {
-      key: "fecha",
-      header: "Fecha Destete",
-      render: (row) => (
-        <span className="text-xs text-slate-600 font-medium">
-          {row.fecha_destete}
-        </span>
-      ),
-    },
-    {
-      key: "lechones",
-      header: "Lechones Destetados",
-      render: (row) => (
-        <span className="font-black text-sm text-purple-700 bg-purple-50 border border-purple-200 px-2.5 py-1 rounded-full">
-          {row.lechones_destetados} lechones
-        </span>
-      ),
-    },
-    {
-      key: "peso",
-      header: "Peso Total Lote",
-      render: (row) => {
-        const peso = Number(row.peso_total_kg) || 0;
-        const count = Number(row.lechones_destetados) || 1;
-        const prom = count > 0 ? (peso / count).toFixed(2) : "0.00";
-        return (
-          <div>
-            <span className="font-black text-slate-900 text-sm">{peso} kg</span>
-            <span className="block text-[10px] text-slate-400">
-              Prom: {prom} kg/lechón
-            </span>
-          </div>
-        );
-      },
-    },
-    {
-      key: "lactancia",
-      header: "Días Lactancia",
-      render: (row) => (
-        <span className="text-xs font-bold text-slate-700">
-          {row.dias_lactancia} días
-        </span>
-      ),
-    },
-    {
-      key: "destino",
-      header: "Corral Destino (Precebo)",
-      render: (row) => (
-        <span className="text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded">
-          {row.corral_destino_codigo || "Corral Precebo"}
-        </span>
-      ),
-    },
-  ];
 
   return (
     <div className="w-full flex flex-col gap-6 text-slate-900">
@@ -809,78 +329,16 @@ export default function ReproductionView() {
         </div>
       )}
 
-      {/* TARJETAS DE KPI SUPERIORES */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        <Card className="rounded-3xl p-5 bg-white border border-slate-100 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-              Hembras Gestantes
-            </p>
-            <h4 className="text-2xl font-black text-fuchsia-600 mt-1">
-              {gestacionesConfirmadas} Cerda{gestacionesConfirmadas === 1 ? "" : "s"}
-            </h4>
-            <p className="text-[11px] text-slate-400 mt-0.5">
-              Confirmadas con diagnóstico positivo
-            </p>
-          </div>
-          <div className="p-3 rounded-2xl bg-fuchsia-50 text-fuchsia-600">
-            <Heart className="w-6 h-6" />
-          </div>
-        </Card>
+      {/* Tarjetas de KPI */}
+      <ReproductionKPIs
+        gestacionesConfirmadas={gestacionesConfirmadas}
+        proximosPartos={proximosPartos}
+        totalNacidosVivos={totalNacidosVivos}
+        totalDestetados={totalDestetados}
+        farrowingsCount={farrowings.length}
+      />
 
-        <Card className="rounded-3xl p-5 bg-white border border-slate-100 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-              Partos Inminentes (14d)
-            </p>
-            <h4 className="text-2xl font-black text-pink-600 mt-1">
-              {proximosPartos} Parto{proximosPartos === 1 ? "" : "s"}
-            </h4>
-            <p className="text-[11px] text-slate-400 mt-0.5">
-              Preparación de parideras
-            </p>
-          </div>
-          <div className="p-3 rounded-2xl bg-pink-50 text-pink-600">
-            <CalendarDays className="w-6 h-6" />
-          </div>
-        </Card>
-
-        <Card className="rounded-3xl p-5 bg-white border border-slate-100 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-              Lechones Vivos Nacidos
-            </p>
-            <h4 className="text-2xl font-black text-emerald-600 mt-1">
-              {totalNacidosVivos.toLocaleString("es-CO")}
-            </h4>
-            <p className="text-[11px] text-slate-400 mt-0.5">
-              En {farrowings.length} partos registrados
-            </p>
-          </div>
-          <div className="p-3 rounded-2xl bg-emerald-50 text-emerald-600">
-            <Baby className="w-6 h-6" />
-          </div>
-        </Card>
-
-        <Card className="rounded-3xl p-5 bg-white border border-slate-100 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-              Lechones Destetados
-            </p>
-            <h4 className="text-2xl font-black text-purple-600 mt-1">
-              {totalDestetados.toLocaleString("es-CO")}
-            </h4>
-            <p className="text-[11px] text-slate-400 mt-0.5">
-              Transición a corrales de precebo
-            </p>
-          </div>
-          <div className="p-3 rounded-2xl bg-purple-50 text-purple-600">
-            <Activity className="w-6 h-6" />
-          </div>
-        </Card>
-      </div>
-
-      {/* CONTROL DE PESTAÑAS */}
+      {/* Control de Pestañas */}
       <div className="flex items-center justify-between border-b border-slate-200 pb-2">
         <div className="flex gap-2">
           <button
@@ -935,7 +393,7 @@ export default function ReproductionView() {
         </button>
       </div>
 
-      {/* CONTENIDO DE PESTAÑAS */}
+      {/* Contenido de Pestaña Activa */}
       <section className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden p-2">
         {isLoading ? (
           <div className="p-6 space-y-3">
@@ -947,785 +405,60 @@ export default function ReproductionView() {
             ))}
           </div>
         ) : activeTab === "services" ? (
-          services.length === 0 ? (
-            <EmptyState
-              icon={Heart}
-              title="Sin servicios registrados"
-              description="No hay inseminaciones ni montas naturales registradas en la base de datos."
-              actionLabel="Registrar Primer Servicio"
-              onAction={() => setIsServiceModalOpen(true)}
-            />
-          ) : (
-            <Table columns={serviceColumns} rows={services} />
-          )
+          <ServicesTab
+            services={services}
+            onOpenDiagnose={handleOpenDiagnoseModal}
+            onOpenNewService={() => setIsServiceModalOpen(true)}
+          />
         ) : activeTab === "farrowings" ? (
-          farrowings.length === 0 ? (
-            <EmptyState
-              icon={Baby}
-              title="Sin partos registrados"
-              description="No se han registrado alumbramientos ni camadas en PostgreSQL."
-              actionLabel="Registrar Primer Parto"
-              onAction={() => setIsFarrowingModalOpen(true)}
-            />
-          ) : (
-            <Table columns={farrowingColumns} rows={farrowings} />
-          )
-        ) : weanings.length === 0 ? (
-          <EmptyState
-            icon={Activity}
-            title="Sin destetes registrados"
-            description="No se han registrado destetes de camadas hacia corrales de precebo."
-            actionLabel="Registrar Primer Destete"
-            onAction={() => setIsWeaningModalOpen(true)}
+          <FarrowingsTab
+            farrowings={farrowings}
+            onOpenNewFarrowing={() => setIsFarrowingModalOpen(true)}
           />
         ) : (
-          <Table columns={weaningColumns} rows={weanings} />
+          <WeaningsTab
+            weanings={weanings}
+            onOpenNewWeaning={() => setIsWeaningModalOpen(true)}
+          />
         )}
       </section>
 
-      {/* MODAL 1: NUEVO SERVICIO REPRODUCTIVO */}
-      {isServiceModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 text-slate-900">
-          <Card
-            as="form"
-            onSubmit={handleCreateServiceSubmit}
-            className="w-full max-w-lg p-8! rounded-[2.5rem]! shadow-2xl relative border border-slate-100 bg-white"
-          >
-            <button
-              type="button"
-              onClick={() => setIsServiceModalOpen(false)}
-              className="absolute top-6 right-6 text-slate-400 hover:text-slate-700 font-bold bg-slate-100 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer"
-            >
-              ✕
-            </button>
+      {/* Modales */}
+      <ServiceModal
+        isOpen={isServiceModalOpen}
+        onClose={() => setIsServiceModalOpen(false)}
+        onSubmit={handleCreateServiceSubmit}
+        isSubmitting={isSubmitting}
+        females={females}
+        males={males}
+        breedingMales={breedingMales}
+      />
 
-            <h2 className="text-2xl font-black mb-1 text-slate-900 flex items-center gap-2">
-              <div className="p-2 bg-fuchsia-100 rounded-xl text-fuchsia-600">
-                <Heart className="w-5 h-5" />
-              </div>
-              Nuevo Servicio Reproductivo
-            </h2>
-            <p className="text-xs text-slate-500 font-semibold mb-6">
-              Inseminación artificial o monta natural con cálculo de gestación (+114 días)
-            </p>
+      <DiagnoseModal
+        service={selectedServiceForDiagnose}
+        onClose={() => setSelectedServiceForDiagnose(null)}
+        onSubmit={handleDiagnoseSubmit}
+        isDiagnosing={isDiagnosing}
+      />
 
-            <div className="space-y-4">
-              <div>
-                <label className="text-xs font-bold text-slate-700 uppercase block mb-1.5">
-                  Cerda Reproductora (Hembra) *
-                </label>
-                <select
-                  value={serviceForm.hembra_id}
-                  onChange={(e) =>
-                    setServiceForm({ ...serviceForm, hembra_id: e.target.value })
-                  }
-                  className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-semibold focus:ring-2 focus:ring-fuchsia-500 outline-none text-sm cursor-pointer"
-                  required
-                >
-                  <option value="">Seleccione hembra reproductora...</option>
-                  {females
-                    .filter((f) => (f.sexo || "").toLowerCase().trim() === "hembra")
-                    .map((f) => {
-                      const displayName = getAnimalDisplayName(f);
-                      const validArete =
-                        f.codigo_arete && !UUID_REGEX.test(f.codigo_arete)
-                          ? `#${f.codigo_arete} · `
-                          : "";
-                      return (
-                        <option key={f.id} value={f.id}>
-                          {validArete ? `${validArete}${displayName}` : displayName} ({f.raza || "Cerda"})
-                        </option>
-                      );
-                    })}
-                </select>
-              </div>
+      <FarrowingModal
+        isOpen={isFarrowingModalOpen}
+        onClose={() => setIsFarrowingModalOpen(false)}
+        onSubmit={handleCreateFarrowingSubmit}
+        isSubmitting={isSubmitting}
+        confirmedFemales={confirmedFemales}
+        services={services}
+        corrales={corrales}
+      />
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs font-bold text-slate-700 uppercase block mb-1.5">
-                    Tipo de Servicio *
-                  </label>
-                  <select
-                    value={serviceForm.tipo_servicio}
-                    onChange={(e) =>
-                      setServiceForm({
-                        ...serviceForm,
-                        tipo_servicio: e.target.value,
-                      })
-                    }
-                    className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-semibold focus:ring-2 focus:ring-fuchsia-500 outline-none text-sm cursor-pointer"
-                  >
-                    <option value="inseminacion_artificial">
-                      Inseminación Artificial
-                    </option>
-                    <option value="monta_natural">Monta Natural</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-xs font-bold text-slate-700 uppercase block mb-1.5">
-                    Fecha de Servicio *
-                  </label>
-                  <Input
-                    type="date"
-                    required
-                    value={serviceForm.fecha_servicio}
-                    onChange={(e) =>
-                      setServiceForm({
-                        ...serviceForm,
-                        fecha_servicio: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-              </div>
-
-              {serviceForm.tipo_servicio === "monta_natural" ? (
-                <div>
-                  <label className="text-xs font-bold text-slate-700 uppercase block mb-1.5">
-                    Macho Semental (Verraco) *
-                  </label>
-                  <select
-                    value={serviceForm.macho_id}
-                    onChange={(e) =>
-                      setServiceForm({
-                        ...serviceForm,
-                        macho_id: e.target.value,
-                      })
-                    }
-                    className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-semibold focus:ring-2 focus:ring-fuchsia-500 outline-none text-sm cursor-pointer"
-                    required
-                  >
-                    <option value="">Seleccione macho semental...</option>
-                    {(breedingMales.length > 0
-                      ? breedingMales
-                      : males.filter((m) => (m.sexo || "").toLowerCase().trim() === "macho")
-                    ).map((m) => {
-                      const displayName = getAnimalDisplayName(m);
-                      const validArete =
-                        m.codigo_arete && !UUID_REGEX.test(m.codigo_arete)
-                          ? `#${m.codigo_arete} · `
-                          : "";
-                      return (
-                        <option key={m.id} value={m.id}>
-                          {validArete ? `${validArete}${displayName}` : displayName} ({m.raza || "Macho Semental"})
-                        </option>
-                      );
-                    })}
-                  </select>
-                </div>
-              ) : (
-                <div>
-                  <label className="text-xs font-bold text-slate-700 uppercase block mb-1.5">
-                    Código de Pajilla / Lote de Semen
-                  </label>
-                  <Input
-                    placeholder="Ej: PAJ-DUROC-99"
-                    value={serviceForm.codigo_pajilla_macho}
-                    onChange={(e) =>
-                      setServiceForm({
-                        ...serviceForm,
-                        codigo_pajilla_macho: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-              )}
-
-              {/* Cálculo previo de fecha estimada de parto */}
-              <div className="p-3.5 bg-fuchsia-50 rounded-2xl border border-fuchsia-200 flex items-center justify-between">
-                <div>
-                  <span className="text-[10px] font-bold text-fuchsia-800 uppercase tracking-wider block">
-                    Parto Probable Estimado (+114 días)
-                  </span>
-                  <span className="text-sm font-black text-fuchsia-950">
-                    {estimatedFarrowingDate || "Pendiente de fecha"}
-                  </span>
-                </div>
-                <Clock className="w-5 h-5 text-fuchsia-600" />
-              </div>
-
-              <div>
-                <label className="text-xs font-bold text-slate-700 uppercase block mb-1.5">
-                  Diagnóstico Inicial
-                </label>
-                <select
-                  value={serviceForm.estado_confirmacion}
-                  onChange={(e) =>
-                    setServiceForm({
-                      ...serviceForm,
-                      estado_confirmacion: e.target.value,
-                    })
-                  }
-                  className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-semibold focus:ring-2 focus:ring-fuchsia-500 outline-none text-sm cursor-pointer"
-                >
-                  <option value="pendiente">Pendiente Diagnóstico</option>
-                  <option value="positiva">Gestante (Confirmada)</option>
-                  <option value="negativa">No Gestante (Vacía)</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="flex gap-4 mt-8">
-              <Button
-                type="button"
-                tone="soft"
-                onClick={() => setIsServiceModalOpen(false)}
-                className="flex-1 font-bold rounded-xl!"
-                disabled={isSubmitting}
-              >
-                Cancelar
-              </Button>
-              <Button
-                type="submit"
-                tone="primary"
-                className="flex-1 font-black bg-fuchsia-600 hover:bg-fuchsia-700 text-white rounded-xl! shadow-md"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? "Registrando..." : "Guardar Servicio"}
-              </Button>
-            </div>
-          </Card>
-        </div>
-      )}
-
-      {/* MODAL 2: REGISTRO DE PARTO Y CAMADA */}
-      {isFarrowingModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 text-slate-900">
-          <Card
-            as="form"
-            onSubmit={handleCreateFarrowingSubmit}
-            className="w-full max-w-lg p-8! rounded-[2.5rem]! shadow-2xl relative border border-slate-100 bg-white max-h-[90vh] overflow-y-auto"
-          >
-            <button
-              type="button"
-              onClick={() => setIsFarrowingModalOpen(false)}
-              className="absolute top-6 right-6 text-slate-400 hover:text-slate-700 font-bold bg-slate-100 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer"
-            >
-              ✕
-            </button>
-
-            <h2 className="text-2xl font-black mb-1 text-slate-900 flex items-center gap-2">
-              <div className="p-2 bg-emerald-100 rounded-xl text-emerald-600">
-                <Baby className="w-5 h-5" />
-              </div>
-              Registrar Parto y Camada
-            </h2>
-            <p className="text-xs text-slate-500 font-semibold mb-6">
-              Conteo biológico de lechones y pesaje inicial de camada en paridera
-            </p>
-
-            <div className="space-y-4">
-              <div>
-                <label className="text-xs font-bold text-slate-700 uppercase block mb-1.5">
-                  Cerda Madre (Gestación Confirmada) *
-                </label>
-                {confirmedFemales.length > 0 ? (
-                  <select
-                    value={farrowingForm.hembra_id}
-                    onChange={(e) => {
-                      const selId = e.target.value;
-                      const matchingService = services.find(
-                        (s) =>
-                          (s.hembra_id === selId || s.id_cerda === selId) &&
-                          s.estado_confirmacion === "positiva"
-                      );
-                      setFarrowingForm({
-                        ...farrowingForm,
-                        hembra_id: selId,
-                        servicio_id: matchingService ? matchingService.id : "",
-                      });
-                    }}
-                    className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-semibold focus:ring-2 focus:ring-emerald-500 outline-none text-sm cursor-pointer"
-                    required
-                  >
-                    <option value="">Seleccione madre con servicio confirmado...</option>
-                    {confirmedFemales.map((f) => {
-                      const displayName = getAnimalDisplayName(f);
-                      const validArete =
-                        f.codigo_arete && !UUID_REGEX.test(f.codigo_arete)
-                          ? `#${f.codigo_arete} · `
-                          : "";
-                      return (
-                        <option key={f.id} value={f.id}>
-                          {validArete ? `${validArete}${displayName}` : displayName} ({f.raza || "Cerda"}) - Gestación Confirmada
-                        </option>
-                      );
-                    })}
-                  </select>
-                ) : (
-                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900">
-                    <p className="font-bold flex items-center gap-1.5 mb-1 text-amber-800">
-                      <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-                      Sin hembras con servicio confirmado positivo
-                    </p>
-                    <p className="text-slate-600 leading-relaxed">
-                      Para registrar un parto, la cerda debe contar previamente con un servicio registrado y diagnóstico de preñez confirmado como <strong>positiva</strong> (+114 días).
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs font-bold text-slate-700 uppercase block mb-1.5">
-                    Corral Maternidad
-                  </label>
-                  <select
-                    value={farrowingForm.corral_maternidad_id}
-                    onChange={(e) =>
-                      setFarrowingForm({
-                        ...farrowingForm,
-                        corral_maternidad_id: e.target.value,
-                      })
-                    }
-                    className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-semibold focus:ring-2 focus:ring-emerald-500 outline-none text-sm cursor-pointer"
-                  >
-                    <option value="">Seleccione paridera...</option>
-                    {corrales.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        Corral {c.codigo} ({c.fase})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-xs font-bold text-slate-700 uppercase block mb-1.5">
-                    Fecha de Parto *
-                  </label>
-                  <Input
-                    type="date"
-                    required
-                    value={farrowingForm.fecha_parto}
-                    onChange={(e) =>
-                      setFarrowingForm({
-                        ...farrowingForm,
-                        fecha_parto: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="text-xs font-bold text-slate-700 uppercase block mb-1.5">
-                    Nacidos Vivos *
-                  </label>
-                  <Input
-                    type="number"
-                    min="0"
-                    required
-                    placeholder="12"
-                    value={farrowingForm.nacidos_vivos}
-                    onChange={(e) =>
-                      setFarrowingForm({
-                        ...farrowingForm,
-                        nacidos_vivos: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-bold text-slate-700 uppercase block mb-1.5">
-                    Nacidos Muertos
-                  </label>
-                  <Input
-                    type="number"
-                    min="0"
-                    placeholder="0"
-                    value={farrowingForm.nacidos_muertos}
-                    onChange={(e) =>
-                      setFarrowingForm({
-                        ...farrowingForm,
-                        nacidos_muertos: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-bold text-slate-700 uppercase block mb-1.5">
-                    Momias
-                  </label>
-                  <Input
-                    type="number"
-                    min="0"
-                    placeholder="0"
-                    value={farrowingForm.momias}
-                    onChange={(e) =>
-                      setFarrowingForm({
-                        ...farrowingForm,
-                        momias: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="text-xs font-bold text-slate-700 uppercase block mb-1.5">
-                  Peso Camada Total (kg) *
-                </label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="0.1"
-                  required
-                  placeholder="Ej: 16.80"
-                  value={farrowingForm.peso_camada_total_kg}
-                  onChange={(e) =>
-                    setFarrowingForm({
-                      ...farrowingForm,
-                      peso_camada_total_kg: e.target.value,
-                    })
-                  }
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-bold text-slate-700 uppercase block mb-1.5">
-                  Observaciones del Alumbramiento
-                </label>
-                <Input
-                  placeholder="Ej: Parto normal sin asistencia, calostro consumido"
-                  value={farrowingForm.observaciones}
-                  onChange={(e) =>
-                    setFarrowingForm({
-                      ...farrowingForm,
-                      observaciones: e.target.value,
-                    })
-                  }
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-4 mt-8">
-              <Button
-                type="button"
-                tone="soft"
-                onClick={() => setIsFarrowingModalOpen(false)}
-                className="flex-1 font-bold rounded-xl!"
-                disabled={isSubmitting}
-              >
-                Cancelar
-              </Button>
-              <Button
-                type="submit"
-                tone="primary"
-                className="flex-1 font-black rounded-xl! shadow-md"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? "Registrando..." : "Guardar Parto"}
-              </Button>
-            </div>
-          </Card>
-        </div>
-      )}
-
-      {/* MODAL 3: REGISTRO DE DESTETE */}
-      {isWeaningModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 text-slate-900">
-          <Card
-            as="form"
-            onSubmit={handleCreateWeaningSubmit}
-            className="w-full max-w-lg p-8! rounded-[2.5rem]! shadow-2xl relative border border-slate-100 bg-white"
-          >
-            <button
-              type="button"
-              onClick={() => setIsWeaningModalOpen(false)}
-              className="absolute top-6 right-6 text-slate-400 hover:text-slate-700 font-bold bg-slate-100 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer"
-            >
-              ✕
-            </button>
-
-            <h2 className="text-2xl font-black mb-1 text-slate-900 flex items-center gap-2">
-              <div className="p-2 bg-purple-100 rounded-xl text-purple-600">
-                <Activity className="w-5 h-5" />
-              </div>
-              Registrar Destete de Camada
-            </h2>
-            <p className="text-xs text-slate-500 font-semibold mb-6">
-              Finalización de lactancia y traslado del lote a corral de precebo
-            </p>
-
-            <div className="space-y-4">
-              <div>
-                <label className="text-xs font-bold text-slate-700 uppercase block mb-1.5">
-                  Cerda Madre *
-                </label>
-                <select
-                  value={weaningForm.hembra_id}
-                  onChange={(e) =>
-                    setWeaningForm({
-                      ...weaningForm,
-                      hembra_id: e.target.value,
-                    })
-                  }
-                  className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-semibold focus:ring-2 focus:ring-purple-500 outline-none text-sm cursor-pointer"
-                  required
-                >
-                  <option value="">Seleccione madre...</option>
-                  {females.map((f) => {
-                    const displayName = getAnimalDisplayName(f);
-                    const validArete =
-                      f.codigo_arete && !UUID_REGEX.test(f.codigo_arete)
-                        ? `#${f.codigo_arete} · `
-                        : "";
-                    return (
-                      <option key={f.id} value={f.id}>
-                        {validArete ? `${validArete}${displayName}` : displayName} ({f.raza || "Cerda"})
-                      </option>
-                    );
-                  })}
-                </select>
-              </div>
-
-              <div>
-                <label className="text-xs font-bold text-slate-700 uppercase block mb-1.5">
-                  Corral Destino (Precebo) *
-                </label>
-                <select
-                  value={weaningForm.corral_destino_id}
-                  onChange={(e) =>
-                    setWeaningForm({
-                      ...weaningForm,
-                      corral_destino_id: e.target.value,
-                    })
-                  }
-                  className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-semibold focus:ring-2 focus:ring-purple-500 outline-none text-sm cursor-pointer"
-                  required
-                >
-                  <option value="">Seleccione corral destino...</option>
-                  {corrales.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      Corral {c.codigo} ({c.fase})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs font-bold text-slate-700 uppercase block mb-1.5">
-                    Fecha de Destete *
-                  </label>
-                  <Input
-                    type="date"
-                    required
-                    value={weaningForm.fecha_destete}
-                    onChange={(e) =>
-                      setWeaningForm({
-                        ...weaningForm,
-                        fecha_destete: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-bold text-slate-700 uppercase block mb-1.5">
-                    Días de Lactancia *
-                  </label>
-                  <Input
-                    type="number"
-                    min="14"
-                    required
-                    placeholder="21"
-                    value={weaningForm.dias_lactancia}
-                    onChange={(e) =>
-                      setWeaningForm({
-                        ...weaningForm,
-                        dias_lactancia: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs font-bold text-slate-700 uppercase block mb-1.5">
-                    Lechones Destetados *
-                  </label>
-                  <Input
-                    type="number"
-                    min="1"
-                    required
-                    placeholder="11"
-                    value={weaningForm.lechones_destetados}
-                    onChange={(e) =>
-                      setWeaningForm({
-                        ...weaningForm,
-                        lechones_destetados: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-bold text-slate-700 uppercase block mb-1.5">
-                    Peso Total Lote (kg) *
-                  </label>
-                  <Input
-                    type="number"
-                    step="0.1"
-                    min="1"
-                    required
-                    placeholder="68.5"
-                    value={weaningForm.peso_total_kg}
-                    onChange={(e) =>
-                      setWeaningForm({
-                        ...weaningForm,
-                        peso_total_kg: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="flex gap-4 mt-8">
-              <Button
-                type="button"
-                tone="soft"
-                onClick={() => setIsWeaningModalOpen(false)}
-                className="flex-1 font-bold rounded-xl!"
-                disabled={isSubmitting}
-              >
-                Cancelar
-              </Button>
-              <Button
-                type="submit"
-                tone="primary"
-                className="flex-1 font-black bg-purple-600 hover:bg-purple-700 text-white rounded-xl! shadow-md"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? "Registrando..." : "Guardar Destete"}
-              </Button>
-            </div>
-          </Card>
-        </div>
-      )}
-
-      {/* MODAL 4: DIAGNÓSTICO DE GESTACIÓN / PREÑEZ */}
-      {selectedServiceForDiagnose && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 text-slate-900">
-          <Card
-            as="form"
-            onSubmit={handleDiagnoseSubmit}
-            className="w-full max-w-md p-8! rounded-[2.5rem]! shadow-2xl relative border border-slate-100 bg-white"
-          >
-            <button
-              type="button"
-              onClick={() => setSelectedServiceForDiagnose(null)}
-              className="absolute top-6 right-6 text-slate-400 hover:text-slate-700 font-bold bg-slate-100 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer"
-            >
-              ✕
-            </button>
-
-            <h2 className="text-xl font-black mb-1 text-slate-900 flex items-center gap-2">
-              <div className="p-2 bg-fuchsia-100 rounded-xl text-fuchsia-600">
-                <CheckCircle2 className="w-5 h-5" />
-              </div>
-              Diagnóstico de Gestación
-            </h2>
-            <p className="text-xs text-slate-500 font-semibold mb-5">
-              Confirmación clínica o ecográfica para la cerda{" "}
-              <strong className="text-slate-900 font-black">
-                {selectedServiceForDiagnose.hembra_arete &&
-                !UUID_REGEX.test(selectedServiceForDiagnose.hembra_arete)
-                  ? `#${selectedServiceForDiagnose.hembra_arete}`
-                  : (selectedServiceForDiagnose.hembra_alias || "Cerda Madre")}
-              </strong>
-              {selectedServiceForDiagnose.hembra_alias &&
-              selectedServiceForDiagnose.hembra_arete &&
-              !UUID_REGEX.test(selectedServiceForDiagnose.hembra_arete)
-                ? ` ("${selectedServiceForDiagnose.hembra_alias}")`
-                : ""}
-            </p>
-
-            <div className="space-y-4">
-              <div>
-                <label className="text-xs font-bold text-slate-700 uppercase block mb-1.5">
-                  Resultado del Diagnóstico *
-                </label>
-                <select
-                  value={diagnoseForm.estado_confirmacion}
-                  onChange={(e) =>
-                    setDiagnoseForm({
-                      ...diagnoseForm,
-                      estado_confirmacion: e.target.value,
-                    })
-                  }
-                  className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-semibold focus:ring-2 focus:ring-fuchsia-500 outline-none text-sm cursor-pointer"
-                >
-                  <option value="positiva">Positiva (Gestante - Pasa a Gestación)</option>
-                  <option value="negativa">Negativa (Vacía)</option>
-                  <option value="repetida">Repetida (Repitió celo)</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="text-xs font-bold text-slate-700 uppercase block mb-1.5">
-                  Fecha de Diagnóstico *
-                </label>
-                <input
-                  type="date"
-                  value={diagnoseForm.fecha_diagnostico}
-                  onChange={(e) =>
-                    setDiagnoseForm({
-                      ...diagnoseForm,
-                      fecha_diagnostico: e.target.value,
-                    })
-                  }
-                  className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-semibold focus:ring-2 focus:ring-fuchsia-500 outline-none text-sm"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-bold text-slate-700 uppercase block mb-1.5">
-                  Observaciones Clínicas (Opcional)
-                </label>
-                <textarea
-                  rows={2}
-                  value={diagnoseForm.observaciones}
-                  onChange={(e) =>
-                    setDiagnoseForm({
-                      ...diagnoseForm,
-                      observaciones: e.target.value,
-                    })
-                  }
-                  placeholder="Ej: Confirmada por ultrasonido a los 30 días..."
-                  className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-medium focus:ring-2 focus:ring-fuchsia-500 outline-none text-sm resize-none"
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-3 mt-6">
-              <Button
-                type="button"
-                tone="soft"
-                onClick={() => setSelectedServiceForDiagnose(null)}
-                className="flex-1 rounded-xl! font-bold text-sm"
-              >
-                Cancelar
-              </Button>
-              <Button
-                type="submit"
-                tone="primary"
-                isLoading={isDiagnosing}
-                className="flex-1 rounded-xl! font-black text-sm bg-fuchsia-600 hover:bg-fuchsia-700 text-white"
-              >
-                Confirmar Diagnóstico
-              </Button>
-            </div>
-          </Card>
-        </div>
-      )}
+      <WeaningModal
+        isOpen={isWeaningModalOpen}
+        onClose={() => setIsWeaningModalOpen(false)}
+        onSubmit={handleCreateWeaningSubmit}
+        isSubmitting={isSubmitting}
+        females={females}
+        corrales={corrales}
+      />
     </div>
   );
 }
