@@ -31,8 +31,8 @@ export default function QrQuickSearchModal({ isOpen, onClose }) {
 
   useEffect(() => {
     if (isOpen) {
-      // Cargar lista de animales reales desde la API de FastAPI
-      getAnimales()
+      // Cargar muestra reciente acotada (evita descargar miles de registros a RAM)
+      getAnimales({ limit: 25 })
         .then((list) => {
           if (Array.isArray(list) && list.length > 0) {
             setKnownAnimals(list);
@@ -49,6 +49,31 @@ export default function QrQuickSearchModal({ isOpen, onClose }) {
       }, 100);
     }
   }, [isOpen]);
+
+  // Búsqueda reactiva en servidor con debounce de 300ms cuando no hay match en caché corta
+  useEffect(() => {
+    if (!isOpen) return;
+    const cleaned = searchCode.trim();
+    if (cleaned.length < 2) return;
+
+    const timer = setTimeout(async () => {
+      try {
+        const results = await getAnimales({ search: cleaned, limit: 20 });
+        if (Array.isArray(results) && results.length > 0) {
+          setKnownAnimals((prev) => {
+            const byId = new Map(prev.map((a) => [a.id, a]));
+            results.forEach((a) => byId.set(a.id, a));
+            return Array.from(byId.values());
+          });
+          setMatchedAnimal((prev) => prev || results[0]);
+        }
+      } catch {
+        // Ignorar errores silenciosos durante tipeo
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchCode, isOpen]);
 
   // Manejar búsqueda y matching dinámico
   const handleCodeChange = (val) => {
