@@ -1,25 +1,21 @@
 # =============================================================
 # ETAPA 1: Dependencias base
 # =============================================================
-FROM node:20-alpine AS deps
+FROM node:22-alpine AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-RUN npm install -g pnpm@10 && \
-    pnpm config set network-timeout 600000 && \
-    pnpm config set fetch-retries 5 && \
-    pnpm config set fetch-retry-mintimeout 20000 && \
-    pnpm config set fetch-retry-maxtimeout 120000
+RUN npm install -g pnpm@11.4.0
 
-COPY package.json pnpm-lock.yaml* ./
+COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml* ./
 RUN pnpm install --frozen-lockfile --dangerously-allow-all-builds
 
 # =============================================================
 # ETAPA 2: Compilación de Next.js (Standalone)
 # =============================================================
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 WORKDIR /app
-RUN npm install -g pnpm@10
+RUN npm install -g pnpm@11.4.0
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -33,7 +29,7 @@ RUN pnpm run build
 # =============================================================
 # ETAPA 3: Runner de Producción Ultra-ligero (~120 MB)
 # =============================================================
-FROM node:20-alpine AS runner
+FROM node:22-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
