@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import {
   ArrowDownLeft,
@@ -146,7 +146,7 @@ export function useInventoryData() {
     }
   }, [filterCategory, searchTerm, filterLowStockOnly]);
 
-  const isFirstFilterRender = useMemo(() => ({ current: true }), []);
+  const isFirstFilterRender = useRef(true);
 
   useEffect(() => {
     if (isFirstFilterRender.current) {
@@ -157,7 +157,7 @@ export function useInventoryData() {
       handleApplyFilters();
     }, 250);
     return () => clearTimeout(timer);
-  }, [handleApplyFilters, isFirstFilterRender]);
+  }, [handleApplyFilters]);
 
   // KPIs reactivos calculados
   const totalValue = useMemo(() => {

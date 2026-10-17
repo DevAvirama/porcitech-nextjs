@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   Syringe,
   Pill,
@@ -70,7 +70,7 @@ export function useHealthData() {
       console.error("Error al cargar datos sanitarios:", err);
       setError(
         err.message ||
-          "No se pudieron sincronizar los datos de sanidad con el backend de FastAPI."
+          "No se pudieron sincronizar los datos de sanidad con el backend de FastAPI.",
       );
     } finally {
       setIsLoading(false);
@@ -99,8 +99,9 @@ export function useHealthData() {
           (t) =>
             (t.animal_arete && t.animal_arete.toLowerCase().includes(query)) ||
             (t.animal_alias && t.animal_alias.toLowerCase().includes(query)) ||
-            (t.producto_nombre && t.producto_nombre.toLowerCase().includes(query)) ||
-            (t.diagnostico && t.diagnostico.toLowerCase().includes(query))
+            (t.producto_nombre &&
+              t.producto_nombre.toLowerCase().includes(query)) ||
+            (t.diagnostico && t.diagnostico.toLowerCase().includes(query)),
         );
       }
 
@@ -110,7 +111,7 @@ export function useHealthData() {
     }
   }, [filterType, filterCorral, searchTerm]);
 
-  const isFirstFilterRender = useMemo(() => ({ current: true }), []);
+  const isFirstFilterRender = useRef(true);
 
   useEffect(() => {
     if (isFirstFilterRender.current) {
@@ -121,7 +122,7 @@ export function useHealthData() {
       handleApplyFilters();
     }, 250);
     return () => clearTimeout(timer);
-  }, [handleApplyFilters, isFirstFilterRender]);
+  }, [handleApplyFilters]);
 
   // Columnas para la tabla clínica
   const columns = useMemo(
@@ -163,12 +164,11 @@ export function useHealthData() {
         key: "tipo_evento",
         header: "Evento Sanitario",
         render: (row) => {
-          const badge =
-            EVENT_TYPE_BADGES[row.tipo_evento] || {
-              label: row.tipo_evento || "General",
-              className: "bg-slate-100 text-slate-700 border-slate-200",
-              icon: Activity,
-            };
+          const badge = EVENT_TYPE_BADGES[row.tipo_evento] || {
+            label: row.tipo_evento || "General",
+            className: "bg-slate-100 text-slate-700 border-slate-200",
+            icon: Activity,
+          };
           const Icon = badge.icon;
           return (
             <span
@@ -185,7 +185,9 @@ export function useHealthData() {
         header: "Producto / Diagnóstico",
         render: (row) => (
           <div className="py-1">
-            <p className="font-bold text-slate-900 text-sm">{row.producto_nombre}</p>
+            <p className="font-bold text-slate-900 text-sm">
+              {row.producto_nombre}
+            </p>
             <p className="text-xs text-slate-500 leading-snug mt-0.5">
               {row.diagnostico}
             </p>
@@ -252,7 +254,7 @@ export function useHealthData() {
         },
       },
     ],
-    []
+    [],
   );
 
   return {
