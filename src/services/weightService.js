@@ -1,9 +1,76 @@
-import { apiFetch } from './apiClient.js';
+import { apiFetch, getApiBaseUrl } from './apiClient.js';
 
 /**
  * Servicio para la gestión de pesajes, analítica de series temporales (TimescaleDB)
- * e inferencia de visión artificial (YOLO + OpenCV en microservicio Docker).
+ * e inferencia de visión artificial en vivo con cámara industrial Dahua TPC-BF.
  */
+
+/**
+ * Retorna la URL directa del flujo de video en vivo MJPEG para elementos <img /> o canvas.
+ *
+ * @param {object} options
+ * @param {number} [options.channel=1] - 1: Óptico, 2: Térmico
+ * @param {number} [options.subtype=0] - 0: Principal 1080P, 1: Substream
+ * @param {string} [options.password] - Contraseña Dahua
+ * @param {number|string} [options.pixelsPerCm] - Calibración métrica px/cm
+ * @param {number} [options.t] - Timestamp para evitar caché
+ */
+export function getLiveStreamUrl({ channel = 1, subtype = 0, password = '', pixelsPerCm = null, t = Date.now() } = {}) {
+  const baseUrl = getApiBaseUrl().replace(/\/+$/, '');
+  const params = new URLSearchParams();
+  params.set('channel', String(channel));
+  params.set('subtype', String(subtype));
+  if (password) params.set('password', password);
+  if (pixelsPerCm && Number(pixelsPerCm) > 0) params.set('pixels_per_cm', String(pixelsPerCm));
+  params.set('_t', String(t));
+  return `${baseUrl}/pesajes/stream/live?${params.toString()}`;
+}
+
+/**
+ * Consulta las métricas y estado de conexión en tiempo real del streaming Dahua.
+ * Endpoint: GET /api/v1/pesajes/stream/status
+ */
+export async function getLiveStreamStatus() {
+  return await apiFetch('/pesajes/stream/status');
+}
+
+/**
+ * Actualiza la configuración de conexión del stream de la cámara Dahua.
+ * Endpoint: POST /api/v1/pesajes/stream/config
+ */
+export async function updateStreamConfig(config) {
+  return await apiFetch('/pesajes/stream/config', {
+    method: 'POST',
+    body: config,
+  });
+}
+
+/**
+ * Captura el fotograma actual del flujo en vivo, ejecuta inferencia morfométrica de precisión
+ * y persiste el pesaje en la hipertabla de TimescaleDB actualizando el peso del cerdo.
+ * Endpoint: POST /api/v1/pesajes/capturar-en-vivo
+ *
+ * @param {object} payload
+ * @param {string} payload.id_cerdo
+ * @param {string} payload.corral_id
+ * @param {boolean} [payload.persistir=true]
+ * @param {number} [payload.pixels_per_cm]
+ * @param {boolean} [payload.validar_bordes=false]
+ * @param {number} [payload.channel=1]
+ * @param {number} [payload.subtype=0]
+ */
+export async function capturarPesoEnVivo(payload) {
+  if (!payload.id_cerdo) {
+    throw new Error('Debes seleccionar el cerdo para asociar el pesaje.');
+  }
+  if (!payload.corral_id) {
+    throw new Error('Debes seleccionar el corral de procedencia.');
+  }
+  return await apiFetch('/pesajes/capturar-en-vivo', {
+    method: 'POST',
+    body: payload,
+  });
+}
 
 /**
  * Envía una imagen dorsal a la API de visión artificial para estimación morfométrica y de peso.
@@ -160,6 +227,10 @@ export async function registerManualWeight(data) {
 }
 
 const weightService = {
+  getLiveStreamUrl,
+  getLiveStreamStatus,
+  updateStreamConfig,
+  capturarPesoEnVivo,
   estimateWeightWithAI,
   estimarPesoCamaraRTSP,
   deletePesaje,
