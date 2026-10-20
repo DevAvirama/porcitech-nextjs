@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { QRCodeSVG } from "qrcode.react";
 import {
   Printer,
@@ -70,7 +71,6 @@ export default function AnimalQrModal({ animal, isOpen, onClose }) {
   };
 
   const handlePrint = () => {
-    // Añadir clase temporal al body si fuera necesario y llamar print
     window.print();
   };
 
@@ -94,15 +94,15 @@ export default function AnimalQrModal({ animal, isOpen, onClose }) {
     animal.fechaIngreso ||
     new Date().toISOString().split("T")[0];
 
-  return (
+  const modalContent = (
     <div
-      className="fixed inset-0 z-100 overflow-y-auto bg-slate-950/80 backdrop-blur-md p-4 sm:p-6"
+      className="qr-modal-portal fixed inset-0 z-100 overflow-y-auto bg-slate-950/80 backdrop-blur-md p-4 sm:p-6"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="min-h-full flex items-center justify-center">
-        <div className="relative w-full max-w-xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col text-slate-900 my-4 sm:my-8">
+      <div className="min-h-full flex items-center justify-center print:min-h-0 print:block">
+        <div className="qr-modal-dialog relative w-full max-w-xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col text-slate-900 my-4 sm:my-8 print:my-0">
         {/* Cabecera del Modal (no se imprime) */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/80 no-print">
           <div className="flex items-center gap-3">
@@ -182,16 +182,18 @@ export default function AnimalQrModal({ animal, isOpen, onClose }) {
         </div>
 
         {/* ÁREA IMPRIMIBLE / VISTA PREVIA */}
-        <div className="p-5 sm:p-6 md:p-8 flex justify-center items-center bg-slate-100/50 overflow-x-auto">
+        <div className="qr-modal-canvas p-5 sm:p-6 md:p-8 flex justify-center items-center bg-slate-100/50 overflow-x-auto">
           <div
             ref={printRef}
             className={`printable-chapeta-container w-full transition-all ${
-              tagFormat === "arete" ? "max-w-95" : "max-w-full"
+              tagFormat === "arete"
+                ? "max-w-95 print:w-[380px] print:max-w-[380px]"
+                : "max-w-full print:w-[540px] print:max-w-[540px]"
             }`}
           >
             {tagFormat === "arete" ? (
               /* DISEÑO CHAPETA DE ARETE (FORMA TÉRMICA DE GANADO) */
-              <div className="relative bg-white border-2 border-slate-900 rounded-[2.5rem] p-6 shadow-xl overflow-hidden text-center flex flex-col items-center">
+              <div className="relative bg-white border-2 border-slate-900 rounded-[2.5rem] p-6 shadow-xl print:shadow-none overflow-hidden text-center flex flex-col items-center">
                 {/* Perforación visual de la chapeta */}
                 <div className="w-9 h-9 rounded-full bg-slate-100 border-3 border-slate-900 mb-3 flex items-center justify-center shadow-inner">
                   <div className="w-2.5 h-2.5 rounded-full bg-slate-300"></div>
@@ -276,7 +278,7 @@ export default function AnimalQrModal({ animal, isOpen, onClose }) {
               </div>
             ) : (
               /* DISEÑO RÓTULO DE CORRAL / JAULA */
-              <div className="bg-white border-3 border-slate-900 rounded-3xl p-5 sm:p-6 shadow-xl text-slate-900">
+              <div className="bg-white border-3 border-slate-900 rounded-3xl p-5 sm:p-6 shadow-xl print:shadow-none text-slate-900">
                 <div className="flex items-center justify-between border-b-2 border-slate-900 pb-3 mb-4">
                   <div>
                     <h3 className="text-xl font-black uppercase tracking-tight italic">
@@ -293,7 +295,7 @@ export default function AnimalQrModal({ animal, isOpen, onClose }) {
                   </div>
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-4 items-center">
+                <div className="flex flex-col sm:flex-row print:flex-row gap-4 items-center">
                   <div className="p-3 bg-white border-2 border-slate-900 rounded-2xl shrink-0 shadow-sm">
                     {mounted ? (
                       <QRCodeSVG
@@ -383,5 +385,10 @@ export default function AnimalQrModal({ animal, isOpen, onClose }) {
       </div>
     </div>
   </div>
-);
+  );
+
+  if (mounted && typeof document !== "undefined") {
+    return createPortal(modalContent, document.body);
+  }
+  return modalContent;
 }

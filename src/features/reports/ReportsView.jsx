@@ -45,10 +45,11 @@ export default function ReportsView() {
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-300">
+    <div className="space-y-8 print:space-y-0 animate-in fade-in duration-300">
       <ModuleHeader
         title="Reportes y Analítica Zootécnica"
         description="Generación de informes de desempeño, trazabilidad sanitaria y métricas operativas."
+        className="no-print"
       />
 
       {/* RENDERIZADO ESTÁNDAR: CONFIGURACIÓN Y DASHBOARD */}

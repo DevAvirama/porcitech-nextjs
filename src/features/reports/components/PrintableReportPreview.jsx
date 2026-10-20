@@ -35,7 +35,7 @@ export default function PrintableReportPreview({
       </div>
 
       {/* Plantilla A4 / Printable Document Container */}
-      <Card className="printable-report bg-white text-slate-900 p-8 sm:p-12 shadow-xl border border-slate-200 rounded-[2.5rem] max-w-225 mx-auto space-y-8 font-sans">
+      <Card className="printable-report bg-white text-slate-900 p-8 sm:p-12 print:p-8 shadow-xl border border-slate-200 rounded-[2.5rem] print:rounded-3xl max-w-225 mx-auto space-y-8 print:space-y-6 font-sans">
         {/* Header del Documento PDF */}
         <div className="flex justify-between items-start border-b-4 border-slate-900 pb-6">
           <div className="space-y-1">
@@ -153,7 +153,7 @@ export default function PrintableReportPreview({
         )}
 
         {/* Sección de cumplimiento normativo ICA */}
-        <div className="space-y-3 pt-4 border-t border-slate-200">
+        <div className="space-y-3 pt-4 border-t border-slate-200 break-inside-avoid">
           <h3 className="text-xs font-black uppercase text-slate-500 tracking-wider">
             Control Regulatorio y Bioseguridad
           </h3>
@@ -175,7 +175,7 @@ export default function PrintableReportPreview({
         </div>
 
         {/* Bloque de Firmas PDF */}
-        <div className="grid grid-cols-2 gap-12 pt-16 text-center text-xs">
+        <div className="grid grid-cols-2 gap-12 pt-16 print:pt-12 text-center text-xs break-inside-avoid">
           <div className="space-y-2">
             <div className="border-b border-slate-400 mx-auto w-48 h-8"></div>
             <p className="font-bold text-slate-800">

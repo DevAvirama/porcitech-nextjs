@@ -255,7 +255,7 @@ export default function AnimalTracePassportPage({ params }) {
   const isCarencia = animal.carenciaActiva;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-100 font-sans antialiased pb-28 sm:pb-16 print:bg-white print:text-slate-900 print:pb-0">
+    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-100 font-sans antialiased pb-28 sm:pb-16 print:min-h-0 print:bg-white print:pb-0">
       {/* BARRA SUPERIOR PÚBLICA (no requiere auth) */}
       <header className="sticky top-0 z-40 bg-slate-950/80 backdrop-blur-md border-b border-white/10 px-4 py-3 sm:px-8 no-print">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
@@ -293,40 +293,40 @@ export default function AnimalTracePassportPage({ params }) {
       </header>
 
       {/* CONTENIDO PRINCIPAL / PASAPORTE SANITARIO */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 pt-6 sm:pt-8">
-        <div className="printable-passport bg-slate-900 border border-white/10 rounded-3xl sm:rounded-[2.5rem] shadow-2xl overflow-hidden print:border-2 print:border-slate-900 print:shadow-none print:rounded-none">
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 pt-6 sm:pt-8 print:px-0 print:pt-0 print:max-w-none">
+        <div className="printable-passport bg-slate-900 text-slate-100 border border-white/10 rounded-3xl sm:rounded-[2.5rem] print:rounded-3xl shadow-2xl overflow-hidden">
           {/* CABECERA INSTITUCIONAL */}
-          <div className="relative bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 p-6 sm:p-8 border-b border-white/10 print:bg-white print:border-b-2 print:border-slate-900">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+          <div className="relative bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 p-6 sm:p-8 print:p-6 border-b border-white/10 break-inside-avoid">
+            <div className="flex flex-col sm:flex-row print:flex-row items-start sm:items-center print:items-center justify-between gap-6">
               <div className="flex items-center gap-4">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-3xl sm:text-4xl shadow-inner shrink-0 print:border-2 print:border-slate-900">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-3xl sm:text-4xl shadow-inner shrink-0">
                   🐷
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold uppercase tracking-widest text-emerald-400 print:text-emerald-700">
+                    <span className="text-xs font-bold uppercase tracking-widest text-emerald-400">
                       Pasaporte Sanitario Oficial
                     </span>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-white/10 text-slate-300 font-bold print:border print:border-slate-400 print:text-slate-800">
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-white/10 text-slate-300 font-bold">
                       BPP-ICA
                     </span>
                   </div>
-                  <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-white print:text-slate-900 mt-1">
+                  <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-white mt-1">
                     {getAnimalDisplayName(animal)}
                   </h1>
                   {animal.codigo_arete && !UUID_REGEX.test(animal.codigo_arete) && (
-                    <span className="text-xs font-mono font-bold text-emerald-400 print:text-emerald-700 block mt-0.5">
+                    <span className="text-xs font-mono font-bold text-emerald-400 block mt-0.5">
                       Arete Comercial #{animal.codigo_arete}
                     </span>
                   )}
-                  <p className="text-xs sm:text-sm text-slate-400 print:text-slate-600 mt-0.5">
+                  <p className="text-xs sm:text-sm text-slate-400 mt-0.5">
                     {animal.raza} • {animal.sexo} • {animal.etapa}
                   </p>
                 </div>
               </div>
 
               {/* QR Pequeño de re-validación en cabecera */}
-              <div className="hidden sm:flex flex-col items-center p-2.5 bg-white rounded-2xl shadow-md border border-slate-200 shrink-0">
+              <div className="hidden sm:flex print:flex flex-col items-center p-2.5 bg-white rounded-2xl shadow-md border border-slate-200 shrink-0">
                 {mounted && (
                   <QRCodeSVG
                     value={currentUrl || "https://porcitech.com"}
@@ -342,48 +342,48 @@ export default function AnimalTracePassportPage({ params }) {
             </div>
 
             {/* Sello de Registro de Granja */}
-            <div className="mt-6 pt-4 border-t border-white/10 print:border-slate-300 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-400 print:text-slate-700">
+            <div className="mt-6 pt-4 border-t border-white/10 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-400">
               <div className="flex items-center gap-2">
-                <Building2 size={15} className="text-emerald-400 print:text-emerald-700 shrink-0" />
+                <Building2 size={15} className="text-emerald-400 shrink-0" />
                 <span className="font-semibold">{animal.granja}</span>
               </div>
               <div className="flex items-center gap-2">
-                <MapPin size={15} className="text-blue-400 print:text-blue-700 shrink-0" />
+                <MapPin size={15} className="text-blue-400 shrink-0" />
                 <span>{animal.ubicacionGeo}</span>
               </div>
-              <div className="flex items-center gap-1.5 font-mono font-bold text-slate-300 print:text-slate-900">
-                <Award size={15} className="text-amber-400 print:text-amber-700 shrink-0" />
+              <div className="flex items-center gap-1.5 font-mono font-bold text-slate-300">
+                <Award size={15} className="text-amber-400 shrink-0" />
                 <span>Reg: {animal.registroICA}</span>
               </div>
             </div>
           </div>
 
           {/* INSIGNIA GIGANTE DE SEGURIDAD ALIMENTARIA / INOCUIDAD */}
-          <div className="p-6 sm:p-8 border-b border-white/10 print:border-slate-300">
+          <div className="p-6 sm:p-8 print:p-6 border-b border-white/10 break-inside-avoid">
             {isCarencia ? (
               /* ALERTA: PERIODO DE CARENCIA ACTIVO */
-              <div className="bg-gradient-to-r from-red-950/80 via-amber-950/40 to-red-950/80 border-2 border-red-500/80 rounded-3xl p-6 sm:p-7 shadow-xl shadow-red-950/40 print:bg-red-50 print:border-red-600">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
-                  <div className="w-14 h-14 rounded-2xl bg-red-500/20 border-2 border-red-500 flex items-center justify-center text-red-400 shrink-0 print:bg-red-100 print:text-red-700">
+              <div className="bg-gradient-to-r from-red-950/80 via-amber-950/40 to-red-950/80 border-2 border-red-500/80 rounded-3xl p-6 sm:p-7 print:p-5 shadow-xl shadow-red-950/40">
+                <div className="flex flex-col sm:flex-row print:flex-row items-start sm:items-center print:items-center gap-5">
+                  <div className="w-14 h-14 rounded-2xl bg-red-500/20 border-2 border-red-500 flex items-center justify-center text-red-400 shrink-0">
                     <AlertTriangle size={32} />
                   </div>
                   <div className="flex-1">
                     <span className="inline-block px-3 py-0.5 rounded-full text-[11px] font-black uppercase tracking-widest bg-red-500 text-white mb-2">
                       Inocuidad en Restricción
                     </span>
-                    <h2 className="text-xl sm:text-2xl font-black text-red-200 print:text-red-800 tracking-tight">
+                    <h2 className="text-xl sm:text-2xl font-black text-red-200 tracking-tight">
                       PERIODO DE CARENCIA ACTIVO — NO APTO PARA SACRIFICIO
                     </h2>
-                    <p className="text-xs sm:text-sm text-red-300/90 print:text-red-900 font-medium mt-1">
+                    <p className="text-xs sm:text-sm text-red-300/90 font-medium mt-1">
                       Este animal cuenta con tratamientos veterinarios recientes. Por normativa de Porkcolombia e ICA, no debe ser comercializado ni sacrificado para consumo humano hasta cumplir el tiempo de retiro.
                     </p>
 
-                    <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-red-500/30 text-xs">
-                      <div className="flex items-center gap-2 text-red-200 print:text-red-800 font-semibold">
+                    <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 print:grid-cols-2 gap-3 pt-3 border-t border-red-500/30 text-xs">
+                      <div className="flex items-center gap-2 text-red-200 font-semibold">
                         <Clock size={16} className="text-red-400" />
                         <span>Días de retiro restantes: <strong>{animal.diasCarenciaRestantes} días</strong></span>
                       </div>
-                      <div className="flex items-center gap-2 text-red-200 print:text-red-800 font-semibold">
+                      <div className="flex items-center gap-2 text-red-200 font-semibold">
                         <Calendar size={16} className="text-red-400" />
                         <span>Apto a partir de: <strong>{animal.fechaFinCarencia}</strong></span>
                       </div>
@@ -393,9 +393,9 @@ export default function AnimalTracePassportPage({ params }) {
               </div>
             ) : (
               /* APROBADO: APTO PARA CONSUMO / VENTA */
-              <div className="bg-gradient-to-r from-emerald-950/70 via-emerald-900/30 to-emerald-950/70 border-2 border-emerald-500/80 rounded-3xl p-6 sm:p-7 shadow-xl shadow-emerald-950/30 print:bg-emerald-50 print:border-emerald-600">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
-                  <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 border-2 border-emerald-500 flex items-center justify-center text-emerald-400 shrink-0 print:bg-emerald-100 print:text-emerald-700">
+              <div className="bg-gradient-to-r from-emerald-950/70 via-emerald-900/30 to-emerald-950/70 border-2 border-emerald-500/80 rounded-3xl p-6 sm:p-7 print:p-5 shadow-xl shadow-emerald-950/30">
+                <div className="flex flex-col sm:flex-row print:flex-row items-start sm:items-center print:items-center gap-5">
+                  <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 border-2 border-emerald-500 flex items-center justify-center text-emerald-400 shrink-0">
                     <ShieldCheck size={32} />
                   </div>
                   <div className="flex-1">
@@ -403,14 +403,14 @@ export default function AnimalTracePassportPage({ params }) {
                       <span className="inline-block px-3 py-0.5 rounded-full text-[11px] font-black uppercase tracking-widest bg-emerald-500 text-slate-950">
                         Inocuidad Verificada
                       </span>
-                      <span className="text-xs font-mono text-emerald-400 print:text-emerald-800 font-bold">
+                      <span className="text-xs font-mono text-emerald-400 font-bold">
                         100% CUMPLIMIENTO SANITARIO
                       </span>
                     </div>
-                    <h2 className="text-xl sm:text-2xl font-black text-white print:text-emerald-900 tracking-tight">
+                    <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
                       APTO PARA CONSUMO Y COMERCIALIZACIÓN
                     </h2>
-                    <p className="text-xs sm:text-sm text-emerald-200/90 print:text-emerald-800 font-medium mt-1">
+                    <p className="text-xs sm:text-sm text-emerald-200/90 font-medium mt-1">
                       El animal cumple satisfactoriamente con todos los planes de vacunación obligatorios y no posee residuos farmacológicos activos. Certificado libre de restricciones zoosanitarias.
                     </p>
                   </div>
@@ -419,70 +419,70 @@ export default function AnimalTracePassportPage({ params }) {
             )}
           </div>
 
-          {/* FICHA TÉCNICA BIOLÓGICA */}
-          <div className="p-6 sm:p-8 border-b border-white/10 print:border-slate-300">
-            <h3 className="text-base sm:text-lg font-black text-white print:text-slate-900 mb-4 flex items-center gap-2">
-              <Dna size={20} className="text-indigo-400 print:text-indigo-700" />
+          {/* FICHA TÉCNICA BIOLÓGÍAS */}
+          <div className="p-6 sm:p-8 print:p-6 border-b border-white/10 break-inside-avoid">
+            <h3 className="text-base sm:text-lg font-black text-white mb-4 flex items-center gap-2">
+              <Dna size={20} className="text-indigo-400" />
               Ficha Técnica del Ejemplar
             </h3>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-              <div className="bg-white/5 print:bg-slate-50 border border-white/10 print:border-slate-200 rounded-2xl p-3.5">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 print:text-slate-600 block">
+            <div className="grid grid-cols-2 sm:grid-cols-4 print:grid-cols-4 gap-3 sm:gap-4">
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-3.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
                   Raza Genética
                 </span>
-                <p className="text-sm sm:text-base font-black text-white print:text-slate-900 mt-1">
+                <p className="text-sm sm:text-base font-black text-white mt-1">
                   {animal.raza}
                 </p>
               </div>
 
-              <div className="bg-white/5 print:bg-slate-50 border border-white/10 print:border-slate-200 rounded-2xl p-3.5">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 print:text-slate-600 block">
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-3.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
                   Sexo / Género
                 </span>
-                <p className="text-sm sm:text-base font-black text-white print:text-slate-900 mt-1">
+                <p className="text-sm sm:text-base font-black text-white mt-1">
                   {animal.sexo}
                 </p>
               </div>
 
-              <div className="bg-white/5 print:bg-slate-50 border border-white/10 print:border-slate-200 rounded-2xl p-3.5">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 print:text-slate-600 block">
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-3.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
                   Nacimiento / Edad
                 </span>
-                <p className="text-sm sm:text-base font-black text-white print:text-slate-900 mt-1">
+                <p className="text-sm sm:text-base font-black text-white mt-1">
                   {animal.fechaNacimiento}
                 </p>
-                <span className="text-[10px] text-slate-400 print:text-slate-600 font-semibold">
+                <span className="text-[10px] text-slate-400 font-semibold">
                   (~{animal.edadMeses} meses)
                 </span>
               </div>
 
-              <div className="bg-white/5 print:bg-slate-50 border border-white/10 print:border-slate-200 rounded-2xl p-3.5">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 print:text-slate-600 block">
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-3.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
                   Peso Actual
                 </span>
-                <p className="text-sm sm:text-base font-black text-emerald-400 print:text-emerald-700 mt-1">
+                <p className="text-sm sm:text-base font-black text-emerald-400 mt-1">
                   {animal.pesoActual} kg
                 </p>
-                <span className="text-[10px] text-slate-400 print:text-slate-600 font-semibold">
+                <span className="text-[10px] text-slate-400 font-semibold">
                   Rango óptimo
                 </span>
               </div>
 
-              <div className="col-span-2 bg-white/5 print:bg-slate-50 border border-white/10 print:border-slate-200 rounded-2xl p-3.5">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 print:text-slate-600 block">
+              <div className="col-span-2 bg-white/5 border border-white/10 rounded-2xl p-3.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
                   Ubicación en Granja / Corral
                 </span>
-                <p className="text-sm sm:text-base font-black text-white print:text-slate-900 mt-1">
+                <p className="text-sm sm:text-base font-black text-white mt-1">
                   {animal.galpon}
                 </p>
               </div>
 
-              <div className="col-span-2 bg-white/5 print:bg-slate-50 border border-white/10 print:border-slate-200 rounded-2xl p-3.5">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 print:text-slate-600 block">
+              <div className="col-span-2 bg-white/5 border border-white/10 rounded-2xl p-3.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
                   Origen y Planta de Manejo
                 </span>
-                <p className="text-sm sm:text-base font-black text-white print:text-slate-900 mt-1">
+                <p className="text-sm sm:text-base font-black text-white mt-1">
                   {animal.granja}
                 </p>
               </div>
@@ -490,64 +490,64 @@ export default function AnimalTracePassportPage({ params }) {
           </div>
 
           {/* SECCIÓN: INMUNIZACIONES Y VACUNAS CERTIFICADAS */}
-          <div className="p-6 sm:p-8 border-b border-white/10 print:border-slate-300">
+          <div className="p-6 sm:p-8 print:p-6 border-b border-white/10">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-base sm:text-lg font-black text-white print:text-slate-900 flex items-center gap-2">
-                <Syringe size={20} className="text-emerald-400 print:text-emerald-700" />
+              <h3 className="text-base sm:text-lg font-black text-white flex items-center gap-2">
+                <Syringe size={20} className="text-emerald-400" />
                 Inmunizaciones y Vacunas Certificadas
               </h3>
-              <span className="text-xs font-bold text-slate-400 print:text-slate-600">
+              <span className="text-xs font-bold text-slate-400">
                 {animal.vacunas?.length || 0} {animal.vacunas?.length === 1 ? "registro auditado" : "registros auditados"}
               </span>
             </div>
 
             {(!animal.vacunas || animal.vacunas.length === 0) ? (
-              <div className="bg-white/5 print:bg-slate-50 border border-white/10 print:border-slate-200 rounded-2xl p-6 sm:p-8 text-center space-y-2">
-                <ShieldAlert className="w-9 h-9 mx-auto text-amber-400 print:text-amber-600 mb-1" />
-                <h4 className="text-base font-black text-white print:text-slate-900">
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-6 sm:p-8 text-center space-y-2 break-inside-avoid">
+                <ShieldAlert className="w-9 h-9 mx-auto text-amber-400 mb-1" />
+                <h4 className="text-base font-black text-white">
                   Sin inmunizaciones oficiales registradas en el sistema
                 </h4>
-                <p className="text-xs text-slate-400 print:text-slate-600 max-w-md mx-auto">
+                <p className="text-xs text-slate-400 max-w-md mx-auto">
                   No existen aplicaciones biológicas auditadas (con fecha de aplicación, lote biológico y profesional responsable) registradas en granja para este ejemplar.
                 </p>
               </div>
             ) : (
               <div className="relative border-l-2 border-emerald-500/30 ml-3 sm:ml-4 space-y-6">
                 {animal.vacunas.map((vacuna, idx) => (
-                  <div key={idx} className="relative pl-6 sm:pl-8">
+                  <div key={idx} className="relative pl-6 sm:pl-8 break-inside-avoid">
                     {/* Nodo circular */}
-                    <div className="absolute -left-[9px] top-1.5 w-4 h-4 rounded-full bg-emerald-500 ring-4 ring-slate-900 print:ring-white"></div>
+                    <div className="absolute -left-[9px] top-1.5 w-4 h-4 rounded-full bg-emerald-500 ring-4 ring-slate-900"></div>
 
-                    <div className="bg-white/5 print:bg-slate-50 border border-white/10 print:border-slate-200 rounded-2xl p-4 sm:p-5">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                    <div className="bg-white/5 border border-white/10 rounded-2xl p-4 sm:p-5">
+                      <div className="flex flex-col sm:flex-row print:flex-row sm:items-center print:items-center justify-between gap-2 mb-2">
                         <div>
-                          <h4 className="font-black text-white print:text-slate-900 text-sm sm:text-base">
+                          <h4 className="font-black text-white text-sm sm:text-base">
                             {vacuna.producto}
                           </h4>
-                          <p className="text-xs text-slate-400 print:text-slate-600 font-medium">
+                          <p className="text-xs text-slate-400 font-medium">
                             {vacuna.cepa} • Dosis: {vacuna.dosis}
                           </p>
                         </div>
-                        <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 print:bg-emerald-100 print:text-emerald-800 border border-emerald-500/30 w-fit">
+                        <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 w-fit">
                           {vacuna.estado || "CERTIFICADA"}
                         </span>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-slate-400 print:text-slate-700 pt-2 border-t border-white/5 print:border-slate-200">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 print:grid-cols-3 gap-2 text-xs text-slate-400 pt-2 border-t border-white/5">
                         <div>
                           <span className="block text-[10px] text-slate-500 font-bold uppercase">Lote Biológico</span>
-                          <span className="font-mono font-bold text-slate-300 print:text-slate-900">{vacuna.lote_biologico || vacuna.lote}</span>
+                          <span className="font-mono font-bold text-slate-300">{vacuna.lote_biologico || vacuna.lote}</span>
                         </div>
                         <div>
                           <span className="block text-[10px] text-slate-500 font-bold uppercase">Fecha Aplicación / Vigencia</span>
-                          <span className="font-semibold text-slate-300 print:text-slate-900">
+                          <span className="font-semibold text-slate-300">
                             {vacuna.fecha_aplicacion || vacuna.fechaAplicacion}
                             {vacuna.fechaVigencia ? ` (Vig: ${vacuna.fechaVigencia})` : ""}
                           </span>
                         </div>
                         <div>
                           <span className="block text-[10px] text-slate-500 font-bold uppercase">Responsable</span>
-                          <span className="font-semibold text-slate-300 print:text-slate-900">{vacuna.responsable || vacuna.veterinario}</span>
+                          <span className="font-semibold text-slate-300">{vacuna.responsable || vacuna.veterinario}</span>
                         </div>
                       </div>
                     </div>
@@ -558,10 +558,10 @@ export default function AnimalTracePassportPage({ params }) {
           </div>
 
           {/* VERIFICACIÓN CRIPTOGRÁFICA Y DECLARACIÓN LEGAL */}
-          <div className="p-6 sm:p-8 bg-slate-950/60 print:bg-white flex flex-col sm:flex-row items-center justify-between gap-6 text-xs text-slate-400 print:text-slate-600">
-            <div className="space-y-1.5 text-center sm:text-left">
-              <div className="flex items-center justify-center sm:justify-start gap-2 font-mono text-[11px] text-slate-300 print:text-slate-800">
-                <FileCheck size={16} className="text-emerald-400 print:text-emerald-700" />
+          <div className="p-6 sm:p-8 print:p-6 bg-slate-950/60 flex flex-col sm:flex-row print:flex-row items-center justify-between gap-6 text-xs text-slate-400 break-inside-avoid">
+            <div className="space-y-1.5 text-center sm:text-left print:text-left">
+              <div className="flex items-center justify-center sm:justify-start print:justify-start gap-2 font-mono text-[11px] text-slate-300">
+                <FileCheck size={16} className="text-emerald-400" />
                 <span className="font-black">Firma Digital de Trazabilidad:</span>
               </div>
               <p className="font-mono text-[10px] text-slate-500 break-all max-w-md">
@@ -584,9 +584,9 @@ export default function AnimalTracePassportPage({ params }) {
                 )}
               </div>
               <div className="text-left text-[10px] text-slate-500 font-mono">
-                <span className="font-bold text-slate-300 print:text-slate-800 block">Escanear para verificar</span>
+                <span className="font-bold text-slate-300 block">Escanear para verificar</span>
                 <span>PorciTech Cloud</span>
-                <span className="block text-emerald-400 print:text-emerald-700">● 100% Auténtico</span>
+                <span className="block text-emerald-400">● 100% Auténtico</span>
               </div>
             </div>
           </div>

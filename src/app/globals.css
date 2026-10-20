@@ -33,133 +33,106 @@ body {
 }
 
 @media print {
-  /* Reset variables for print to ensure high contrast black-on-white */
-  :root {
-    --background: #ffffff !important;
-    --foreground: #0f172a !important;
+  @page {
+    size: A4 portrait;
+    margin: 10mm;
   }
 
+  /* Preserve exact web colors, gradients, badges and backgrounds in print preview */
+  *,
+  *::before,
+  *::after {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  html,
   body {
     background: #ffffff !important;
-    color: #0f172a !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    min-height: auto !important;
+    height: auto !important;
+    overflow: visible !important;
   }
 
-  /* Hide sidebar, buttons, and no-print elements during printing */
+  /* Hide sidebar, navigation and explicit no-print controls */
   aside,
   nav,
-  button,
   .no-print,
   .no-print * {
     display: none !important;
   }
 
-  /* Reset main layout grid and margins */
-  div.min-h-screen,
-  div.flex,
-  main {
+  /* Reset only the outer dashboard layout wrapper without breaking inner .flex or .grid */
+  .dashboard-shell {
+    display: block !important;
+    min-height: auto !important;
+    background: #ffffff !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .dashboard-main {
     display: block !important;
     width: 100% !important;
     max-width: 100% !important;
     padding: 0 !important;
     margin: 0 !important;
+    overflow: visible !important;
     background: #ffffff !important;
-    color: #0f172a !important;
   }
 
-  /* Format report container */
+  /* Report container: preserve its web design and internal spacing */
   .printable-report {
-    border: none !important;
-    box-shadow: none !important;
-    padding: 0 !important;
-    margin: 0 !important;
     width: 100% !important;
-    background: #ffffff !important;
-    color: #0f172a !important;
-  }
-
-  /* Dedicated chapeta tag print isolation */
-  body:has(.printable-chapeta-container) *:not(.printable-chapeta-container, .printable-chapeta-container *) {
-    visibility: hidden !important;
-  }
-
-  body:has(.printable-chapeta-container) .printable-chapeta-container {
-    visibility: visible !important;
-    position: fixed !important;
-    left: 50% !important;
-    top: 20px !important;
-    transform: translateX(-50%) !important;
-    width: 380px !important;
-    max-width: 95vw !important;
+    max-width: 100% !important;
     margin: 0 auto !important;
     box-shadow: none !important;
-    border: 2px solid #000000 !important;
-    background: #ffffff !important;
-    color: #000000 !important;
-    page-break-inside: avoid !important;
-    z-index: 999999 !important;
+    break-inside: auto;
   }
 
-  /* Force all elements inside the report to have dark text colors */
-  .printable-report *,
-  .printable-report span,
-  .printable-report p,
-  .printable-report h1,
-  .printable-report h2,
-  .printable-report h3,
-  .printable-report h4,
-  .printable-report td,
-  .printable-report th,
-  .printable-chapeta-container *,
-  .printable-passport * {
-    color: #0f172a !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
+  /* When the QR / Chapeta modal is open, hide everything else in the body so only the tag prints */
+  body:has(.qr-modal-portal) > *:not(.qr-modal-portal) {
+    display: none !important;
   }
 
-  .printable-passport {
-    background: #ffffff !important;
-    color: #0f172a !important;
+  body:has(.qr-modal-portal) .qr-modal-portal {
+    position: static !important;
+    inset: auto !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+  }
+
+  body:has(.qr-modal-portal) .qr-modal-dialog {
     box-shadow: none !important;
-    border: 1px solid #cbd5e1 !important;
+    border: none !important;
+    background: transparent !important;
+    margin: 0 auto !important;
+    max-width: 100% !important;
   }
 
-  /* Table styles for print */
-  table {
-    border-collapse: collapse !important;
+  body:has(.qr-modal-portal) .qr-modal-canvas {
+    background: transparent !important;
+    padding: 4mm 0 !important;
+    overflow: visible !important;
+  }
+
+  .printable-chapeta-container {
+    margin: 0 auto !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* Public Sanitary Passport: keep exact web card look without clipping */
+  .printable-passport {
+    box-shadow: none !important;
+    margin: 0 auto !important;
     width: 100% !important;
-  }
-
-  th {
-    background-color: #f1f5f9 !important;
-    color: #0f172a !important;
-    border: 1px solid #cbd5e1 !important;
-  }
-
-  td {
-    border: 1px solid #e2e8f0 !important;
-    color: #334155 !important;
-  }
-
-  /* Ensure charts and graphics look good */
-  svg {
-    max-height: 250px !important;
-  }
-
-  /* Grid layout overrides for print to force full width stacking */
-  .grid {
-    display: grid !important;
-    grid-template-columns: 1fr !important;
-  }
-
-  .lg\:col-span-2,
-  .lg\:col-span-1 {
-    grid-column: span 1 / span 1 !important;
-  }
-
-  /* Force background colors and text colors for print compatibility */
-  * {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
   }
 }
 
