@@ -158,18 +158,19 @@ export default function ManageCorralsModal({
 
   const handleDelete = async (c) => {
     const ocupacion = animals.filter(
-      (a) => (a.corral_id === c.id || a.corral?.id === c.id) && a.activo !== false
+      (a) =>
+        (a.corral_id === c.id || a.corral?.id === c.id) && a.activo !== false,
     ).length;
 
     if (ocupacion > 0) {
       toast.error(
-        `No se puede eliminar el corral ${c.codigo} porque tiene ${ocupacion} cerdo(s) asignado(s). Trasládelos primero.`
+        `No se puede eliminar el corral ${c.codigo} porque tiene ${ocupacion} cerdo(s) asignado(s). Trasládelos primero.`,
       );
       return;
     }
 
     const confirmed = window.confirm(
-      `¿Desea dar de baja / inactivar el corral "${c.codigo}"?`
+      `¿Desea dar de baja / inactivar el corral "${c.codigo}"?`,
     );
     if (!confirmed) return;
 
@@ -228,8 +229,7 @@ export default function ManageCorralsModal({
                 onClick={handleOpenCreate}
                 className="py-2.5 px-4 text-xs rounded-xl! font-black flex items-center gap-1.5 shadow-md"
               >
-                <Plus size={16} />
-                + Nuevo Corral
+                <Plus size={16} />+ Nuevo Corral
               </Button>
             </div>
           )}
@@ -243,7 +243,9 @@ export default function ManageCorralsModal({
               <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                 <h3 className="text-lg font-black text-slate-800 flex items-center gap-2">
                   <Layers className="w-5 h-5 text-emerald-600" />
-                  {formMode === "create" ? "Registrar Nuevo Corral" : `Editar Corral: ${selectedCorral?.codigo}`}
+                  {formMode === "create"
+                    ? "Registrar Nuevo Corral"
+                    : `Editar Corral: ${selectedCorral?.codigo}`}
                 </h3>
                 <button
                   type="button"
@@ -260,7 +262,10 @@ export default function ManageCorralsModal({
                   placeholder="CORRAL-10"
                   value={formData.codigo}
                   onChange={(e) =>
-                    setFormData({ ...formData, codigo: e.target.value.toUpperCase() })
+                    setFormData({
+                      ...formData,
+                      codigo: e.target.value.toUpperCase(),
+                    })
                   }
                   required
                 />
@@ -346,7 +351,9 @@ export default function ManageCorralsModal({
                   isLoading={isSubmitting}
                   className="flex-1 rounded-xl! font-black"
                 >
-                  {formMode === "create" ? "Guardar Corral" : "Actualizar Corral"}
+                  {formMode === "create"
+                    ? "Guardar Corral"
+                    : "Actualizar Corral"}
                 </Button>
               </div>
             </form>
@@ -366,7 +373,10 @@ export default function ManageCorralsModal({
                 <tbody>
                   {corralList.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="py-8 text-center text-slate-400 font-semibold">
+                      <td
+                        colSpan={5}
+                        className="py-8 text-center text-slate-400 font-semibold"
+                      >
                         No hay corrales registrados en la base de datos.
                       </td>
                     </tr>
@@ -375,15 +385,18 @@ export default function ManageCorralsModal({
                       const ocupacion = animals.filter(
                         (a) =>
                           (a.corral_id === c.id || a.corral?.id === c.id) &&
-                          a.activo !== false
+                          a.activo !== false,
                       ).length;
                       const capMax = c.capacidad_maxima || 1;
-                      const pct = Math.min(Math.round((ocupacion / capMax) * 100), 100);
-                      const faseConf =
-                        FASE_CONFIG[c.fase?.toLowerCase()] || {
-                          label: c.fase || "General",
-                          className: "bg-slate-100 text-slate-700 border-slate-200",
-                        };
+                      const pct = Math.min(
+                        Math.round((ocupacion / capMax) * 100),
+                        100,
+                      );
+                      const faseConf = FASE_CONFIG[c.fase?.toLowerCase()] || {
+                        label: c.fase || "General",
+                        className:
+                          "bg-slate-100 text-slate-700 border-slate-200",
+                      };
 
                       return (
                         <tr
@@ -396,7 +409,7 @@ export default function ManageCorralsModal({
                                 {c.codigo}
                               </span>
                               {c.descripcion && (
-                                <span className="text-xs text-slate-400 font-normal truncate max-w-[150px]">
+                                <span className="text-xs text-slate-400 font-normal truncate max-w-37.5">
                                   ({c.descripcion})
                                 </span>
                               )}
@@ -414,8 +427,12 @@ export default function ManageCorralsModal({
                           <td className="px-5 py-3.5">
                             <div className="flex flex-col gap-1 w-32">
                               <div className="flex justify-between text-xs font-bold text-slate-700">
-                                <span>{ocupacion} / {c.capacidad_maxima}</span>
-                                <span className="text-slate-400 font-normal">{pct}%</span>
+                                <span>
+                                  {ocupacion} / {c.capacidad_maxima}
+                                </span>
+                                <span className="text-slate-400 font-normal">
+                                  {pct}%
+                                </span>
                               </div>
                               <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
                                 <div
@@ -423,8 +440,8 @@ export default function ManageCorralsModal({
                                     pct >= 100
                                       ? "bg-rose-500"
                                       : pct >= 80
-                                      ? "bg-amber-500"
-                                      : "bg-emerald-500"
+                                        ? "bg-amber-500"
+                                        : "bg-emerald-500"
                                   }`}
                                   style={{ width: `${pct}%` }}
                                 />
