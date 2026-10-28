@@ -1,9 +1,15 @@
 node_modules
 .next
+.env
+.env.*
+!.env.example
 .git
+.gitignore
+.gitattributes
 .idea
 .vscode
 Dockerfile
 .dockerignore
 npm-debug.log
 pnpm-debug.log
+*.md

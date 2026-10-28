@@ -19,16 +19,21 @@ export const getApiBaseUrl = () => {
     }
   }
 
-  // 2. Si hay una variable explícita definida en build time (Next.js server-side)
+  // 2. En el servidor (SSR dentro de Docker Compose): priorizar red interna de contenedores
+  if (process.env.INTERNAL_API_URL) {
+    return process.env.INTERNAL_API_URL.replace(/\/+$/, "");
+  }
+
+  // 3. Si hay una variable pública definida en build time
   if (process.env.NEXT_PUBLIC_API_URL) {
     return process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, "");
   }
 
-  // 3. Fallback para SSR dentro de la red Docker Compose o localhost
-  return process.env.INTERNAL_API_URL || "http://api:8000/api/v1";
+  // 4. Fallback para SSR dentro de la red Docker Compose
+  return "http://api:8000/api/v1";
 };
 
-export const BASE_URL = typeof window !== "undefined" ? getApiBaseUrl() : (process.env.NEXT_PUBLIC_API_URL || "http://api:8000/api/v1");
+export const BASE_URL = getApiBaseUrl();
 
 /**
  * Cliente HTTP centralizado para comunicación con la API backend de PorciTech (FastAPI).
