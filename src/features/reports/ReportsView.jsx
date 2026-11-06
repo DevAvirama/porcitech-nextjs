@@ -24,6 +24,8 @@ export default function ReportsView() {
     corrales,
     animalsCount,
     stageDistribution,
+    corralGrowthById,
+    globalGrowthSeries,
     dynamicKpis,
     kpiCols,
     handleGenerateReport,
@@ -71,6 +73,11 @@ export default function ReportsView() {
             dbAlerts={dbAlerts}
             animalsCount={animalsCount}
             stageDistribution={stageDistribution}
+            corrales={corrales}
+            corralGrowthById={corralGrowthById}
+            globalGrowthSeries={globalGrowthSeries}
+            selectedBatch={selectedBatch}
+            setSelectedBatch={setSelectedBatch}
             dynamicKpis={dynamicKpis}
             kpiCols={kpiCols}
           />

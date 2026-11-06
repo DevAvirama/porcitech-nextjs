@@ -7,6 +7,7 @@ import { getCorrales } from "@/services/corralService";
 import { getTreatments } from "@/services/healthService";
 import { getItems } from "@/services/inventoryService";
 import { getFarrowings } from "@/services/reproductionService";
+import { getCorralGMD } from "@/services/weightService";
 
 export function useReportsData() {
   // Configuración de Reportes
@@ -25,6 +26,8 @@ export function useReportsData() {
   const [corrales, setCorrales] = useState([]);
   const [animalsCount, setAnimalsCount] = useState(0);
   const [stageDistribution, setStageDistribution] = useState({});
+  const [corralGrowthById, setCorralGrowthById] = useState({});
+  const [globalGrowthSeries, setGlobalGrowthSeries] = useState([]);
 
   useEffect(() => {
     async function loadData() {
@@ -50,7 +53,91 @@ export function useReportsData() {
         }
 
         if (corralesRes.status === "fulfilled" && Array.isArray(corralesRes.value)) {
-          setCorrales(corralesRes.value);
+          const loadedCorrales = corralesRes.value;
+          setCorrales(loadedCorrales);
+
+          // Consultar series temporales reales de TimescaleDB por cada corral
+          const gmdPromises = loadedCorrales.map((c) =>
+            getCorralGMD(c.id, 30)
+              .then((rows) => ({ corral: c, rows: Array.isArray(rows) ? rows : [] }))
+              .catch(() => ({ corral: c, rows: [] }))
+          );
+          const gmdResults = await Promise.all(gmdPromises);
+
+          const byId = {};
+          const dateBuckets = {};
+
+          gmdResults.forEach(({ corral, rows }) => {
+            const sorted = [...rows].sort(
+              (a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime()
+            );
+            byId[corral.id] = sorted;
+
+            // Consolidar corrales de línea comercial (precebo, levante, ceba) o todos con pesajes
+            const tipo = String(corral.tipo || "").toLowerCase();
+            const isGrowthStage = ["precebo", "levante", "ceba", "engorde"].includes(tipo);
+            if (isGrowthStage && sorted.length > 0) {
+              sorted.forEach((pt) => {
+                const dateKey = String(pt.fecha).split("T")[0];
+                if (!dateBuckets[dateKey]) {
+                  dateBuckets[dateKey] = {
+                    fecha: pt.fecha,
+                    weightedSum: 0,
+                    totalPesajes: 0,
+                    minPeso: Infinity,
+                    maxPeso: -Infinity,
+                    gmdWeightedSum: 0,
+                    gmdCount: 0,
+                  };
+                }
+                const count = Number(pt.total_pesajes) || 1;
+                const avg = Number(pt.peso_promedio_kg) || 0;
+                const minP = Number(pt.peso_minimo_kg) || avg;
+                const maxP = Number(pt.peso_maximo_kg) || avg;
+
+                dateBuckets[dateKey].weightedSum += avg * count;
+                dateBuckets[dateKey].totalPesajes += count;
+                dateBuckets[dateKey].minPeso = Math.min(dateBuckets[dateKey].minPeso, minP);
+                dateBuckets[dateKey].maxPeso = Math.max(dateBuckets[dateKey].maxPeso, maxP);
+
+                if (pt.gmd_kg !== null && pt.gmd_kg !== undefined) {
+                  dateBuckets[dateKey].gmdWeightedSum += Number(pt.gmd_kg) * count;
+                  dateBuckets[dateKey].gmdCount += count;
+                }
+              });
+            }
+          });
+
+          const consolidated = Object.keys(dateBuckets)
+            .sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
+            .map((dateKey, idx, arr) => {
+              const b = dateBuckets[dateKey];
+              const avgPeso =
+                b.totalPesajes > 0 ? Number((b.weightedSum / b.totalPesajes).toFixed(2)) : 0;
+              const avgGmd =
+                b.gmdCount > 0 ? Number((b.gmdWeightedSum / b.gmdCount).toFixed(3)) : null;
+              let variacion = 0;
+              if (idx > 0) {
+                const prevB = dateBuckets[arr[idx - 1]];
+                const prevAvg =
+                  prevB.totalPesajes > 0 ? prevB.weightedSum / prevB.totalPesajes : 0;
+                if (prevAvg > 0) {
+                  variacion = Number((((avgPeso - prevAvg) / prevAvg) * 100).toFixed(2));
+                }
+              }
+              return {
+                fecha: b.fecha,
+                total_pesajes: b.totalPesajes,
+                peso_promedio_kg: avgPeso,
+                peso_minimo_kg: b.minPeso === Infinity ? avgPeso : Number(b.minPeso.toFixed(2)),
+                peso_maximo_kg: b.maxPeso === -Infinity ? avgPeso : Number(b.maxPeso.toFixed(2)),
+                gmd_kg: avgGmd,
+                variacion_porcentual: variacion,
+              };
+            });
+
+          setCorralGrowthById(byId);
+          setGlobalGrowthSeries(consolidated);
         }
       } catch (err) {
         console.warn("Error cargando datos para reportes:", err);
@@ -412,6 +499,8 @@ export function useReportsData() {
     corrales,
     animalsCount,
     stageDistribution,
+    corralGrowthById,
+    globalGrowthSeries,
     dynamicKpis,
     kpiCols,
     handleGenerateReport,

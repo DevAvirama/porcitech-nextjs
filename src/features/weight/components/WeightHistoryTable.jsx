@@ -19,6 +19,12 @@ export default function WeightHistoryTable({
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
 
+  useEffect(() => {
+    if (animals.length > 0 && !historyAnimalId && recentLogs.length === 0) {
+      setHistoryAnimalId(animals[0].id);
+    }
+  }, [animals, historyAnimalId, recentLogs.length]);
+
   const fetchAnimalHistory = useCallback(async (animalId) => {
     if (!animalId) {
       setDbHistoryLogs([]);
