@@ -25,6 +25,12 @@ export async function getAnimales(params = {}) {
   if (params.estado && params.estado !== 'all') {
     query.append('estado', params.estado);
   }
+  if (params.limit !== undefined && params.limit !== null) {
+    query.append('limit', String(params.limit));
+  }
+  if (params.offset !== undefined && params.offset !== null) {
+    query.append('offset', String(params.offset));
+  }
 
   const queryString = query.toString();
   const endpoint = queryString ? `/animales?${queryString}` : '/animales';

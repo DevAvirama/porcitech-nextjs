@@ -17,6 +17,8 @@ import {
   updateCorralCycle,
 } from "@/services/corralService";
 import { downloadOfficialReport } from "@/services/reportService";
+import { getCurrentUser } from "@/services/auth/authService";
+import { getLocalISODate } from "@/utils/formatters";
 
 const AUDIT_BADGE = {
   cumple_protocolo: {
@@ -47,7 +49,10 @@ export default function CorralSanitaryAuditTab({ corrales = [] }) {
   const [showForm, setShowForm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const todayStr = new Date().toISOString().split("T")[0];
+  const currentUser = typeof window !== "undefined" ? getCurrentUser() : null;
+  const userRole = String(currentUser?.rol || currentUser?.role || "").toLowerCase();
+  const canManageCycles = ["administrador", "admin", "veterinario"].includes(userRole);
+  const todayStr = getLocalISODate();
   const [form, setForm] = useState({
     corral_id: corrales[0]?.id || "",
     codigo_lote: "",
@@ -162,15 +167,17 @@ export default function CorralSanitaryAuditTab({ corrales = [] }) {
             <RefreshCw size={14} className={isLoading ? "animate-spin" : ""} />
             Refrescar
           </Button>
-          <Button
-            type="button"
-            tone="primary"
-            onClick={() => setShowForm((v) => !v)}
-            className="py-2 px-3.5 text-xs rounded-xl! font-black flex items-center gap-1.5"
-          >
-            <Plus size={14} />
-            {showForm ? "Cancelar" : "Registrar Ciclo"}
-          </Button>
+          {canManageCycles && (
+            <Button
+              type="button"
+              tone="primary"
+              onClick={() => setShowForm((v) => !v)}
+              className="py-2 px-3.5 text-xs rounded-xl! font-black flex items-center gap-1.5"
+            >
+              <Plus size={14} />
+              {showForm ? "Cancelar" : "Registrar Ciclo"}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -297,7 +304,7 @@ export default function CorralSanitaryAuditTab({ corrales = [] }) {
                       </span>
                     </td>
                     <td className="px-4 py-3 rounded-r-2xl text-right space-x-1.5">
-                      {!r.desinfeccion_verificada && (
+                      {canManageCycles && !r.desinfeccion_verificada && (
                         <button
                           type="button"
                           onClick={() => handleVerifyDisinfection(r)}
@@ -308,7 +315,7 @@ export default function CorralSanitaryAuditTab({ corrales = [] }) {
                           Desinfección
                         </button>
                       )}
-                      {!r.fecha_salida && (
+                      {canManageCycles && !r.fecha_salida && (
                         <button
                           type="button"
                           onClick={() => handleCloseCycleToday(r)}

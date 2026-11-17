@@ -78,8 +78,8 @@ export function useReportsData() {
             byId[corral.id] = sorted;
 
             // Consolidar corrales de línea comercial (precebo, levante, ceba) o todos con pesajes
-            const tipo = String(corral.tipo || "").toLowerCase();
-            const isGrowthStage = ["precebo", "levante", "ceba", "engorde"].includes(tipo);
+            const fase = String(corral.fase || corral.tipo || "").toLowerCase();
+            const isGrowthStage = ["precebo", "levante", "ceba", "engorde"].includes(fase);
             if (isGrowthStage && sorted.length > 0) {
               sorted.forEach((pt) => {
                 const dateKey = String(pt.fecha).split("T")[0];

@@ -5,7 +5,7 @@ import { Scale } from "lucide-react";
 import { toast } from "sonner";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
-import { getAnimalDisplayName, UUID_REGEX } from "@/utils/formatters";
+import { getAnimalDisplayName, getLocalISODate, UUID_REGEX } from "@/utils/formatters";
 import { registerManualWeight } from "@/services/weightService";
 
 export default function WeightManualForm({
@@ -17,15 +17,15 @@ export default function WeightManualForm({
     animalId: "",
     corralId: "",
     peso_kg: "",
-    fecha: new Date().toISOString().split("T")[0],
+    fecha: getLocalISODate(),
     observaciones: "",
   });
   const [isSubmittingManual, setIsSubmittingManual] = useState(false);
 
   const handleManualSubmit = async (e) => {
     e.preventDefault();
-    if (!manualForm.animalId || !manualForm.peso_kg) {
-      toast.error("Completa el cerdo y el peso registrado.");
+    if (!manualForm.animalId || !manualForm.corralId || !manualForm.peso_kg) {
+      toast.error("Selecciona el cerdo, el corral de ubicación y el peso registrado.");
       return;
     }
 
@@ -33,10 +33,10 @@ export default function WeightManualForm({
     try {
       const payload = {
         id_cerdo: manualForm.animalId,
-        corral_id: manualForm.corralId || null,
+        corral_id: manualForm.corralId,
         peso_kg: parseFloat(manualForm.peso_kg),
         tiempo: manualForm.fecha
-          ? new Date(manualForm.fecha).toISOString()
+          ? `${manualForm.fecha}T12:00:00`
           : new Date().toISOString(),
         observaciones: manualForm.observaciones || null,
       };
@@ -72,7 +72,7 @@ export default function WeightManualForm({
         animalId: "",
         corralId: "",
         peso_kg: "",
-        fecha: new Date().toISOString().split("T")[0],
+        fecha: getLocalISODate(),
         observaciones: "",
       });
     } catch (err) {
@@ -142,17 +142,18 @@ export default function WeightManualForm({
 
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-              Corral de Ubicación
+              Corral de Ubicación *
             </label>
             <select
               value={manualForm.corralId}
               onChange={(e) =>
                 setManualForm((prev) => ({ ...prev, corralId: e.target.value }))
               }
+              required
               disabled={isSubmittingManual}
               className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-emerald-500 cursor-pointer"
             >
-              <option value="">-- Sin corral asignado --</option>
+              <option value="">-- Seleccionar corral --</option>
               {corrales.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.codigo} ({c.fase})

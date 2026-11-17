@@ -153,13 +153,19 @@ export function useFeedingData() {
       return;
     }
 
-    // Validar si el alimento seleccionado tiene stock suficiente en inventario
+    // Validar si el alimento seleccionado tiene stock suficiente en inventario (convirtiendo kg según factor_conversion_kg)
     const selectedItem = feedItems.find((i) => i.id === form.alimento_item_id);
-    if (selectedItem && selectedItem.stock_actual < qty) {
-      toast.error(
-        `Stock insuficiente en bodega para ${selectedItem.nombre}. Stock actual: ${selectedItem.stock_actual} ${selectedItem.unidad_medida}`
-      );
-      return;
+    if (selectedItem) {
+      const factor = Number(selectedItem.factor_conversion_kg) > 0
+        ? Number(selectedItem.factor_conversion_kg)
+        : 1;
+      const unitsNeeded = qty / factor;
+      if (Number(selectedItem.stock_actual) < unitsNeeded) {
+        toast.error(
+          `Stock insuficiente en bodega para ${selectedItem.nombre}. Disponible: ${selectedItem.stock_actual} ${selectedItem.unidad_medida}, Requerido: ${unitsNeeded.toFixed(2)} ${selectedItem.unidad_medida} (${qty} kg)`
+        );
+        return;
+      }
     }
 
     setIsSubmitting(true);

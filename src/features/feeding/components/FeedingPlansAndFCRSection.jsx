@@ -14,6 +14,7 @@ import {
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import { createFeedingPlan, deleteFeedingPlan } from "@/services/feedingService";
+import { getCurrentUser } from "@/services/auth/authService";
 
 const FASES_ALIMENTACION = [
   "Pre-iniciador",
@@ -46,6 +47,9 @@ export default function FeedingPlansAndFCRSection({
   const [activeTab, setActiveTab] = useState("fcr");
   const [showPlanForm, setShowPlanForm] = useState(false);
   const [isSavingPlan, setIsSavingPlan] = useState(false);
+  const currentUser = typeof window !== "undefined" ? getCurrentUser() : null;
+  const userRole = String(currentUser?.rol || currentUser?.role || "").toLowerCase();
+  const canManagePlans = ["administrador", "admin", "veterinario"].includes(userRole);
   const [planForm, setPlanForm] = useState({
     nombre: "",
     fase_alimentacion: "Levante",
@@ -160,7 +164,7 @@ export default function FeedingPlansAndFCRSection({
             </>
           )}
 
-          {activeTab === "planes" && (
+          {activeTab === "planes" && canManagePlans && (
             <Button
               type="button"
               tone="primary"
@@ -366,14 +370,16 @@ export default function FeedingPlansAndFCRSection({
                         {p.alimento_nombre}
                       </p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => handleDeletePlan(p)}
-                      className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 transition-colors cursor-pointer"
-                      title="Eliminar plan"
-                    >
-                      <Trash2 size={15} />
-                    </button>
+                    {canManagePlans && (
+                      <button
+                        type="button"
+                        onClick={() => handleDeletePlan(p)}
+                        className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 transition-colors cursor-pointer"
+                        title="Eliminar plan"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    )}
                   </div>
                   <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-200/70 text-center">
                     <div>

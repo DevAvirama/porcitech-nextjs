@@ -13,11 +13,13 @@ import {
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import ModuleHeader from "@/components/layout/ModuleHeader";
+import dynamic from "next/dynamic";
 import { useWeightData } from "./hooks/useWeightData";
 import WeightAICard from "./components/WeightAICard";
-import WeightManualForm from "./components/WeightManualForm";
-import WeightGMDChart from "./components/WeightGMDChart";
-import WeightHistoryTable from "./components/WeightHistoryTable";
+
+const WeightManualForm = dynamic(() => import("./components/WeightManualForm"), { ssr: false });
+const WeightGMDChart = dynamic(() => import("./components/WeightGMDChart"), { ssr: false });
+const WeightHistoryTable = dynamic(() => import("./components/WeightHistoryTable"), { ssr: false });
 
 export default function WeightView() {
   // Pestaña activa: 'ia_vision' | 'manual' | 'analytics' | 'history'

@@ -4,10 +4,12 @@ import React from "react";
 import ModuleHeader from "@/components/layout/ModuleHeader";
 import Skeleton from "@/components/ui/Skeleton";
 
+import dynamic from "next/dynamic";
 import { useReportsData } from "./hooks/useReportsData";
 import ReportConfigCard from "./components/ReportConfigCard";
 import ReportsDashboard from "./components/ReportsDashboard";
-import PrintableReportPreview from "./components/PrintableReportPreview";
+
+const PrintableReportPreview = dynamic(() => import("./components/PrintableReportPreview"), { ssr: false });
 
 export default function ReportsView() {
   const {

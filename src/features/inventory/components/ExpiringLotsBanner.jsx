@@ -71,7 +71,7 @@ export default function ExpiringLotsBanner({
           return (
             <Link
               key={lote.id}
-              href={`/dashboard/inventory/${lote.item_id}`}
+              href={`/dashboard/inventory/profile?id=${encodeURIComponent(lote.item_id)}`}
               className={`group flex flex-col justify-between rounded-2xl border bg-white p-3.5 transition-all hover:shadow-sm ${
                 isExpired
                   ? "border-rose-200 hover:border-rose-400"

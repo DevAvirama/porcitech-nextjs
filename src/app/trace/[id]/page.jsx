@@ -90,9 +90,38 @@ export default function AnimalTracePassportPage({ params }) {
           console.warn("Error cargando tratamientos clínicos para trazabilidad:", e);
         }
 
+        // Evaluar periodos de retiro farmacológico vigentes desde los tratamientos reales
+        const nowMs = Date.now();
+        const activeWithdrawals = realTreatments
+          .filter((t) => Number(t.tiempo_retiro_dias) > 0 && t.fecha_tratamiento)
+          .map((t) => {
+            const startMs = new Date(t.fecha_tratamiento).getTime();
+            const endMs = startMs + Number(t.tiempo_retiro_dias) * 86400000;
+            return { ...t, endMs };
+          })
+          .filter((t) => !isNaN(t.endMs) && t.endMs > nowMs)
+          .sort((a, b) => b.endMs - a.endMs);
+
+        const topWithdrawal = activeWithdrawals[0] || null;
+        const computedDiasRetiro = topWithdrawal
+          ? Math.max(1, Math.ceil((topWithdrawal.endMs - nowMs) / 86400000))
+          : 0;
+        const computedFechaFinRetiro = topWithdrawal
+          ? new Date(topWithdrawal.endMs).toLocaleDateString("es-CO", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+              timeZone: "America/Bogota",
+            })
+          : null;
+
         // Según normativa ICA / BPP: Solo certificar aplicaciones con fecha_aplicacion, lote_biologico y responsable
         const certifiedVacunas = realTreatments
-          .filter((t) => t.tipo_evento === "vacuna" || t.tipo_evento === "inmunizacion")
+          .filter((t) =>
+            ["vacuna", "vacunacion", "inmunizacion"].includes(
+              String(t.tipo_evento || "").toLowerCase()
+            )
+          )
           .map((t) => {
             const fecha =
               t.fecha_aplicacion ||
@@ -126,6 +155,10 @@ export default function AnimalTracePassportPage({ params }) {
           })
           .filter((v) => v.fecha_aplicacion && v.lote_biologico && v.responsable);
 
+        const hasCarencia = Boolean(
+          topWithdrawal || found.carencia_activa || isSpecialTreatment
+        );
+
         const realAnimal = {
           id: found.id || animalId,
           codigo_arete: validArete,
@@ -146,18 +179,19 @@ export default function AnimalTracePassportPage({ params }) {
           galpon: found.corral_codigo ? `Corral ${found.corral_codigo}` : (found.ubicacion || "Sin asignar"),
           granja: found.granja || "Granja Porcícola PorciTech - SENA",
           ubicacionGeo: found.ubicacion_geo || "Buga, Valle del Cauca - Colombia",
-          registroICA: found.registro_ica || "ICA-BPP-2026-9041",
-          estadoSalud: found.estado || (isSpecialTreatment ? "En Tratamiento" : "Óptimo"),
-          carenciaActiva: Boolean(found.carencia_activa || isSpecialTreatment),
-          diasCarenciaRestantes: found.dias_carencia_restantes || (isSpecialTreatment ? 8 : 0),
-          medicamentoCarencia: found.medicamento_carencia || (isSpecialTreatment ? "Tratamiento con periodo de retiro" : null),
-          fechaFinCarencia: found.fecha_fin_carencia || null,
+          registroICA: found.registro_ica || "Registro Sanitario BPP",
+          estadoSalud: topWithdrawal ? "En Periodo de Retiro" : (found.estado || (isSpecialTreatment ? "En Tratamiento" : "Óptimo")),
+          carenciaActiva: hasCarencia,
+          diasCarenciaRestantes: computedDiasRetiro || found.dias_carencia_restantes || 0,
+          medicamentoCarencia: topWithdrawal?.producto_nombre || found.medicamento_carencia || (hasCarencia ? "Tratamiento con periodo de retiro" : null),
+          fechaFinCarencia: computedFechaFinRetiro || found.fecha_fin_carencia || "Según prescripción veterinaria",
           vacunas: certifiedVacunas,
-          hashTrazabilidad: `SHA256:7f8a9b0c${String(found.id || animalId).replace(/[^a-zA-Z0-9]/g, "")}e5d4c3b2a10f8e7d`,
+          hashTrazabilidad: `ID:${found.id || animalId} · QR:${found.codigo_qr || validArete || animalId}`,
           fechaEmision: new Date().toLocaleDateString("es-CO", {
             year: "numeric",
             month: "long",
             day: "numeric",
+            timeZone: "America/Bogota",
           }),
         };
         setAnimal(realAnimal);

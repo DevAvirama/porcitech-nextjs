@@ -215,7 +215,7 @@ export default function ProfileProduccionTab({
                   key: "metodo",
                   render: (r) => (
                     <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-700">
-                      {r.metodo === "ia_vision" ? "Visión IA" : "Báscula Manual"}
+                      {["ia_vision", "vision_ai"].includes(r.metodo) ? "Visión IA" : "Báscula Manual"}
                     </span>
                   ),
                 },

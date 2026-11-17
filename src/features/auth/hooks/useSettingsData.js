@@ -121,17 +121,13 @@ export function useSettingsData() {
         telefono: telefono.trim(),
       };
 
-      // Si el usuario tiene id, sincronizar perfil con el backend
+      // Si el usuario tiene id, sincronizar perfil con el backend antes de actualizar estado local
       if (currentUser?.id) {
-        try {
-          await userService.updateUsuario(currentUser.id, {
-            nombre: nombre.trim(),
-            apellido: apellido.trim(),
-            telefono: telefono.trim() || null,
-          });
-        } catch (apiErr) {
-          console.warn("No se pudo sincronizar perfil con backend:", apiErr);
-        }
+        await userService.updateUsuario(currentUser.id, {
+          nombre: nombre.trim(),
+          apellido: apellido.trim(),
+          telefono: telefono.trim() || null,
+        });
       }
 
       authService.updateCurrentUser(updatedData);

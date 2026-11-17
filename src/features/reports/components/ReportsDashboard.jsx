@@ -87,7 +87,7 @@ export default function ReportsDashboard({
   }, [selectedBatch, corralGrowthById, globalGrowthSeries]);
 
   const targetMeta = useMemo(
-    () => getTargetGmdByStage(selectedCorralObj?.tipo || "consolidado"),
+    () => getTargetGmdByStage(selectedCorralObj?.fase || selectedCorralObj?.tipo || "consolidado"),
     [selectedCorralObj]
   );
 
@@ -331,7 +331,7 @@ export default function ReportsDashboard({
                     <option value="todos">Consolidado Producción</option>
                     {corrales.map((c) => (
                       <option key={c.id} value={c.id}>
-                        {c.codigo} ({c.tipo})
+                        {c.codigo} ({c.fase || c.tipo})
                       </option>
                     ))}
                   </select>

@@ -68,3 +68,15 @@ export function formatDateTime(dateString) {
     hour12: true,
   });
 }
+
+/**
+ * Retorna fecha YYYY-MM-DD en calendario local (evita desfase UTC después de las 19:00 COT).
+ */
+export function getLocalISODate(date = new Date()) {
+  const d = date instanceof Date ? date : new Date(date);
+  if (isNaN(d.getTime())) return "";
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}

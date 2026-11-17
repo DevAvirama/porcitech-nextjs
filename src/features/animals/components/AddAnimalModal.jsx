@@ -6,6 +6,7 @@ import { X, Tag, Sparkles, AlertCircle } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { createAnimal } from "@/services/animalService";
 import { getCorrales } from "@/services/corralService";
+import { getLocalISODate } from "@/utils/formatters";
 
 const RAZAS_DISPONIBLES = [
   "Landrace",
@@ -21,7 +22,7 @@ const FASES_ESTADOS = [
   { value: "precebo", label: "Precebo" },
   { value: "levante", label: "Levante" },
   { value: "engorde", label: "Engorde / Ceba" },
-  { value: "maternidad", label: "Maternidad / Lactancia" },
+  { value: "lactante", label: "Maternidad / Lactancia" },
   { value: "gestacion", label: "Gestación" },
   { value: "cuarentena", label: "Cuarentena / Observación" },
 ];
@@ -47,7 +48,7 @@ const getInitialFormState = () => ({
   sexo: "hembra",
   estado_reproductivo: "Vacía",
   raza: "Landrace",
-  fecha_nacimiento: new Date().toISOString().split("T")[0],
+  fecha_nacimiento: getLocalISODate(),
   estado: "activo",
   corral_id: "",
   peso_actual_kg: "",

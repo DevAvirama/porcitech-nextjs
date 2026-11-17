@@ -15,12 +15,11 @@ import { apiFetch, getApiBaseUrl } from './apiClient.js';
  * @param {number|string} [options.pixelsPerCm] - Calibración métrica px/cm
  * @param {number} [options.t] - Timestamp para evitar caché
  */
-export function getLiveStreamUrl({ channel = 1, subtype = 0, password = '', pixelsPerCm = null, t = Date.now() } = {}) {
+export function getLiveStreamUrl({ channel = 1, subtype = 0, pixelsPerCm = null, t = Date.now() } = {}) {
   const baseUrl = getApiBaseUrl().replace(/\/+$/, '');
   const params = new URLSearchParams();
   params.set('channel', String(channel));
   params.set('subtype', String(subtype));
-  if (password) params.set('password', password);
   if (pixelsPerCm && Number(pixelsPerCm) > 0) params.set('pixels_per_cm', String(pixelsPerCm));
   params.set('_t', String(t));
   return `${baseUrl}/pesajes/stream/live?${params.toString()}`;

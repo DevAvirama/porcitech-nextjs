@@ -24,7 +24,7 @@ import {
 import { toast } from "sonner";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
-import { getAnimalDisplayName, UUID_REGEX } from "@/utils/formatters";
+import { formatDateTime, getAnimalDisplayName, UUID_REGEX } from "@/utils/formatters";
 import {
   estimateWeightWithAI,
   getLiveStreamUrl,
@@ -215,40 +215,50 @@ export default function WeightAICard({
     };
   }, [imagePreview]);
 
-  // Sincronización continua de estado y métricas del streaming en vivo (Polling cada 400ms)
+  // Sincronización continua de estado y métricas del streaming en vivo (polling encadenado y respetando pestaña visible)
   useEffect(() => {
     if (captureMode !== "live" || !isPlaying) return;
 
     let isMounted = true;
-    const interval = setInterval(async () => {
-      try {
-        const status = await getLiveStreamStatus();
-        if (isMounted && status) {
-          setStreamMetrics({
-            connected: Boolean(status.connected),
-            detectado: Boolean(status.metrics?.detectado),
-            peso_estimado_kg: status.metrics?.peso_estimado_kg,
-            confianza: status.metrics?.confianza,
-            area_cm2: status.metrics?.area_cm2,
-            largo_cm: status.metrics?.largo_cm,
-            ancho_cm: status.metrics?.ancho_cm,
-            fps: status.fps || 0,
-            mensaje: status.metrics?.mensaje || status.last_error || "Conectado",
-          });
-          if (status.connected) {
-            setStreamError(false);
+    let timerId = null;
+
+    const poll = async () => {
+      if (!isMounted) return;
+      if (typeof document === "undefined" || !document.hidden) {
+        try {
+          const status = await getLiveStreamStatus();
+          if (isMounted && status) {
+            setStreamMetrics({
+              connected: Boolean(status.connected),
+              detectado: Boolean(status.metrics?.detectado),
+              peso_estimado_kg: status.metrics?.peso_estimado_kg,
+              confianza: status.metrics?.confianza,
+              area_cm2: status.metrics?.area_cm2,
+              largo_cm: status.metrics?.largo_cm,
+              ancho_cm: status.metrics?.ancho_cm,
+              fps: status.fps || 0,
+              mensaje: status.metrics?.mensaje || status.last_error || "Conectado",
+            });
+            if (status.connected) {
+              setStreamError(false);
+            }
+          }
+        } catch (err) {
+          if (isMounted) {
+            console.debug("Error leyendo métricas live stream:", err?.message);
           }
         }
-      } catch (err) {
-        if (isMounted) {
-          console.debug("Error leyendo métricas live stream:", err?.message);
-        }
       }
-    }, 400);
+      if (isMounted) {
+        timerId = setTimeout(poll, 450);
+      }
+    };
+
+    poll();
 
     return () => {
       isMounted = false;
-      clearInterval(interval);
+      if (timerId) clearTimeout(timerId);
     };
   }, [captureMode, isPlaying]);
 
@@ -380,12 +390,28 @@ export default function WeightAICard({
     }
   };
 
+  const captureLiveRef = useRef(null);
+  useEffect(() => {
+    captureLiveRef.current = handleCaptureLiveWeight;
+  });
+
+  // Cerrar explícitamente conexión MJPEG al pausar, cambiar de pestaña o desmontar
+  useEffect(() => {
+    const imgEl = streamImgRef.current;
+    if (captureMode !== "live" || !isPlaying) {
+      if (imgEl) imgEl.src = "";
+    }
+    return () => {
+      if (imgEl) imgEl.src = "";
+    };
+  }, [captureMode, isPlaying]);
+
   // Atajo de teclado: Barra espaciadora para capturar peso instantáneo
   useEffect(() => {
+    if (captureMode !== "live") return;
     const handleKeyDown = (e) => {
       if (
         e.code === "Space" &&
-        captureMode === "live" &&
         !isCapturing &&
         selectedAnimalId &&
         document.activeElement?.tagName !== "INPUT" &&
@@ -393,17 +419,16 @@ export default function WeightAICard({
         document.activeElement?.tagName !== "TEXTAREA"
       ) {
         e.preventDefault();
-        handleCaptureLiveWeight();
+        captureLiveRef.current?.();
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  });
+  }, [captureMode, isCapturing, selectedAnimalId]);
 
   const liveStreamSrc = getLiveStreamUrl({
     channel,
     subtype,
-    password: cameraPassword,
     pixelsPerCm: Number(pixelsPerCm) || 15.2,
     t: streamKey,
   });
@@ -1103,7 +1128,11 @@ export default function WeightAICard({
                 </div>
                 <div className="flex justify-between">
                   <span className="font-bold text-slate-700">Hora:</span>
-                  <span>{new Date().toLocaleTimeString()}</span>
+                  <span>
+                    {aiResult.tiempo_registro
+                      ? formatDateTime(aiResult.tiempo_registro)
+                      : new Date().toLocaleTimeString()}
+                  </span>
                 </div>
               </div>
             )}

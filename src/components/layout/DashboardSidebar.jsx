@@ -37,7 +37,7 @@ export default function DashboardSidebar({ items = [] }) {
           { name: "Inicio", path: "/dashboard" },
           { name: "Animales", path: "/dashboard/animals" },
           { name: "Inventario", path: "/dashboard/inventory" },
-          { name: "Resgistro de Peso", path: "/dashboard/weight" },
+          { name: "Registro de Peso", path: "/dashboard/weight" },
           { name: "Alimentación", path: "/dashboard/feeding" },
           { name: "Reproducción", path: "/dashboard/reproduction" },
           { name: "Vacunación", path: "/dashboard/health" },

@@ -85,19 +85,30 @@ export default function WeightGMDChart({ corrales, onNavigateToIA }) {
       }
     }
 
+    let cancelled = false;
     setIsLoadingGMD(true);
     setHoveredIdx(null);
     getCorralGMD(analyticsCorralId, limite, options)
       .then((data) => {
-        setGmdData(Array.isArray(data) ? data : []);
+        if (!cancelled) {
+          setGmdData(Array.isArray(data) ? data : []);
+        }
       })
       .catch((err) => {
-        console.warn("Aviso al obtener GMD de TimescaleDB:", err.message);
-        setGmdData([]);
+        if (!cancelled) {
+          console.warn("Aviso al obtener GMD de TimescaleDB:", err.message);
+          setGmdData([]);
+        }
       })
       .finally(() => {
-        setIsLoadingGMD(false);
+        if (!cancelled) {
+          setIsLoadingGMD(false);
+        }
       });
+
+    return () => {
+      cancelled = true;
+    };
   }, [analyticsCorralId, periodPreset, customStart, customEnd]);
 
   const selectedCorral = useMemo(

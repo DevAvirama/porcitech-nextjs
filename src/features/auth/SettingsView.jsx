@@ -5,11 +5,13 @@ import { Users, User, RefreshCw } from "lucide-react";
 import Card from "@/components/ui/Card";
 import ModuleHeader from "@/components/layout/ModuleHeader";
 
+import dynamic from "next/dynamic";
 import { useSettingsData } from "./hooks/useSettingsData";
 import UserListTab from "./components/settings/UserListTab";
 import ProfileSecurityTab from "./components/settings/ProfileSecurityTab";
-import CreateUserModal from "./components/settings/CreateUserModal";
-import EditUserModal from "./components/settings/EditUserModal";
+
+const CreateUserModal = dynamic(() => import("./components/settings/CreateUserModal"), { ssr: false });
+const EditUserModal = dynamic(() => import("./components/settings/EditUserModal"), { ssr: false });
 
 export default function SettingsView() {
   const {

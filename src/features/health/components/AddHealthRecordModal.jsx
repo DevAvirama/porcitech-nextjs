@@ -60,13 +60,16 @@ export default function AddHealthRecordModal({ isOpen, onClose, onSaved }) {
       setLoadingCatalogs(true);
       try {
         const [animalsData, medicinesData, corralesData] = await Promise.all([
-          getAnimales({ estado: "activo" }).catch(() => []),
+          getAnimales().catch(() => []),
           getItems({ search: "" }).catch(() => []),
           getCorrales(true).catch(() => []),
         ]);
 
         if (isMounted) {
-          setAnimals(Array.isArray(animalsData) ? animalsData : []);
+          const activeAnimals = (Array.isArray(animalsData) ? animalsData : []).filter(
+            (a) => !["vendido", "muerto", "descarte"].includes(String(a.estado || "").toLowerCase())
+          );
+          setAnimals(activeAnimals);
           // Filtrar items que sean medicamentos o biológicos si es posible, o todos
           const allItems = Array.isArray(medicinesData) ? medicinesData : [];
           const medItems = allItems.filter(

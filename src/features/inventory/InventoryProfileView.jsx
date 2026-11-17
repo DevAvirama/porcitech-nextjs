@@ -394,6 +394,79 @@ export default function InventoryProfileView() {
         </Card>
       </div>
 
+      {/* Lotes y Caducidad (HU30) */}
+      <section className="bg-white rounded-3xl shadow-sm overflow-hidden p-2 border border-slate-100">
+        <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-black text-slate-900">
+              Lotes Registrados y Control de Caducidad (HU30)
+            </h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Seguimiento FEFO de lotes activos, próximos a vencer y vencidos
+            </p>
+          </div>
+          <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-700">
+            {Array.isArray(item.lotes) ? item.lotes.length : 0} lotes
+          </span>
+        </div>
+
+        {!Array.isArray(item.lotes) || item.lotes.length === 0 ? (
+          <div className="p-6 text-center text-xs text-slate-400">
+            No hay lotes específicos registrados para este insumo.
+          </div>
+        ) : (
+          <div className="overflow-x-auto p-3">
+            <table className="w-full text-left text-xs">
+              <thead>
+                <tr className="border-b border-slate-200 text-slate-500 uppercase text-[10px]">
+                  <th className="py-2 px-3 font-bold">Número de Lote</th>
+                  <th className="py-2 px-3 font-bold">Disponible</th>
+                  <th className="py-2 px-3 font-bold">Vencimiento</th>
+                  <th className="py-2 px-3 font-bold">Estado ICA</th>
+                  <th className="py-2 px-3 font-bold">Registro ICA</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {item.lotes.map((lote) => {
+                  const estadoVenc = lote.estado_vencimiento || "vigente";
+                  const badgeCls =
+                    estadoVenc === "vencido"
+                      ? "bg-rose-100 text-rose-700"
+                      : estadoVenc === "proximo_vencer"
+                        ? "bg-amber-100 text-amber-800"
+                        : "bg-emerald-100 text-emerald-700";
+                  return (
+                    <tr key={lote.id} className="hover:bg-slate-50">
+                      <td className="py-2.5 px-3 font-mono font-bold text-slate-800">
+                        {lote.numero_lote}
+                      </td>
+                      <td className="py-2.5 px-3 font-semibold text-slate-700">
+                        {Number(lote.cantidad_disponible ?? 0).toLocaleString("es-CO")} {item.unidad_medida}
+                      </td>
+                      <td className="py-2.5 px-3 text-slate-600">
+                        {lote.fecha_vencimiento || "Sin vencimiento"}
+                      </td>
+                      <td className="py-2.5 px-3">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${badgeCls}`}>
+                          {estadoVenc === "vencido"
+                            ? "Vencido"
+                            : estadoVenc === "proximo_vencer"
+                              ? `Por vencer (${lote.dias_para_vencer ?? 0}d)`
+                              : "Vigente"}
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-3 font-mono text-slate-500">
+                        {lote.registro_ica || "-"}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
       {/* Historial de Movimientos de este insumo */}
       <section className="bg-white rounded-3xl shadow-sm overflow-hidden p-2 border border-slate-100">
         <div className="p-4 border-b border-slate-100">

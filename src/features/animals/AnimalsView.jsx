@@ -104,27 +104,31 @@ const AnimalsView = () => {
     return () => clearTimeout(handler);
   }, [loadAnimals]);
 
-  // Cargar y persistir papelera local secundaria
+  // Cargar papelera local secundaria al montar (sin sobreescribirla en el primer render)
   useEffect(() => {
     const storedTrash = localStorage.getItem("sip_animals_trash");
     if (storedTrash) {
       try {
-        setTrash(JSON.parse(storedTrash));
+        const parsed = JSON.parse(storedTrash);
+        if (Array.isArray(parsed)) setTrash(parsed);
       } catch {
         setTrash([]);
       }
     }
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem("sip_animals_trash", JSON.stringify(trash));
-  }, [trash]);
+  const persistTrash = (nextTrash) => {
+    setTrash(nextTrash);
+    try {
+      localStorage.setItem("sip_animals_trash", JSON.stringify(nextTrash));
+    } catch {}
+  };
 
   // Mover animal a papelera local
   const moveToTrash = (id) => {
     const animal = animals.find((a) => a.id === id);
     if (animal) {
-      setTrash((prev) => [animal, ...prev]);
+      persistTrash([animal, ...trash]);
       setAnimals((prev) => prev.filter((a) => a.id !== id));
       toast.success(`${getAnimalDisplayName(animal)} movido a la papelera`);
     }
@@ -135,7 +139,7 @@ const AnimalsView = () => {
     const animal = trash.find((a) => a.id === id);
     if (animal) {
       setAnimals((prev) => [animal, ...prev]);
-      setTrash((prev) => prev.filter((a) => a.id !== id));
+      persistTrash(trash.filter((a) => a.id !== id));
       toast.success(`${getAnimalDisplayName(animal)} restaurado a la lista activa`);
     }
   };
@@ -153,7 +157,7 @@ const AnimalsView = () => {
       } catch (err) {
         console.warn("Aviso al eliminar en backend:", err.message);
       }
-      setTrash((prev) => prev.filter((a) => a.id !== id));
+      persistTrash(trash.filter((a) => a.id !== id));
       toast.success(`${getAnimalDisplayName(animal)} eliminado de forma permanente`);
     }
   };
@@ -243,7 +247,7 @@ const AnimalsView = () => {
                 <option value="precebo">Precebo</option>
                 <option value="levante">Levante</option>
                 <option value="engorde">Engorde / Ceba</option>
-                <option value="maternidad">Maternidad</option>
+                <option value="lactante">Maternidad / Lactancia</option>
                 <option value="gestacion">Gestación</option>
                 <option value="cuarentena">Cuarentena</option>
               </select>

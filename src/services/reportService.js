@@ -1,4 +1,5 @@
 import { getApiBaseUrl } from './apiClient.js';
+import { getLocalISODate } from '../utils/formatters.js';
 
 /**
  * Convierte los códigos de rango temporal del módulo Reportes a fechas YYYY-MM-DD.
@@ -17,10 +18,9 @@ export function resolveReportDateBounds(dateRange = '30dias') {
   const start = new Date(today);
   start.setDate(today.getDate() - days);
 
-  const fmt = (d) => d.toISOString().split('T')[0];
   return {
-    fecha_inicio: fmt(start),
-    fecha_fin: fmt(today),
+    fecha_inicio: getLocalISODate(start),
+    fecha_fin: getLocalISODate(today),
   };
 }
 
@@ -55,9 +55,29 @@ export async function downloadOfficialReport({
   }
 
   const response = await fetch(url, { method: 'GET', headers });
+  if (response.status === 401 && typeof window !== 'undefined') {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('porcitech_token');
+    localStorage.removeItem('porcitech_user');
+    document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
+    document.cookie = 'porcitech_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
+    if (window.location.pathname !== '/login') {
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+      window.location.href = '/login';
+    }
+    throw new Error('Sesión expirada. Por favor inicie sesión nuevamente.');
+  }
   if (!response.ok) {
-    const errText = await response.text().catch(() => '');
-    throw new Error(errText || `Error ${response.status} al exportar el reporte`);
+    let errMsg = `Error ${response.status} al exportar el reporte`;
+    try {
+      const errJson = await response.json();
+      if (errJson?.detail) errMsg = String(errJson.detail);
+    } catch {
+      const errText = await response.text().catch(() => '');
+      if (errText) errMsg = errText;
+    }
+    throw new Error(errMsg);
   }
 
   const blob = await response.blob();
@@ -72,7 +92,7 @@ export async function downloadOfficialReport({
   document.body.appendChild(link);
   link.click();
   link.remove();
-  window.URL.revokeObjectURL(objectUrl);
+  setTimeout(() => window.URL.revokeObjectURL(objectUrl), 1000);
 
   return filename;
 }

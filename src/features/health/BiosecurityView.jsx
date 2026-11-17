@@ -25,6 +25,7 @@ import {
   getDailyExecutions,
   toggleProtocolExecution,
 } from "@/services/healthService";
+import { getLocalISODate } from "@/utils/formatters";
 
 const ICON_MAP = {
   ShieldCheck,
@@ -38,9 +39,8 @@ const ICON_MAP = {
 };
 
 export default function BiosecurityView() {
-  const [selectedDate, setSelectedDate] = useState(
-    () => new Date().toISOString().split("T")[0]
-  );
+  const todayLocal = getLocalISODate();
+  const [selectedDate, setSelectedDate] = useState(() => getLocalISODate());
   const [protocols, setProtocols] = useState([]);
   const [executionsMap, setExecutionsMap] = useState({});
   const [isLoading, setIsLoading] = useState(true);
@@ -99,8 +99,12 @@ export default function BiosecurityView() {
 
   const progress = totalItems > 0 ? Math.round((completedCount / totalItems) * 100) : 0;
 
-  // Manejo optimista de check / uncheck
+  // Manejo optimista de check / uncheck (solo permitido para la fecha actual)
   const handleToggleProtocol = async (protocol) => {
+    if (selectedDate !== todayLocal) {
+      toast.info("Las fechas históricas son de solo lectura. Selecciona la fecha de hoy para registrar cumplimiento.");
+      return;
+    }
     const prevStatus = !!executionsMap[protocol.id];
     const newStatus = !prevStatus;
 
