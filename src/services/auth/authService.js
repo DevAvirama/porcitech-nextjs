@@ -48,6 +48,28 @@ export async function login(emailOrCredentials, maybePassword) {
 export const signIn = login;
 
 /**
+ * Solicita el envío de un enlace/token temporal de recuperación de contraseña (HU02).
+ * Endpoint: POST /api/v1/auth/forgot-password
+ */
+export async function requestPasswordReset(email) {
+  return await apiFetch('/auth/forgot-password', {
+    method: 'POST',
+    body: { email },
+  });
+}
+
+/**
+ * Confirma el cambio de contraseña usando el token temporal (HU02).
+ * Endpoint: POST /api/v1/auth/reset-password
+ */
+export async function confirmPasswordReset(token, newPassword) {
+  return await apiFetch('/auth/reset-password', {
+    method: 'POST',
+    body: { token, new_password: newPassword },
+  });
+}
+
+/**
  * Cierra la sesión activa del usuario, limpia el almacenamiento local,
  * expira las cookies de sesión y redirecciona a /login.
  */

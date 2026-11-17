@@ -7,7 +7,7 @@ import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { getAnimales } from "@/services/animalService";
-import { getItems } from "@/services/inventoryService";
+import { getItems, getItemById } from "@/services/inventoryService";
 import { getCorrales } from "@/services/corralService";
 import { createTreatment } from "@/services/healthService";
 import { getAnimalDisplayName, UUID_REGEX } from "@/utils/formatters";
@@ -30,6 +30,8 @@ export default function AddHealthRecordModal({ isOpen, onClose, onSaved }) {
   const [animals, setAnimals] = useState([]);
   const [medicines, setMedicines] = useState([]);
   const [corrales, setCorrales] = useState([]);
+  const [selectedMedicineLots, setSelectedMedicineLots] = useState([]);
+  const [loadingLots, setLoadingLots] = useState(false);
   const [loadingCatalogs, setLoadingCatalogs] = useState(false);
 
   // Formulario
@@ -37,6 +39,7 @@ export default function AddHealthRecordModal({ isOpen, onClose, onSaved }) {
     animal_id: "",
     corral_id: "",
     medicamento_id: "",
+    lote_inventario_id: "",
     producto_nombre: "",
     diagnostico: "",
     dosis: "",
@@ -103,17 +106,61 @@ export default function AddHealthRecordModal({ isOpen, onClose, onSaved }) {
     }));
   };
 
-  // Manejo de selección de medicamento del inventario: auto-asignar nombre
-  const handleMedicineChange = (e) => {
+  // Manejo de selección de medicamento del inventario: auto-asignar nombre y cargar lotes (HU30)
+  const handleMedicineChange = async (e) => {
     const selectedId = e.target.value;
     const selectedMed = medicines.find((m) => m.id === selectedId);
 
     setForm((prev) => ({
       ...prev,
       medicamento_id: selectedId,
+      lote_inventario_id: "",
       producto_nombre: selectedMed ? selectedMed.nombre : prev.producto_nombre,
     }));
+    setSelectedMedicineLots([]);
+
+    if (!selectedId) return;
+
+    setLoadingLots(true);
+    try {
+      const detail = await getItemById(selectedId);
+      const lotes = Array.isArray(detail?.lotes) ? detail.lotes : [];
+      setSelectedMedicineLots(lotes);
+
+      // Autoseleccionar primer lote vigente con stock disponible (FEFO)
+      const firstValid = lotes.find(
+        (l) => l.estado_vencimiento !== "vencido" && Number(l.cantidad_disponible ?? l.cantidad_actual ?? 0) > 0
+      );
+      if (firstValid) {
+        setForm((prev) => ({
+          ...prev,
+          lote_inventario_id: firstValid.id,
+          lote_biologico: firstValid.numero_lote || prev.lote_biologico,
+        }));
+      }
+    } catch (err) {
+      console.warn("No se pudieron cargar los lotes del insumo:", err?.message);
+    } finally {
+      setLoadingLots(false);
+    }
   };
+
+  const handleLotChange = (e) => {
+    const lotId = e.target.value;
+    const lot = selectedMedicineLots.find((l) => l.id === lotId);
+    setForm((prev) => ({
+      ...prev,
+      lote_inventario_id: lotId,
+      lote_biologico: lot ? lot.numero_lote : prev.lote_biologico,
+    }));
+  };
+
+  const selectedLotObj = selectedMedicineLots.find((l) => l.id === form.lote_inventario_id) || null;
+  const allLotsExpired =
+    selectedMedicineLots.length > 0 &&
+    selectedMedicineLots.every(
+      (l) => l.estado_vencimiento === "vencido" || Number(l.cantidad_disponible ?? l.cantidad_actual ?? 0) <= 0
+    );
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -143,16 +190,22 @@ export default function AddHealthRecordModal({ isOpen, onClose, onSaved }) {
       return;
     }
 
+    if (selectedLotObj && selectedLotObj.estado_vencimiento === "vencido") {
+      toast.error(
+        `Bloqueado (HU30): El lote ${selectedLotObj.numero_lote} venció el ${selectedLotObj.fecha_vencimiento}. No se puede aplicar.`
+      );
+      return;
+    }
+
+    if (form.medicamento_id && allLotsExpired) {
+      toast.error(
+        "Todos los lotes disponibles en bodega de este insumo están vencidos o agotados."
+      );
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      let finalObservaciones = form.observaciones.trim();
-      if (form.lote_biologico && form.lote_biologico.trim()) {
-        const lotePrefix = `Lote: ${form.lote_biologico.trim()}`;
-        finalObservaciones = finalObservaciones
-          ? `${lotePrefix} | ${finalObservaciones}`
-          : lotePrefix;
-      }
-
       const payload = {
         animal_id: form.animal_id,
         tipo_evento: eventType,
@@ -162,11 +215,13 @@ export default function AddHealthRecordModal({ isOpen, onClose, onSaved }) {
         unidad_dosis: form.unidad_dosis,
         via_administracion: form.via_administracion,
         tiempo_retiro_dias: retiroNum,
-        observaciones: finalObservaciones || undefined,
+        lote_biologico: form.lote_biologico.trim() || undefined,
+        observaciones: form.observaciones.trim() || undefined,
       };
 
       if (form.corral_id) payload.corral_id = form.corral_id;
       if (form.medicamento_id) payload.medicamento_id = form.medicamento_id;
+      if (form.lote_inventario_id) payload.lote_inventario_id = form.lote_inventario_id;
       if (form.fecha_proxima_dosis) {
         payload.fecha_proxima_dosis = form.fecha_proxima_dosis;
       }
@@ -347,6 +402,63 @@ export default function AddHealthRecordModal({ isOpen, onClose, onSaved }) {
               onChange={(e) => setForm({ ...form, producto_nombre: e.target.value })}
             />
           </div>
+
+          {/* Selector de Lote de Bodega con Control de Caducidad (HU30) */}
+          {form.medicamento_id && (
+            <div className="md:col-span-2">
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                <span>Lote de Inventario (Control de Caducidad ICA)</span>
+                <span className="text-[10px] font-bold text-emerald-700 lowercase">
+                  Lotes vencidos bloqueados automáticamente
+                </span>
+              </label>
+              {loadingLots ? (
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-500 font-semibold">
+                  Consultando lotes y fechas de vencimiento en bodega...
+                </div>
+              ) : selectedMedicineLots.length === 0 ? (
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-500">
+                  Este insumo no tiene lotes registrados con fecha de vencimiento; el stock se descontará del saldo general.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="relative">
+                    <select
+                      className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 font-semibold text-slate-900 appearance-none cursor-pointer pr-10 text-sm"
+                      value={form.lote_inventario_id}
+                      onChange={handleLotChange}
+                    >
+                      <option value="">Selección automática FEFO (lote vigente más próximo)</option>
+                      {selectedMedicineLots.map((l) => {
+                        const isExpired = l.estado_vencimiento === "vencido";
+                        const isSoon = l.estado_vencimiento === "proximo_vencer";
+                        const disp = l.cantidad_disponible ?? l.cantidad_actual ?? 0;
+                        const statusTag = isExpired
+                          ? " [VENCIDO - BLOQUEADO]"
+                          : isSoon
+                            ? ` [Vence en ${l.dias_para_vencer}d]`
+                            : "";
+                        return (
+                          <option key={l.id} value={l.id} disabled={isExpired || Number(disp) <= 0}>
+                            Lote {l.numero_lote} · Vence: {l.fecha_vencimiento || "N/A"} · Disp: {disp}
+                            {statusTag}
+                          </option>
+                        );
+                      })}
+                    </select>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                      <ChevronDown size={18} />
+                    </div>
+                  </div>
+                  {allLotsExpired && (
+                    <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs font-bold text-rose-700">
+                      ⚠️ Todos los lotes de este producto en bodega están vencidos o agotados. Por normativa ICA no se permite su aplicación.
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Diagnóstico o Motivo */}
           <div className="md:col-span-2">

@@ -18,6 +18,7 @@ import { useInventoryData } from "./hooks/useInventoryData";
 import InventoryKPIs from "./components/InventoryKPIs";
 import InventoryItemsTab from "./components/InventoryItemsTab";
 import InventoryMovementsTab from "./components/InventoryMovementsTab";
+import ExpiringLotsBanner from "./components/ExpiringLotsBanner";
 
 const NewSupplyModal = dynamic(() => import("./components/NewSupplyModal"), { ssr: false });
 const KardexMovementModal = dynamic(() => import("./components/KardexMovementModal"), { ssr: false });
@@ -30,6 +31,9 @@ export default function InventoryView() {
     categories,
     items,
     movements,
+    expiringLots,
+    expiredLotsCount,
+    soonExpiringCount,
     isLoading,
     isRefreshing,
     error,
@@ -214,6 +218,13 @@ export default function InventoryView() {
         lowStockCount={lowStockCount}
         movementsCount={movements.length}
         isLoading={isLoading}
+      />
+
+      {/* ALERTAS DE CADUCIDAD DE LOTES (HU30 - REGLA 30 DÍAS) */}
+      <ExpiringLotsBanner
+        expiringLots={expiringLots}
+        expiredLotsCount={expiredLotsCount}
+        soonExpiringCount={soonExpiringCount}
       />
 
       {/* CONTROL DE PESTAÑAS */}

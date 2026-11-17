@@ -165,9 +165,13 @@ export async function deletePesaje(idRegistro) {
  *   variacion_porcentual?: number
  * }>>}
  */
-export async function getCorralGMD(corralId, limite = 30) {
+export async function getCorralGMD(corralId, limite = 30, options = {}) {
   if (!corralId) throw new Error('Se requiere el ID del corral.');
-  return await apiFetch(`/pesajes/corral/${corralId}/gmd?limite=${limite}`);
+  const params = new URLSearchParams();
+  params.set('limite', String(limite || 30));
+  if (options?.fechaInicio) params.set('fecha_inicio', String(options.fechaInicio));
+  if (options?.fechaFin) params.set('fecha_fin', String(options.fechaFin));
+  return await apiFetch(`/pesajes/corral/${corralId}/gmd?${params.toString()}`);
 }
 
 /**
@@ -226,6 +230,31 @@ export async function registerManualWeight(data) {
   });
 }
 
+/**
+ * Consulta el estado actual de calibración ArUco y los motores YOLO / XGBoost (HU21).
+ * Endpoint: GET /api/v1/pesajes/calibracion
+ */
+export async function getCalibrationStatus() {
+  return await apiFetch('/pesajes/calibracion');
+}
+
+/**
+ * Calibra la escala métrica cm/px a partir de una foto con marcador ArUco (HU21).
+ * Endpoint: POST /api/v1/pesajes/calibrar-aruco
+ */
+export async function calibrateWithAruco(imageFile, tamanoMarcadorCm = 10.0) {
+  if (!imageFile) {
+    throw new Error('Se requiere una fotografía con el marcador ArUco visible.');
+  }
+  const formData = new FormData();
+  formData.append('file', imageFile);
+  formData.append('tamano_marcador_cm', String(tamanoMarcadorCm || 10.0));
+  return await apiFetch('/pesajes/calibrar-aruco', {
+    method: 'POST',
+    body: formData,
+  });
+}
+
 const weightService = {
   getLiveStreamUrl,
   getLiveStreamStatus,
@@ -237,6 +266,8 @@ const weightService = {
   getCorralGMD,
   getAnimalWeightHistory,
   registerManualWeight,
+  getCalibrationStatus,
+  calibrateWithAruco,
 };
 
 export default weightService;

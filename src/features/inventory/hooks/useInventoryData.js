@@ -11,6 +11,7 @@ import {
   getCategories,
   getItems,
   getMovements,
+  getExpiringLots,
 } from "@/services/inventoryService";
 
 export const CATEGORY_COLORS = {
@@ -69,6 +70,7 @@ export function useInventoryData() {
   const [categories, setCategories] = useState([]);
   const [items, setItems] = useState([]);
   const [movements, setMovements] = useState([]);
+  const [expiringLots, setExpiringLots] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState(null);
@@ -85,10 +87,11 @@ export function useInventoryData() {
     setError(null);
 
     try {
-      const [categoriesRes, itemsRes, movementsRes] = await Promise.allSettled([
+      const [categoriesRes, itemsRes, movementsRes, expiringRes] = await Promise.allSettled([
         getCategories(),
         getItems(),
         getMovements({ limite: 20 }),
+        getExpiringLots(30),
       ]);
 
       const errors = [];
@@ -109,6 +112,10 @@ export function useInventoryData() {
         setMovements(movementsRes.value);
       } else if (movementsRes.status === "rejected") {
         errors.push(`Movimientos: ${movementsRes.reason?.message || "Error al cargar"}`);
+      }
+
+      if (expiringRes.status === "fulfilled" && Array.isArray(expiringRes.value)) {
+        setExpiringLots(expiringRes.value);
       }
 
       if (errors.length > 0) {
@@ -195,10 +202,23 @@ export function useInventoryData() {
     setFilterLowStockOnly(false);
   }, []);
 
+  const expiredLotsCount = useMemo(
+    () => expiringLots.filter((l) => l.estado === "vencido").length,
+    [expiringLots]
+  );
+
+  const soonExpiringCount = useMemo(
+    () => expiringLots.filter((l) => l.estado === "proximo_vencer").length,
+    [expiringLots]
+  );
+
   return {
     categories,
     items,
     movements,
+    expiringLots,
+    expiredLotsCount,
+    soonExpiringCount,
     isLoading,
     isRefreshing,
     error,

@@ -26,8 +26,27 @@ const PORKCOLOMBIA_GMD_TARGETS = {
   cuarentena: { min: 400, target: 600, max: 800, label: "Observación / Cuarentena" },
 };
 
+const PERIOD_PRESETS = [
+  { id: "7d", label: "7 días", days: 7 },
+  { id: "15d", label: "15 días", days: 15 },
+  { id: "30d", label: "30 días", days: 30 },
+  { id: "90d", label: "90 días", days: 90 },
+  { id: "all", label: "Histórico", days: null },
+  { id: "custom", label: "Personalizado", days: null },
+];
+
+function toISODate(d) {
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 export default function WeightGMDChart({ corrales, onNavigateToIA }) {
   const [analyticsCorralId, setAnalyticsCorralId] = useState("");
+  const [periodPreset, setPeriodPreset] = useState("all");
+  const [customStart, setCustomStart] = useState("");
+  const [customEnd, setCustomEnd] = useState("");
   const [gmdData, setGmdData] = useState([]);
   const [isLoadingGMD, setIsLoadingGMD] = useState(false);
   const [hoveredIdx, setHoveredIdx] = useState(null);
@@ -43,22 +62,43 @@ export default function WeightGMDChart({ corrales, onNavigateToIA }) {
   }, [corrales, analyticsCorralId]);
 
   useEffect(() => {
-    if (analyticsCorralId) {
-      setIsLoadingGMD(true);
-      setHoveredIdx(null);
-      getCorralGMD(analyticsCorralId, 30)
-        .then((data) => {
-          setGmdData(Array.isArray(data) ? data : []);
-        })
-        .catch((err) => {
-          console.warn("Aviso al obtener GMD de TimescaleDB:", err.message);
-          setGmdData([]);
-        })
-        .finally(() => {
-          setIsLoadingGMD(false);
-        });
+    if (!analyticsCorralId) return;
+
+    const options = {};
+    let limite = 60;
+
+    if (periodPreset === "custom") {
+      if (customStart) options.fechaInicio = customStart;
+      if (customEnd) options.fechaFin = customEnd;
+      limite = 365;
+    } else if (periodPreset === "all") {
+      limite = 365;
+    } else {
+      const presetObj = PERIOD_PRESETS.find((p) => p.id === periodPreset);
+      if (presetObj?.days) {
+        const end = new Date();
+        const start = new Date();
+        start.setDate(end.getDate() - presetObj.days);
+        options.fechaInicio = toISODate(start);
+        options.fechaFin = toISODate(end);
+        limite = Math.max(30, presetObj.days + 5);
+      }
     }
-  }, [analyticsCorralId]);
+
+    setIsLoadingGMD(true);
+    setHoveredIdx(null);
+    getCorralGMD(analyticsCorralId, limite, options)
+      .then((data) => {
+        setGmdData(Array.isArray(data) ? data : []);
+      })
+      .catch((err) => {
+        console.warn("Aviso al obtener GMD de TimescaleDB:", err.message);
+        setGmdData([]);
+      })
+      .finally(() => {
+        setIsLoadingGMD(false);
+      });
+  }, [analyticsCorralId, periodPreset, customStart, customEnd]);
 
   const selectedCorral = useMemo(
     () => corrales.find((c) => c.id === analyticsCorralId) || null,
@@ -296,6 +336,53 @@ export default function WeightGMDChart({ corrales, onNavigateToIA }) {
             ))}
           </select>
         </div>
+      </div>
+
+      {/* 1.5 FILTRO DE PERÍODO (HU37) */}
+      <div className="bg-white px-5 py-3.5 rounded-3xl border border-slate-100 shadow-sm flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 mr-1">
+            <Calendar size={14} className="text-blue-500" />
+            Período:
+          </span>
+          {PERIOD_PRESETS.map((preset) => (
+            <button
+              key={preset.id}
+              type="button"
+              onClick={() => setPeriodPreset(preset.id)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                periodPreset === preset.id
+                  ? "bg-blue-600 text-white shadow-xs"
+                  : "bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200/80"
+              }`}
+            >
+              {preset.label}
+            </button>
+          ))}
+        </div>
+
+        {periodPreset === "custom" && (
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <label className="flex items-center gap-1.5 font-semibold text-slate-600">
+              <span>Desde:</span>
+              <input
+                type="date"
+                value={customStart}
+                onChange={(e) => setCustomStart(e.target.value)}
+                className="px-2.5 py-1.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-semibold outline-none focus:border-blue-500"
+              />
+            </label>
+            <label className="flex items-center gap-1.5 font-semibold text-slate-600">
+              <span>Hasta:</span>
+              <input
+                type="date"
+                value={customEnd}
+                onChange={(e) => setCustomEnd(e.target.value)}
+                className="px-2.5 py-1.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-semibold outline-none focus:border-blue-500"
+              />
+            </label>
+          </div>
+        )}
       </div>
 
       {/* 2. ESTADO DE CARGA O VACÍO */}

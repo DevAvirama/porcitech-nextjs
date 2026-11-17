@@ -31,6 +31,8 @@ import {
   getLiveStreamStatus,
   capturarPesoEnVivo,
   updateStreamConfig,
+  getCalibrationStatus,
+  calibrateWithAruco,
 } from "@/services/weightService";
 
 const DEFAULT_CAMERA_IP = "192.168.1.108";
@@ -113,10 +115,13 @@ export default function WeightAICard({
   const [imagePreview, setImagePreview] = useState(null);
   const [isCapturing, setIsCapturing] = useState(false);
   const [aiResult, setAiResult] = useState(null);
+  const [calibrationStatus, setCalibrationStatus] = useState(null);
+  const [isCalibratingAruco, setIsCalibratingAruco] = useState(false);
   const fileInputRef = useRef(null);
+  const arucoInputRef = useRef(null);
   const streamImgRef = useRef(null);
 
-  // Cargar configuración guardada de localStorage al montar
+  // Cargar configuración guardada de localStorage y estado de calibración ArUco + XGBoost (HU21)
   useEffect(() => {
     try {
       const savedIp = localStorage.getItem("porcitech_dahua_ip");
@@ -133,7 +138,45 @@ export default function WeightAICard({
     } catch {
       // localStorage no disponible o restringido
     }
+
+    getCalibrationStatus()
+      .then((status) => {
+        if (status) {
+          setCalibrationStatus(status);
+          if (status.calibrado && status.pixels_per_cm_base1280) {
+            setPixelsPerCm(String(status.pixels_per_cm_base1280));
+          }
+        }
+      })
+      .catch(() => {
+        // Silencioso si el endpoint no responde aún
+      });
   }, []);
+
+  const handleArucoCalibrationUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsCalibratingAruco(true);
+    try {
+      const resp = await calibrateWithAruco(file, 10.0);
+      toast.success(resp?.mensaje || "Calibración ArUco guardada correctamente.");
+      if (resp?.pixels_per_cm_base1280) {
+        setPixelsPerCm(String(resp.pixels_per_cm_base1280));
+        try {
+          localStorage.setItem("porcitech_dahua_ppc", String(resp.pixels_per_cm_base1280));
+        } catch {
+          // ignore
+        }
+      }
+      const fresh = await getCalibrationStatus().catch(() => null);
+      if (fresh) setCalibrationStatus(fresh);
+    } catch (err) {
+      toast.error(err?.message || "No se detectó un marcador ArUco válido en la fotografía.");
+    } finally {
+      setIsCalibratingAruco(false);
+      if (arucoInputRef.current) arucoInputRef.current.value = "";
+    }
+  };
 
   // Guardar configuración localmente cuando cambie
   const handleSaveSettings = () => {
@@ -995,7 +1038,7 @@ export default function WeightAICard({
             </div>
 
             {/* Métricas Morfométricas Detalladas */}
-            <div className="grid grid-cols-3 gap-2 text-center text-xs">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
               <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
                 <span className="text-[9px] font-bold uppercase text-slate-400 block">
                   Largo
@@ -1014,12 +1057,42 @@ export default function WeightAICard({
               </div>
               <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
                 <span className="text-[9px] font-bold uppercase text-slate-400 block">
+                  Tórax
+                </span>
+                <span className="font-black text-slate-800 font-mono">
+                  {aiResult.ancho_toracico_cm ? `${aiResult.ancho_toracico_cm} cm` : "N/D"}
+                </span>
+              </div>
+              <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
+                <span className="text-[9px] font-bold uppercase text-slate-400 block">
                   Área
                 </span>
                 <span className="font-black text-slate-800 font-mono">
                   {aiResult.area_cm2 ? `${aiResult.area_cm2} cm²` : "N/D"}
                 </span>
               </div>
+            </div>
+
+            {/* Motor de Inferencia y Calibración ArUco (HU21) */}
+            <div className="flex flex-wrap items-center justify-between gap-1.5 text-[10px] font-bold bg-indigo-50/70 border border-indigo-100 rounded-xl p-2.5">
+              <span className="px-2 py-0.5 rounded-full bg-indigo-600 text-white uppercase tracking-wider">
+                {aiResult.algoritmo_peso === "xgboost" ? "XGBoost + YOLO" : "Alometría Huxley"}
+              </span>
+              <span className="text-indigo-900 font-mono">
+                {aiResult.metodo_calibracion === "aruco_en_vivo"
+                  ? `ArUco En Vivo (ID ${aiResult.aruco_id ?? 0})`
+                  : aiResult.metodo_calibracion === "aruco_guardado"
+                    ? "ArUco Calibrado"
+                    : aiResult.metodo_calibracion === "manual_parametro"
+                      ? "Escala Manual"
+                      : "Escala Cenital"}
+                {aiResult.pixels_per_cm_utilizado ? ` · ${aiResult.pixels_per_cm_utilizado} px/cm` : ""}
+              </span>
+              {aiResult.confianza != null && (
+                <span className="text-emerald-700 font-black">
+                  Conf: {(aiResult.confianza * 100).toFixed(1)}%
+                </span>
+              )}
             </div>
 
             {aiResult.id_registro_persistido && (
@@ -1036,14 +1109,66 @@ export default function WeightAICard({
             )}
           </Card>
         ) : (
-          /* Widget Informativo */
+          /* Widget Informativo + Estado ArUco/XGBoost (HU21) */
           <Card className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex flex-col gap-3 text-slate-700">
-            <div className="flex items-center gap-2 font-bold text-xs uppercase tracking-wider text-slate-900">
-              <Info size={16} className="text-indigo-600" />
-              Instrucciones de Pesaje Cenital
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 font-bold text-xs uppercase tracking-wider text-slate-900">
+                <Info size={16} className="text-indigo-600" />
+                Motor IA Biométrico (HU21)
+              </div>
+              <span
+                className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+                  calibrationStatus?.xgboost_activo
+                    ? "bg-emerald-100 text-emerald-700"
+                    : "bg-slate-100 text-slate-600"
+                }`}
+              >
+                {calibrationStatus?.xgboost_activo ? "YOLO + XGBoost" : "YOLO + Huxley"}
+              </span>
             </div>
+
+            <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 text-xs space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-500 font-semibold">Escala espacial activa:</span>
+                <span className="font-mono font-black text-slate-900">
+                  {calibrationStatus?.pixels_per_cm_base1280 || pixelsPerCm} px/cm
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-500 font-semibold">Calibración ArUco:</span>
+                <span
+                  className={`font-bold ${
+                    calibrationStatus?.calibrado ? "text-emerald-600" : "text-amber-600"
+                  }`}
+                >
+                  {calibrationStatus?.calibrado
+                    ? `Activa (ID ${calibrationStatus.marcador_id ?? 0})`
+                    : "Estándar fábrica"}
+                </span>
+              </div>
+              <div className="pt-2">
+                <input
+                  ref={arucoInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleArucoCalibrationUpload}
+                />
+                <button
+                  type="button"
+                  disabled={isCalibratingAruco}
+                  onClick={() => arucoInputRef.current?.click()}
+                  className="w-full py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-[11px] font-bold transition-colors cursor-pointer"
+                >
+                  {isCalibratingAruco
+                    ? "Detectando marcador ArUco..."
+                    : "Calibrar corral con foto ArUco (10×10 cm)"}
+                </button>
+              </div>
+            </div>
+
             <p className="text-xs text-slate-500 leading-relaxed">
-              La cámara industrial Dahua TPC-BF enfoca perpendicularmente a 90° sobre el lomo del cerdo:
+              La cámara cenital enfoca perpendicularmente a 90° sobre el lomo del cerdo (si hay marcador ArUco en la foto se autocalibra en vivo):
             </p>
             <div className="space-y-1.5 text-xs text-slate-600">
               <div className="flex items-start gap-2 p-2 bg-slate-50 rounded-xl">
@@ -1052,11 +1177,11 @@ export default function WeightAICard({
               </div>
               <div className="flex items-start gap-2 p-2 bg-slate-50 rounded-xl">
                 <span className="font-mono font-bold text-indigo-600">2.</span>
-                <span>Observa el encuadre en el video en vivo y verifica la detección verde.</span>
+                <span>Observa el encuadre en el video en vivo o sube una foto cenital.</span>
               </div>
               <div className="flex items-start gap-2 p-2 bg-slate-50 rounded-xl">
                 <span className="font-mono font-bold text-indigo-600">3.</span>
-                <span>Pulsa el botón verde o presiona <strong>Espacio</strong> para capturar.</span>
+                <span>Pulsa el botón verde o presiona <strong>Espacio</strong> para estimar y guardar.</span>
               </div>
             </div>
           </Card>

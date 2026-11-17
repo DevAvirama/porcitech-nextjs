@@ -190,6 +190,14 @@ export async function registerMovement(movementData) {
   });
 }
 
+/**
+ * Obtiene los lotes vencidos y próximos a vencer dentro de la ventana de N días (HU30).
+ * Endpoint: GET /api/v1/inventario/lotes/alertas-vencimiento?dias={dias}
+ */
+export async function getExpiringLots(dias = 30) {
+  return await apiFetch(`/inventario/lotes/alertas-vencimiento?dias=${Number(dias) || 30}`);
+}
+
 const inventoryService = {
   getCategories,
   getItems,
@@ -197,6 +205,7 @@ const inventoryService = {
   createItem,
   getMovements,
   registerMovement,
+  getExpiringLots,
 };
 
 export default inventoryService;
