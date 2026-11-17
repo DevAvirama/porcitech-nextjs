@@ -4,20 +4,22 @@ import React from "react";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Table from "@/components/ui/Table";
-import { ArrowLeft, Download, Calendar, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Download, Calendar, ShieldCheck, FileSpreadsheet, Printer } from "lucide-react";
 
 export default function PrintableReportPreview({
   activeReport = null,
   kpiCols = [],
+  isExporting = null,
   onReset,
   onPrintPDF,
+  onExportFile,
 }) {
   if (!activeReport) return null;
 
   return (
     <div className="space-y-6">
       {/* Barra de Acciones del Reporte */}
-      <div className="flex justify-between items-center bg-slate-900 text-white p-4 rounded-2xl shadow-md no-print">
+      <div className="flex flex-wrap justify-between items-center gap-3 bg-slate-900 text-white p-4 rounded-2xl shadow-md no-print">
         <button
           onClick={onReset}
           className="flex items-center gap-2 text-sm font-bold text-slate-300 hover:text-white transition-colors cursor-pointer bg-slate-800 px-4 py-2.5 rounded-xl border border-slate-700"
@@ -25,13 +27,35 @@ export default function PrintableReportPreview({
           <ArrowLeft size={16} />
           Volver a Configuración
         </button>
-        <Button
-          onClick={onPrintPDF}
-          className="bg-emerald-600 hover:bg-emerald-500 border-none text-white font-black px-6 py-3 rounded-xl flex items-center gap-2 cursor-pointer shadow-md shadow-emerald-600/30"
-        >
-          <Download size={18} />
-          Exportar a PDF / Imprimir
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          {onExportFile && (
+            <>
+              <Button
+                onClick={() => onExportFile("xlsx")}
+                disabled={Boolean(isExporting)}
+                className="bg-emerald-600 hover:bg-emerald-500 border-none text-white font-black px-4 py-2.5 rounded-xl flex items-center gap-2 cursor-pointer text-xs"
+              >
+                <FileSpreadsheet size={16} />
+                {isExporting === "xlsx" ? "Generando..." : "Descargar Excel (.xlsx)"}
+              </Button>
+              <Button
+                onClick={() => onExportFile("pdf")}
+                disabled={Boolean(isExporting)}
+                className="bg-rose-600 hover:bg-rose-500 border-none text-white font-black px-4 py-2.5 rounded-xl flex items-center gap-2 cursor-pointer text-xs"
+              >
+                <Download size={16} />
+                {isExporting === "pdf" ? "Generando..." : "Descargar PDF Oficial"}
+              </Button>
+            </>
+          )}
+          <Button
+            onClick={onPrintPDF}
+            className="bg-slate-700 hover:bg-slate-600 border-none text-white font-black px-4 py-2.5 rounded-xl flex items-center gap-2 cursor-pointer text-xs"
+          >
+            <Printer size={16} />
+            Imprimir Vista
+          </Button>
+        </div>
       </div>
 
       {/* Plantilla A4 / Printable Document Container */}

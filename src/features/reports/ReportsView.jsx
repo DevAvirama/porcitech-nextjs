@@ -19,6 +19,7 @@ export default function ReportsView() {
     setSelectedBatch,
     activeReport,
     isGenerating,
+    isExporting,
     isLoading,
     dbAlerts,
     corrales,
@@ -31,6 +32,7 @@ export default function ReportsView() {
     handleGenerateReport,
     handleReset,
     handlePrintPDF,
+    handleExportFile,
   } = useReportsData();
 
   if (isLoading) {
@@ -66,7 +68,9 @@ export default function ReportsView() {
             setSelectedBatch={setSelectedBatch}
             corrales={corrales}
             isGenerating={isGenerating}
+            isExporting={isExporting}
             onGenerateReport={handleGenerateReport}
+            onExportFile={handleExportFile}
           />
 
           <ReportsDashboard
@@ -89,8 +93,10 @@ export default function ReportsView() {
         <PrintableReportPreview
           activeReport={activeReport}
           kpiCols={kpiCols}
+          isExporting={isExporting}
           onReset={handleReset}
           onPrintPDF={handlePrintPDF}
+          onExportFile={handleExportFile}
         />
       )}
     </div>

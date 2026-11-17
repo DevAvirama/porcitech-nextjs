@@ -74,12 +74,50 @@ export async function deleteCorral(id) {
   });
 }
 
+/**
+ * Consulta la auditoría de vacíos sanitarios Todo Adentro / Todo Afuera (HU38).
+ */
+export async function getSanitaryRestAudit(params = {}) {
+  const query = new URLSearchParams();
+  if (params.corral_id) query.append('corral_id', params.corral_id);
+  if (params.fecha_inicio) query.append('fecha_inicio', params.fecha_inicio);
+  if (params.fecha_fin) query.append('fecha_fin', params.fecha_fin);
+  if (params.solo_alertas) query.append('solo_alertas', 'true');
+  const qs = query.toString();
+  return await apiFetch(qs ? `/corrales/auditoria-vacios?${qs}` : '/corrales/auditoria-vacios');
+}
+
+/**
+ * Registra un ciclo sanitario (entrada/salida de lote) en un corral (HU38).
+ */
+export async function createCorralCycle(corralId, data) {
+  if (!corralId) throw new Error('Se requiere el ID del corral');
+  return await apiFetch(`/corrales/${corralId}/ciclos`, {
+    method: 'POST',
+    body: data,
+  });
+}
+
+/**
+ * Actualiza fecha de salida o verificación de desinfección de un ciclo sanitario (HU38).
+ */
+export async function updateCorralCycle(cicloId, data) {
+  if (!cicloId) throw new Error('Se requiere el ID del ciclo sanitario');
+  return await apiFetch(`/corrales/ciclos/${cicloId}`, {
+    method: 'PUT',
+    body: data,
+  });
+}
+
 const corralService = {
   getCorrales,
   getCorralById,
   createCorral,
   updateCorral,
   deleteCorral,
+  getSanitaryRestAudit,
+  createCorralCycle,
+  updateCorralCycle,
 };
 
 export default corralService;

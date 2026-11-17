@@ -9,6 +9,7 @@ import { useFeedingData } from "./hooks/useFeedingData";
 import FeedingKPIs from "./components/FeedingKPIs";
 import SilosInventorySection from "./components/SilosInventorySection";
 import FeedingHistorySection from "./components/FeedingHistorySection";
+import FeedingPlansAndFCRSection from "./components/FeedingPlansAndFCRSection";
 import SupplyRationModal from "./components/SupplyRationModal";
 
 export default function FeedingView() {
@@ -16,6 +17,10 @@ export default function FeedingView() {
     rations,
     corrales,
     feedItems,
+    plans,
+    fcrItems,
+    fcrFilters,
+    setFcrFilters,
     isLoading,
     isRefreshing,
     error,
@@ -92,6 +97,18 @@ export default function FeedingView() {
 
       {/* ESTADO DE SILOS / INVENTARIO DE ALIMENTO EN TIEMPO REAL */}
       <SilosInventorySection feedItems={feedItems} />
+
+      {/* CONVERSIÓN ALIMENTICIA (FCR) Y PLANES POR ETAPA (HU24 / HU26) */}
+      <FeedingPlansAndFCRSection
+        plans={plans}
+        fcrItems={fcrItems}
+        corrales={corrales}
+        feedItems={feedItems}
+        fcrFilters={fcrFilters}
+        setFcrFilters={setFcrFilters}
+        onRefresh={() => loadFeedingData(false)}
+        isRefreshing={isRefreshing}
+      />
 
       {/* FILTROS Y HISTORIAL DE SUMINISTROS */}
       <FeedingHistorySection

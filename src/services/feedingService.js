@@ -60,9 +60,67 @@ export async function registerRation(data) {
   });
 }
 
+/**
+ * Lista planes de alimentación estandarizados por fase o corral (HU24).
+ */
+export async function getFeedingPlans(params = {}) {
+  const query = new URLSearchParams();
+  if (params.corral_id) query.append('corral_id', params.corral_id);
+  if (params.fase) query.append('fase', params.fase);
+  if (params.solo_activos !== undefined) query.append('solo_activos', String(params.solo_activos));
+  const qs = query.toString();
+  return await apiFetch(qs ? `/alimentacion/planes?${qs}` : '/alimentacion/planes');
+}
+
+/**
+ * Crea un plan de alimentación (HU24).
+ */
+export async function createFeedingPlan(data) {
+  return await apiFetch('/alimentacion/planes', {
+    method: 'POST',
+    body: data,
+  });
+}
+
+/**
+ * Actualiza un plan de alimentación (HU24).
+ */
+export async function updateFeedingPlan(planId, data) {
+  return await apiFetch(`/alimentacion/planes/${planId}`, {
+    method: 'PUT',
+    body: data,
+  });
+}
+
+/**
+ * Elimina lógicamente un plan de alimentación (HU24).
+ */
+export async function deleteFeedingPlan(planId) {
+  return await apiFetch(`/alimentacion/planes/${planId}`, {
+    method: 'DELETE',
+  });
+}
+
+/**
+ * Consulta la Conversión Alimenticia (FCR) por corral y período (HU26).
+ */
+export async function getFeedConversion(params = {}) {
+  const query = new URLSearchParams();
+  if (params.fecha_inicio) query.append('fecha_inicio', params.fecha_inicio);
+  if (params.fecha_fin) query.append('fecha_fin', params.fecha_fin);
+  if (params.corral_id && params.corral_id !== 'all') query.append('corral_id', params.corral_id);
+  const qs = query.toString();
+  return await apiFetch(qs ? `/alimentacion/conversion-alimenticia?${qs}` : '/alimentacion/conversion-alimenticia');
+}
+
 const feedingService = {
   getRations,
   registerRation,
+  getFeedingPlans,
+  createFeedingPlan,
+  updateFeedingPlan,
+  deleteFeedingPlan,
+  getFeedConversion,
 };
 
 export default feedingService;

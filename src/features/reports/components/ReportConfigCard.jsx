@@ -3,7 +3,7 @@
 import React from "react";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
-import { FileText } from "lucide-react";
+import { FileText, FileSpreadsheet, Download } from "lucide-react";
 
 export default function ReportConfigCard({
   selectedReportType = "consolidado",
@@ -14,7 +14,9 @@ export default function ReportConfigCard({
   setSelectedBatch,
   corrales = [],
   isGenerating = false,
+  isExporting = null,
   onGenerateReport,
+  onExportFile,
 }) {
   return (
     <Card className="p-6 md:p-8 bg-white border border-slate-100 shadow-sm rounded-4xl">
@@ -55,6 +57,8 @@ export default function ReportConfigCard({
               </option>
               <option value="reproduccion">Reproducción y Partos</option>
               <option value="nutricion">Alimentación e Inventario</option>
+              <option value="fcr">Conversión Alimenticia (FCR)</option>
+              <option value="vacios">Auditoría de Vacíos Sanitarios</option>
             </select>
             <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
               ▼
@@ -108,8 +112,8 @@ export default function ReportConfigCard({
           </div>
         </div>
 
-        {/* Botón Generar Reporte */}
-        <div>
+        {/* Botón Generar Reporte + Descarga Directa (HU39) */}
+        <div className="space-y-2">
           <Button
             onClick={onGenerateReport}
             disabled={isGenerating}
@@ -123,10 +127,34 @@ export default function ReportConfigCard({
             ) : (
               <>
                 <FileText size={18} />
-                Generar Reporte Oficial
+                Vista Previa Oficial
               </>
             )}
           </Button>
+          {onExportFile && (
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                type="button"
+                tone="soft"
+                disabled={Boolean(isExporting)}
+                onClick={() => onExportFile("xlsx")}
+                className="py-2 text-xs rounded-xl! font-black text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 flex items-center justify-center gap-1.5"
+              >
+                <FileSpreadsheet size={14} />
+                {isExporting === "xlsx" ? "..." : "Excel"}
+              </Button>
+              <Button
+                type="button"
+                tone="soft"
+                disabled={Boolean(isExporting)}
+                onClick={() => onExportFile("pdf")}
+                className="py-2 text-xs rounded-xl! font-black text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 flex items-center justify-center gap-1.5"
+              >
+                <Download size={14} />
+                {isExporting === "pdf" ? "..." : "PDF"}
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </Card>

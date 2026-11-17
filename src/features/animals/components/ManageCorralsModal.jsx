@@ -22,6 +22,7 @@ import {
   deleteCorral,
   getCorrales,
 } from "@/services/corralService";
+import CorralSanitaryAuditTab from "./CorralSanitaryAuditTab";
 
 const FASE_CONFIG = {
   maternidad: {
@@ -63,6 +64,7 @@ export default function ManageCorralsModal({
 
   // Form mode: null | 'create' | 'edit'
   const [formMode, setFormMode] = useState(null);
+  const [modalTab, setModalTab] = useState("corrales"); // 'corrales' | 'auditoria'
   const [selectedCorral, setSelectedCorral] = useState(null);
 
   const [formData, setFormData] = useState({
@@ -196,18 +198,18 @@ export default function ManageCorralsModal({
         </button>
 
         {/* Encabezado */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-100 pr-10">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 pr-10">
           <div>
             <h2 className="text-2xl font-black text-slate-900 flex items-center gap-2">
               <Warehouse className="text-emerald-600 w-7 h-7" />
               Gestión y Mantenimiento de Corrales
             </h2>
             <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mt-1">
-              Administración de naves, capacidad instalada y fases productivas
+              Administración de naves, vacíos sanitarios y fases productivas
             </p>
           </div>
 
-          {!formMode && (
+          {!formMode && modalTab === "corrales" && (
             <div className="flex items-center gap-2">
               <Button
                 type="button"
@@ -235,9 +237,39 @@ export default function ManageCorralsModal({
           )}
         </div>
 
-        {/* CONTENIDO: Formulario o Tabla */}
-        <div className="overflow-y-auto flex-1 mt-6">
-          {formMode ? (
+        {/* Pestañas Corrales / Auditoría Vacíos Sanitarios (HU38) */}
+        {!formMode && (
+          <div className="flex items-center gap-2 mt-4">
+            <button
+              type="button"
+              onClick={() => setModalTab("corrales")}
+              className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
+                modalTab === "corrales"
+                  ? "bg-slate-900 text-white"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              }`}
+            >
+              Corrales Instalados ({corralList.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setModalTab("auditoria")}
+              className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
+                modalTab === "auditoria"
+                  ? "bg-emerald-600 text-white"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              }`}
+            >
+              Auditoría Vacíos Sanitarios
+            </button>
+          </div>
+        )}
+
+        {/* CONTENIDO: Formulario, Auditoría o Tabla */}
+        <div className="overflow-y-auto flex-1 mt-5">
+          {modalTab === "auditoria" && !formMode ? (
+            <CorralSanitaryAuditTab corrales={corralList} />
+          ) : formMode ? (
             /* SUB-FORMULARIO CREAR / EDITAR */
             <form onSubmit={handleSubmitForm} className="space-y-5">
               <div className="flex items-center justify-between pb-3 border-b border-slate-100">

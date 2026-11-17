@@ -4,7 +4,12 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Warehouse } from "lucide-react";
 import { toast } from "sonner";
 import { formatDateTime } from "@/utils/formatters";
-import { getRations, registerRation } from "@/services/feedingService";
+import {
+  getRations,
+  registerRation,
+  getFeedingPlans,
+  getFeedConversion,
+} from "@/services/feedingService";
 import { getCorrales } from "@/services/corralService";
 import { getItems } from "@/services/inventoryService";
 
@@ -19,12 +24,23 @@ export function useFeedingData() {
   const [rations, setRations] = useState([]);
   const [corrales, setCorrales] = useState([]);
   const [feedItems, setFeedItems] = useState([]);
+  const [plans, setPlans] = useState([]);
+  const [fcrItems, setFcrItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState(null);
 
   // Filtros
   const [filterCorral, setFilterCorral] = useState("all");
+  const [fcrFilters, setFcrFilters] = useState(() => {
+    const today = new Date();
+    const start = new Date(today);
+    start.setDate(today.getDate() - 30);
+    return {
+      fecha_inicio: start.toISOString().split("T")[0],
+      fecha_fin: today.toISOString().split("T")[0],
+    };
+  });
 
   // Modal de suministro
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -46,14 +62,22 @@ export function useFeedingData() {
     setError(null);
 
     try {
-      const [rationsData, corralesData, inventoryData] = await Promise.all([
+      const [rationsData, corralesData, inventoryData, plansData, fcrData] = await Promise.all([
         getRations({ limite: 50 }),
         getCorrales(true),
         getItems({ search: "" }),
+        getFeedingPlans({ solo_activos: true }).catch(() => []),
+        getFeedConversion({
+          fecha_inicio: fcrFilters.fecha_inicio,
+          fecha_fin: fcrFilters.fecha_fin,
+          corral_id: filterCorral,
+        }).catch(() => []),
       ]);
 
       setRations(Array.isArray(rationsData) ? rationsData : []);
       setCorrales(Array.isArray(corralesData) ? corralesData : []);
+      setPlans(Array.isArray(plansData) ? plansData : []);
+      setFcrItems(Array.isArray(fcrData) ? fcrData : []);
 
       // Filtrar items de categoría alimento o insumos disponibles
       const allItems = Array.isArray(inventoryData) ? inventoryData : [];
@@ -83,7 +107,7 @@ export function useFeedingData() {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, []);
+  }, [fcrFilters.fecha_fin, fcrFilters.fecha_inicio, filterCorral]);
 
   useEffect(() => {
     loadFeedingData(true);
@@ -247,6 +271,10 @@ export function useFeedingData() {
     rations,
     corrales,
     feedItems,
+    plans,
+    fcrItems,
+    fcrFilters,
+    setFcrFilters,
     isLoading,
     isRefreshing,
     error,

@@ -1,13 +1,16 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { toast } from "sonner";
 import { getDashboardKPIs, getDashboardAlerts } from "@/services/dashboard/dashboardService";
 import { getAnimales } from "@/services/animalService";
-import { getCorrales } from "@/services/corralService";
+import { getCorrales, getSanitaryRestAudit } from "@/services/corralService";
+import { getFeedConversion } from "@/services/feedingService";
 import { getTreatments } from "@/services/healthService";
 import { getItems } from "@/services/inventoryService";
 import { getFarrowings } from "@/services/reproductionService";
 import { getCorralGMD } from "@/services/weightService";
+import { downloadOfficialReport, resolveReportDateBounds } from "@/services/reportService";
 
 export function useReportsData() {
   // Configuración de Reportes
@@ -18,6 +21,7 @@ export function useReportsData() {
   // Estado de Generación
   const [activeReport, setActiveReport] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isExporting, setIsExporting] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // Estados dinámicos de base de datos
@@ -466,6 +470,97 @@ export function useReportsData() {
             : "No existen insumos o alimentos registrados en el inventario.";
         reportData.complianceNotes =
           "Control de materias primas e insumos balanceados.";
+      } else if (selectedReportType === "fcr") {
+        reportData.title = "Reporte de Conversión Alimenticia (FCR) por Corral";
+        const bounds = resolveReportDateBounds(dateRange);
+        const fcrRows = await getFeedConversion({
+          ...bounds,
+          corral_id: selectedBatch !== "todos" ? selectedBatch : undefined,
+        }).catch(() => []);
+        const validFcr = fcrRows.filter((r) => r.fcr_real !== null);
+        const avgFcr = validFcr.length
+          ? (validFcr.reduce((a, b) => a + b.fcr_real, 0) / validFcr.length).toFixed(2)
+          : "--";
+        reportData.kpis = [
+          {
+            metrica: "FCR Promedio Activo",
+            actual: avgFcr,
+            objetivo: "<= 2.40",
+            variacion: "--",
+            estado: validFcr.length > 0 ? "Óptimo" : "Sin datos",
+          },
+          {
+            metrica: "Corrales Auditados",
+            actual: String(fcrRows.length),
+            objetivo: String(corrales.length),
+            variacion: "--",
+            estado: "Óptimo",
+          },
+        ];
+        reportData.tableCols = [
+          { header: "Corral", key: "corral" },
+          { header: "Alimento (kg)", key: "alimento" },
+          { header: "Ganancia (kg)", key: "ganancia" },
+          { header: "FCR Real / Meta", key: "fcr" },
+          { header: "Estado", key: "estado" },
+        ];
+        reportData.tableRows = fcrRows.map((f) => ({
+          corral: `${f.corral_codigo} (${f.fase})`,
+          alimento: `${f.alimento_suministrado_kg} kg`,
+          ganancia: `${f.ganancia_total_estimada_kg} kg`,
+          fcr: `${f.fcr_real ?? "--"} / ${f.fcr_objetivo_estandar}`,
+          estado: f.estado_fcr,
+        }));
+        reportData.summaryText =
+          fcrRows.length > 0
+            ? `Se evaluó la eficiencia de conversión alimenticia en ${fcrRows.length} corrales comparando consumo real frente al estándar Porkcolombia.`
+            : "Sin registros suficientes de alimentación y peso en el período seleccionado.";
+        reportData.complianceNotes =
+          "Indicador calculado como kg de alimento suministrado dividido por kg de ganancia neta de peso.";
+      } else if (selectedReportType === "vacios") {
+        reportData.title = "Auditoría de Vacíos Sanitarios (Todo Adentro / Todo Afuera)";
+        const vaciosRows = await getSanitaryRestAudit({
+          corral_id: selectedBatch !== "todos" ? selectedBatch : undefined,
+        }).catch(() => []);
+        const alerts = vaciosRows.filter(
+          (v) => v.estado_auditoria === "alerta_vacio_insuficiente" || v.estado_auditoria === "pendiente_desinfeccion"
+        );
+        reportData.kpis = [
+          {
+            metrica: "Ciclos Auditados",
+            actual: String(vaciosRows.length),
+            objetivo: "--",
+            variacion: "--",
+            estado: vaciosRows.length > 0 ? "Óptimo" : "Sin datos",
+          },
+          {
+            metrica: "Alertas de Protocolo",
+            actual: String(alerts.length),
+            objetivo: "0",
+            variacion: alerts.length > 0 ? "Incumplimiento" : "Conforme",
+            estado: alerts.length > 0 ? "Atención" : "Óptimo",
+          },
+        ];
+        reportData.tableCols = [
+          { header: "Corral / Lote", key: "lote" },
+          { header: "Entrada", key: "entrada" },
+          { header: "Vacío Real / Mín", key: "vacio" },
+          { header: "Desinfección", key: "desinfeccion" },
+          { header: "Estado", key: "estado" },
+        ];
+        reportData.tableRows = vaciosRows.map((v) => ({
+          lote: `${v.corral_codigo} • ${v.codigo_lote}`,
+          entrada: v.fecha_entrada,
+          vacio: v.dias_vacio_sanitario !== null ? `${v.dias_vacio_sanitario} d / ${v.dias_vacio_requerido} d` : "Primer ciclo",
+          desinfeccion: v.desinfeccion_verificada ? "Verificada" : "Pendiente",
+          estado: v.estado_auditoria.replaceAll("_", " "),
+        }));
+        reportData.summaryText =
+          vaciosRows.length > 0
+            ? `Auditoría de bioseguridad entre lotes sobre ${vaciosRows.length} ciclos registrados, detectando ${alerts.length} novedades.`
+            : "No existen ciclos sanitarios registrados.";
+        reportData.complianceNotes =
+          "Verificación de descanso sanitario obligatorio y desinfección previa a cada ingreso de lote.";
       }
 
       setActiveReport(reportData);
@@ -484,6 +579,28 @@ export function useReportsData() {
     window.print();
   }, []);
 
+  const handleExportFile = useCallback(
+    async (formato = "xlsx") => {
+      setIsExporting(formato);
+      try {
+        const bounds = resolveReportDateBounds(dateRange);
+        const filename = await downloadOfficialReport({
+          formato,
+          tipo: selectedReportType,
+          fecha_inicio: bounds.fecha_inicio,
+          fecha_fin: bounds.fecha_fin,
+          corral_id: selectedBatch,
+        });
+        toast.success(`Archivo descargado: ${filename}`);
+      } catch (err) {
+        toast.error(err.message || `Error al exportar en formato ${formato.toUpperCase()}`);
+      } finally {
+        setIsExporting(null);
+      }
+    },
+    [dateRange, selectedBatch, selectedReportType]
+  );
+
   return {
     selectedReportType,
     setSelectedReportType,
@@ -493,6 +610,7 @@ export function useReportsData() {
     setSelectedBatch,
     activeReport,
     isGenerating,
+    isExporting,
     isLoading,
     dbAlerts,
     kpis,
@@ -506,5 +624,6 @@ export function useReportsData() {
     handleGenerateReport,
     handleReset,
     handlePrintPDF,
+    handleExportFile,
   };
 }
