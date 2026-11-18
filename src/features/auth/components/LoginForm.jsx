@@ -10,7 +10,7 @@ function LoginForm({ fields, onChange, onSubmit, isLoading = false, error = "" }
       <div className="mb-8 flex items-start justify-between">
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.22em] text-emerald-700">
-            Iniciar sesion
+            Iniciar sesión
           </p>
           <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-950">
             Ingresa a tu cuenta
@@ -55,7 +55,7 @@ function LoginForm({ fields, onChange, onSubmit, isLoading = false, error = "" }
         />
 
         <Input
-          label="Contrasena"
+          label="Contraseña"
           name="password"
           type="password"
           value={fields.password}
