@@ -20,6 +20,8 @@ export default function KardexMovementModal({
     cantidad: "",
     costo_unitario: "",
     motivo: "",
+    numero_lote: "",
+    fecha_vencimiento: "",
   });
 
   useEffect(() => {
@@ -30,6 +32,8 @@ export default function KardexMovementModal({
         cantidad: "",
         costo_unitario: selectedItem.costo_unitario ? String(selectedItem.costo_unitario) : "",
         motivo: "",
+        numero_lote: "",
+        fecha_vencimiento: "",
       });
     } else if (items.length > 0 && !movementForm.item_id) {
       setMovementForm((prev) => ({
@@ -51,6 +55,8 @@ export default function KardexMovementModal({
         cantidad: "",
         costo_unitario: "",
         motivo: "",
+        numero_lote: "",
+        fecha_vencimiento: "",
       });
     }
   };
@@ -60,7 +66,7 @@ export default function KardexMovementModal({
       <Card
         as="form"
         onSubmit={handleSubmit}
-        className="w-full max-w-lg p-8! rounded-[2.5rem]! shadow-2xl relative border border-slate-100 bg-white"
+        className="w-full max-w-lg max-h-[90vh] overflow-y-auto p-6! sm:p-8! rounded-[2.5rem]! shadow-2xl relative border border-slate-100 bg-white"
       >
         <button
           type="button"
@@ -110,7 +116,7 @@ export default function KardexMovementModal({
             </select>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="text-xs font-bold text-slate-700 uppercase block mb-1.5">
                 Tipo de Movimiento *
@@ -153,6 +159,35 @@ export default function KardexMovementModal({
               />
             </div>
           </div>
+
+          {movementForm.tipo_movimiento === "entrada_compra" && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-2xl bg-emerald-50/50 border border-emerald-100">
+              <div>
+                <label className="text-xs font-bold text-slate-700 uppercase block mb-1.5">
+                  Número de Lote (opcional)
+                </label>
+                <Input
+                  placeholder="Automático si se deja vacío"
+                  value={movementForm.numero_lote}
+                  onChange={(e) =>
+                    setMovementForm({ ...movementForm, numero_lote: e.target.value })
+                  }
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-slate-700 uppercase block mb-1.5">
+                  Fecha de Vencimiento
+                </label>
+                <Input
+                  type="date"
+                  value={movementForm.fecha_vencimiento}
+                  onChange={(e) =>
+                    setMovementForm({ ...movementForm, fecha_vencimiento: e.target.value })
+                  }
+                />
+              </div>
+            </div>
+          )}
 
           <div>
             <label className="text-xs font-bold text-slate-700 uppercase block mb-1.5">

@@ -51,7 +51,7 @@ export default function UserListTab({
             className="flex items-center gap-1.5 font-bold rounded-xl! py-3 px-5 text-sm shadow-md"
           >
             <Plus size={16} />
-            + Registrar Personal
+            Registrar Personal
           </Button>
         </div>
       </div>

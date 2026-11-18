@@ -231,7 +231,7 @@ export default function ManageCorralsModal({
                 onClick={handleOpenCreate}
                 className="py-2.5 px-4 text-xs rounded-xl! font-black flex items-center gap-1.5 shadow-md"
               >
-                <Plus size={16} />+ Nuevo Corral
+                <Plus size={16} /> Nuevo Corral
               </Button>
             </div>
           )}

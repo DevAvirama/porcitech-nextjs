@@ -4,7 +4,6 @@ import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Search,
-  Camera,
   QrCode,
   X,
   Sparkles,
@@ -12,18 +11,14 @@ import {
   AlertCircle,
   ArrowRight,
   ShieldCheck,
-  Zap,
 } from "lucide-react";
 import { toast } from "sonner";
-import Button from "@/components/ui/Button";
 import { getAnimales, getAnimalByQr, getAnimalById } from "@/services/animalService";
 import { getAnimalDisplayName, UUID_REGEX } from "@/utils/formatters";
 
 export default function QrQuickSearchModal({ isOpen, onClose }) {
   const router = useRouter();
-  const [activeMode, setActiveMode] = useState("manual"); // 'manual' | 'camera'
   const [searchCode, setSearchCode] = useState("");
-  const [isScanning, setIsScanning] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [matchedAnimal, setMatchedAnimal] = useState(null);
   const [knownAnimals, setKnownAnimals] = useState([]);
@@ -170,52 +165,6 @@ export default function QrQuickSearchModal({ isOpen, onClose }) {
     }
   };
 
-  // Simular escaneo de cámara
-  const handleSimulateScan = (presetCode) => {
-    const availableCodes = knownAnimals
-      .map((a) => a.codigo_arete || a.codigo_qr || a.id)
-      .filter(Boolean);
-
-    const target = presetCode || availableCodes[0];
-    if (!target) {
-      toast.error("No hay animales registrados en el inventario para escanear");
-      return;
-    }
-
-    setIsScanning(true);
-
-    setTimeout(() => {
-      setIsScanning(false);
-      setSearchCode(target);
-      const lower = String(target).toLowerCase();
-      const found = knownAnimals.find(
-        (a) =>
-          (a.codigo_arete && a.codigo_arete.toLowerCase() === lower) ||
-          (a.codigo_qr && a.codigo_qr.toLowerCase() === lower) ||
-          (a.nombre_alias && a.nombre_alias.toLowerCase() === lower) ||
-          (a.id && String(a.id).toLowerCase() === lower)
-      );
-      setMatchedAnimal(found || null);
-
-      if (found) {
-        const label = found.codigo_arete
-          ? `#${found.codigo_arete}${found.nombre_alias ? ` · ${found.nombre_alias}` : ""}`
-          : `#${found.id || target}`;
-        toast.success(`¡Código QR detectado: ${label}!`);
-
-        setTimeout(() => {
-          onClose();
-          const profileTarget = found.id || target;
-          router.push(
-            `/dashboard/animals/profile?id=${encodeURIComponent(profileTarget)}`
-          );
-        }, 1000);
-      } else {
-        toast.info(`Código leído: #${target}`);
-      }
-    }, 1200);
-  };
-
   if (!isOpen) return null;
 
   return (
@@ -234,10 +183,10 @@ export default function QrQuickSearchModal({ isOpen, onClose }) {
             </div>
             <div>
               <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
-                Escáner de QR
+                Búsqueda Rápida de Cerdo / Arete
               </h2>
               <p className="text-xs text-slate-500 font-medium">
-                Localiza rápidamente cualquier animal por arete o escaneo de código QR.
+                Localiza rápidamente cualquier animal por número de arete, alias o código QR.
               </p>
             </div>
           </div>
@@ -250,37 +199,9 @@ export default function QrQuickSearchModal({ isOpen, onClose }) {
           </button>
         </div>
 
-        {/* Selector de Modos */}
-        <div className="px-6 pt-4 pb-2 flex gap-2 border-b border-slate-100 bg-white">
-          <button
-            type="button"
-            onClick={() => setActiveMode("manual")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
-              activeMode === "manual"
-                ? "bg-slate-900 text-white shadow-md"
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-            }`}
-          >
-            <Search size={15} />
-            Búsqueda por Arete / Alias
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveMode("camera")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
-              activeMode === "camera"
-                ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/30"
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-            }`}
-          >
-            <Camera size={15} />
-            Simulador de Escaneo por Cámara
-          </button>
-        </div>
 
         {/* Contenido del Modal */}
         <div className="p-6">
-          {activeMode === "manual" ? (
             <div className="space-y-6">
               {/* Formulario de búsqueda */}
               <form
@@ -450,100 +371,6 @@ export default function QrQuickSearchModal({ isOpen, onClose }) {
                 </div>
               )}
             </div>
-          ) : (
-            /* SIMULADOR DE CÁMARA / ESCÁNER ÓPTICO */
-            <div className="space-y-5 text-center">
-              <div className="relative w-full h-64 bg-slate-950 rounded-3xl overflow-hidden border-2 border-slate-800 shadow-inner flex items-center justify-center">
-                {/* Cuadrícula de fondo */}
-                <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#39A900_1px,transparent_1px)] [background-size:16px_16px]"></div>
-
-                {/* Retícula de puntería con esquinas marcadas */}
-                <div className="relative w-44 h-44 border-2 border-dashed border-emerald-400/50 rounded-2xl flex items-center justify-center">
-                  {/* Esquinas estéticas */}
-                  <div className="absolute -top-1 -left-1 w-4 h-4 border-t-4 border-l-4 border-emerald-400"></div>
-                  <div className="absolute -top-1 -right-1 w-4 h-4 border-t-4 border-r-4 border-emerald-400"></div>
-                  <div className="absolute -bottom-1 -left-1 w-4 h-4 border-b-4 border-l-4 border-emerald-400"></div>
-                  <div className="absolute -bottom-1 -right-1 w-4 h-4 border-b-4 border-r-4 border-emerald-400"></div>
-
-                  {/* Haz láser animado de escaneo */}
-                  <div
-                    className={`absolute left-0 right-0 h-1 bg-linear-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_15px_#39A900] ${
-                      isScanning
-                        ? "animate-bounce duration-500"
-                        : "animate-pulse"
-                    }`}
-                  ></div>
-
-                  <div className="text-center text-slate-400 text-xs p-3">
-                    <QrCode
-                      size={36}
-                      className="mx-auto mb-2 text-emerald-400/70"
-                    />
-                    <span className="font-semibold text-[11px] block">
-                      {isScanning
-                        ? "Procesando código QR..."
-                        : "Apunta la cámara al arete del cerdo"}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Indicador de sensor activo */}
-                <div className="absolute top-3 left-4 flex items-center gap-2 bg-slate-900/80 px-3 py-1 rounded-full border border-slate-700 text-[10px] font-mono text-emerald-400">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-                  SENSOR ÓPTICO ACTIVO
-                </div>
-
-                <div className="absolute bottom-3 right-4 text-[10px] font-mono text-slate-500">
-                  60 FPS • 1080p
-                </div>
-              </div>
-
-              {/* Botón de acción para simular lectura */}
-              <div className="space-y-3">
-                <Button
-                  type="button"
-                  tone="primary"
-                  onClick={() => handleSimulateScan()}
-                  disabled={isScanning}
-                  className="w-full justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-black py-3 rounded-2xl shadow-lg shadow-emerald-600/30 cursor-pointer"
-                >
-                  <Zap size={18} />
-                  {isScanning
-                    ? "Escaneando código..."
-                    : "Escanear Arete Detectado"}
-                </Button>
-
-                {knownAnimals.length > 0 &&
-                  knownAnimals.some(
-                    (a) =>
-                      a.codigo_arete && !UUID_REGEX.test(String(a.codigo_arete).trim())
-                  ) && (
-                    <div className="flex flex-wrap justify-center gap-2 pt-1">
-                      <span className="text-xs text-slate-500 font-bold self-center mr-1">
-                        Ejemplares en granja:
-                      </span>
-                      {knownAnimals
-                        .map((a) => a.codigo_arete)
-                        .filter(
-                          (c) => Boolean(c) && !UUID_REGEX.test(String(c).trim())
-                        )
-                        .slice(0, 4)
-                        .map((code) => (
-                          <button
-                            key={code}
-                            type="button"
-                            onClick={() => handleSimulateScan(code)}
-                            disabled={isScanning}
-                            className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-[11px] font-mono font-bold text-slate-700 cursor-pointer transition-colors"
-                          >
-                            #{code}
-                          </button>
-                        ))}
-                    </div>
-                  )}
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Pie del modal */}

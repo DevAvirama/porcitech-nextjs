@@ -14,7 +14,7 @@ import ModuleHeader from "@/components/layout/ModuleHeader";
 import { createItem, registerMovement } from "@/services/inventoryService";
 
 import dynamic from "next/dynamic";
-import { useInventoryData } from "./hooks/useInventoryData";
+import { useInventoryData, UNIT_KG_FACTOR } from "./hooks/useInventoryData";
 import InventoryKPIs from "./components/InventoryKPIs";
 import InventoryItemsTab from "./components/InventoryItemsTab";
 import InventoryMovementsTab from "./components/InventoryMovementsTab";
@@ -66,7 +66,7 @@ export default function InventoryView() {
       toast.error("Seleccione una categoría válida");
       return false;
     }
-    const minStock = parseFloat(newSupply.stock_minimo);
+    const minStock = newSupply.stock_minimo === "" ? 0 : parseFloat(newSupply.stock_minimo);
     if (isNaN(minStock) || minStock < 0) {
       toast.error("El stock mínimo debe ser un número positivo");
       return false;
@@ -76,18 +76,31 @@ export default function InventoryView() {
       toast.error("El costo unitario debe ser mayor o igual a 0");
       return false;
     }
+    const initialStock = newSupply.stock_inicial === "" ? 0 : parseFloat(newSupply.stock_inicial);
+    if (isNaN(initialStock) || initialStock < 0) {
+      toast.error("La cantidad inicial debe ser 0 o mayor");
+      return false;
+    }
 
     setIsSubmitting(true);
     try {
-      await createItem({
+      const payload = {
         categoria_id: newSupply.categoria_id,
-        codigo_sku: newSupply.codigo_sku.trim() || `INS-${Math.floor(100 + Math.random() * 900)}`,
         nombre: newSupply.nombre.trim(),
         unidad_medida: newSupply.unidad_medida,
+        factor_conversion_kg: UNIT_KG_FACTOR[newSupply.unidad_medida] || 1,
         stock_minimo: minStock,
         costo_unitario: unitCost,
+        stock_actual: initialStock,
         ubicacion_bodega: newSupply.ubicacion_bodega.trim() || "Bodega General",
-      });
+      };
+      if (newSupply.codigo_sku.trim()) payload.codigo_sku = newSupply.codigo_sku.trim();
+      if (initialStock > 0) {
+        if (newSupply.numero_lote.trim()) payload.numero_lote = newSupply.numero_lote.trim();
+        if (newSupply.fecha_vencimiento) payload.fecha_vencimiento = newSupply.fecha_vencimiento;
+        if (newSupply.registro_ica.trim()) payload.registro_ica = newSupply.registro_ica.trim();
+      }
+      await createItem(payload);
 
       toast.success("Insumo registrado exitosamente");
       setIsAddModalOpen(false);
@@ -128,6 +141,10 @@ export default function InventoryView() {
       };
       if (movementForm.costo_unitario) {
         payload.costo_unitario = parseFloat(movementForm.costo_unitario);
+      }
+      if (movementForm.tipo_movimiento === "entrada_compra") {
+        if (movementForm.numero_lote?.trim()) payload.numero_lote = movementForm.numero_lote.trim();
+        if (movementForm.fecha_vencimiento) payload.fecha_vencimiento = movementForm.fecha_vencimiento;
       }
 
       await registerMovement(payload);

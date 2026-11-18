@@ -66,6 +66,25 @@ export const STANDARD_UNITS = [
   "Unidades / Cajas",
 ];
 
+/** Unidades sugeridas según el código de la categoría del insumo. */
+export const UNITS_BY_CATEGORY = {
+  alimento: ["Bultos (40kg)", "Bultos (25kg)", "Kg"],
+  suplemento: ["Kg", "Bultos (25kg)", "Frascos (250ml)", "Frascos (500ml)", "Litros", "Dosis"],
+  medicamento: ["Frascos (100ml)", "Frascos (250ml)", "Frascos (500ml)", "Dosis", "Litros", "Unidades / Cajas"],
+  bioseguridad: ["Litros", "Unidades / Cajas", "Kg"],
+};
+
+/** Kilogramos equivalentes por unidad (usado para descontar raciones en kg). */
+export const UNIT_KG_FACTOR = {
+  "Bultos (40kg)": 40,
+  "Bultos (25kg)": 25,
+  Kg: 1,
+};
+
+export function getUnitsForCategory(categoryCode) {
+  return UNITS_BY_CATEGORY[categoryCode] || STANDARD_UNITS;
+}
+
 export function useInventoryData() {
   const [categories, setCategories] = useState([]);
   const [items, setItems] = useState([]);

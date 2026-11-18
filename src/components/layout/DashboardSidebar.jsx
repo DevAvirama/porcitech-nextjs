@@ -155,7 +155,7 @@ export default function DashboardSidebar({ items = [] }) {
             size={18}
             className="text-slate-950 group-hover:scale-110 transition-transform"
           />
-          <span>+ Escanear QR</span>
+          <span>Buscar Arete / QR</span>
         </button>
       </div>
 
@@ -202,7 +202,7 @@ export default function DashboardSidebar({ items = [] }) {
             type="button"
             onClick={handleOpenQrModal}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-400 text-slate-950 font-black text-xs uppercase tracking-wider shadow-sm cursor-pointer"
-            title="Escanear o buscar chapeta QR"
+            title="Buscar cerdo por arete, alias o código QR"
           >
             <QrCode size={16} />
             <span className="hidden sm:inline">QR</span>
@@ -252,7 +252,7 @@ export default function DashboardSidebar({ items = [] }) {
         {sidebarBody}
       </aside>
 
-      {/* Modal de Búsqueda y Escáner QR */}
+      {/* Modal de Búsqueda Rápida por Arete / QR */}
       <QrQuickSearchModal
         isOpen={isSearchModalOpen}
         onClose={() => setIsSearchModalOpen(false)}
