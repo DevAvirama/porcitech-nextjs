@@ -13,8 +13,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Sistema Integral Porcino",
+  title: "PorciTech • Sistema Integral Porcino SENA",
   description: "Sistema de gestión integral para la producción porcina",
+  icons: {
+    icon: "/assets/SENA.png",
+    shortcut: "/assets/SENA.png",
+    apple: "/assets/SENA.png",
+  },
 };
 
 export default function RootLayout({ children }) {
