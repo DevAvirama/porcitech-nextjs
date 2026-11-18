@@ -13,7 +13,7 @@ export default function SilosInventorySection({ feedItems = [] }) {
           Disponibilidad en Almacén y Silos
         </h3>
         <span className="text-xs font-semibold text-slate-500">
-          Sincronizado con inventario PostgreSQL
+          Existencias actualizadas en bodega
         </span>
       </div>
 

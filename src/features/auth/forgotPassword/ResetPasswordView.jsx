@@ -53,7 +53,7 @@ export default function ResetPasswordView() {
       const resp = await confirmPasswordReset(token.trim(), newPassword);
       const msg = resp?.message || "Contraseña restablecida exitosamente.";
       setSuccessMsg(msg);
-      toast.success("Contraseña actualizada con cifrado Bcrypt");
+      toast.success("Contraseña actualizada exitosamente");
       setTimeout(() => {
         router.push("/login");
       }, 2200);

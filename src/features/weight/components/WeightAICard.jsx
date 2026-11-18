@@ -159,7 +159,7 @@ export default function WeightAICard({
     setIsCalibratingAruco(true);
     try {
       const resp = await calibrateWithAruco(file, 10.0);
-      toast.success(resp?.mensaje || "Calibración ArUco guardada correctamente.");
+      toast.success(resp?.mensaje || "Calibración de cámara guardada correctamente.");
       if (resp?.pixels_per_cm_base1280) {
         setPixelsPerCm(String(resp.pixels_per_cm_base1280));
         try {
@@ -171,7 +171,7 @@ export default function WeightAICard({
       const fresh = await getCalibrationStatus().catch(() => null);
       if (fresh) setCalibrationStatus(fresh);
     } catch (err) {
-      toast.error(err?.message || "No se detectó un marcador ArUco válido en la fotografía.");
+      toast.error(err?.message || "No se detectó el patrón de calibración en la fotografía.");
     } finally {
       setIsCalibratingAruco(false);
       if (arucoInputRef.current) arucoInputRef.current.value = "";
@@ -860,7 +860,7 @@ export default function WeightAICard({
                 className="w-full py-4 rounded-2xl font-black text-sm sm:text-base shadow-xl shadow-emerald-600/20 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] transition-all cursor-pointer flex items-center justify-center gap-3"
               >
                 {isCapturing ? (
-                  "Procesando Fotograma y Guardando en TimescaleDB..."
+                  "Calculando y Guardando Peso..."
                 ) : (
                   <span className="flex items-center justify-center gap-2">
                     <Camera size={22} />
@@ -940,7 +940,7 @@ export default function WeightAICard({
               disabled={isCapturing || !imageFile || !selectedAnimalId || !selectedCorralId}
               className="w-full py-4 rounded-2xl font-black text-sm shadow-xl shadow-indigo-600/20 bg-indigo-600 hover:bg-indigo-700 cursor-pointer"
             >
-              {isCapturing ? "Procesando Imagen con YOLO..." : "Calcular Peso de Fotografía"}
+              {isCapturing ? "Calculando peso del ejemplar..." : "Calcular Peso de Fotografía"}
             </Button>
           </div>
         )}
@@ -955,10 +955,10 @@ export default function WeightAICard({
           />
           <div className="text-xs">
             <span className="font-bold text-slate-800">
-              Persistir resultado automáticamente
+              Guardar pesaje automáticamente
             </span>
             <p className="text-slate-500 text-[11px]">
-              Guarda el pesaje en la hipertabla TimescaleDB y actualiza peso_actual_kg del cerdo.
+              Registra la medición en el historial y actualiza el peso actual del cerdo.
             </p>
           </div>
         </label>
@@ -1098,16 +1098,16 @@ export default function WeightAICard({
               </div>
             </div>
 
-            {/* Motor de Inferencia y Calibración ArUco (HU21) */}
+            {/* Resumen de Calibración y Precisión */}
             <div className="flex flex-wrap items-center justify-between gap-1.5 text-[10px] font-bold bg-indigo-50/70 border border-indigo-100 rounded-xl p-2.5">
               <span className="px-2 py-0.5 rounded-full bg-indigo-600 text-white uppercase tracking-wider">
-                {aiResult.algoritmo_peso === "xgboost" ? "XGBoost + YOLO" : "Alometría Huxley"}
+                {aiResult.algoritmo_peso === "xgboost" ? "Alta Precisión" : "Estimación Volumétrica"}
               </span>
               <span className="text-indigo-900 font-mono">
                 {aiResult.metodo_calibracion === "aruco_en_vivo"
-                  ? `ArUco En Vivo (ID ${aiResult.aruco_id ?? 0})`
+                  ? "Escala Automática en Vivo"
                   : aiResult.metodo_calibracion === "aruco_guardado"
-                    ? "ArUco Calibrado"
+                    ? "Escala Calibrada"
                     : aiResult.metodo_calibracion === "manual_parametro"
                       ? "Escala Manual"
                       : "Escala Cenital"}
@@ -1138,12 +1138,12 @@ export default function WeightAICard({
             )}
           </Card>
         ) : (
-          /* Widget Informativo + Estado ArUco/XGBoost (HU21) */
+          /* Widget Informativo de Calibración de Cámara */
           <Card className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex flex-col gap-3 text-slate-700">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 font-bold text-xs uppercase tracking-wider text-slate-900">
                 <Info size={16} className="text-indigo-600" />
-                Motor IA Biométrico (HU21)
+                Guía y Calibración de Cámara
               </div>
               <span
                 className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
@@ -1152,27 +1152,27 @@ export default function WeightAICard({
                     : "bg-slate-100 text-slate-600"
                 }`}
               >
-                {calibrationStatus?.xgboost_activo ? "YOLO + XGBoost" : "YOLO + Huxley"}
+                {calibrationStatus?.xgboost_activo ? "Alta Precisión Activa" : "Modo Estándar"}
               </span>
             </div>
 
             <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 text-xs space-y-1.5">
               <div className="flex items-center justify-between">
-                <span className="text-slate-500 font-semibold">Escala espacial activa:</span>
+                <span className="text-slate-500 font-semibold">Escala de medición:</span>
                 <span className="font-mono font-black text-slate-900">
                   {calibrationStatus?.pixels_per_cm_base1280 || pixelsPerCm} px/cm
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-slate-500 font-semibold">Calibración ArUco:</span>
+                <span className="text-slate-500 font-semibold">Estado de calibración:</span>
                 <span
                   className={`font-bold ${
                     calibrationStatus?.calibrado ? "text-emerald-600" : "text-amber-600"
                   }`}
                 >
                   {calibrationStatus?.calibrado
-                    ? `Activa (ID ${calibrationStatus.marcador_id ?? 0})`
-                    : "Estándar fábrica"}
+                    ? "Calibrada en corral"
+                    : "Altura estándar"}
                 </span>
               </div>
               <div className="pt-2">
@@ -1190,14 +1190,14 @@ export default function WeightAICard({
                   className="w-full py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-[11px] font-bold transition-colors cursor-pointer"
                 >
                   {isCalibratingAruco
-                    ? "Detectando marcador ArUco..."
-                    : "Calibrar corral con foto ArUco (10×10 cm)"}
+                    ? "Calibrando escala de cámara..."
+                    : "Calibrar escala con patrón (10×10 cm)"}
                 </button>
               </div>
             </div>
 
             <p className="text-xs text-slate-500 leading-relaxed">
-              La cámara cenital enfoca perpendicularmente a 90° sobre el lomo del cerdo (si hay marcador ArUco en la foto se autocalibra en vivo):
+              La cámara cenital enfoca a 90° sobre el lomo del cerdo para estimar su peso sin contacto:
             </p>
             <div className="space-y-1.5 text-xs text-slate-600">
               <div className="flex items-start gap-2 p-2 bg-slate-50 rounded-xl">

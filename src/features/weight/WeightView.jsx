@@ -67,9 +67,9 @@ export default function WeightView() {
     <div className="w-full flex flex-col gap-6 text-slate-900">
       {/* Cabecera Estandarizada */}
       <ModuleHeader
-        category="BIOMETRÍA Y VISIÓN COMPUTACIONAL"
-        title="Pesaje Inteligente y Estimación por Visión Artificial"
-        description="Inferencia biométrica dorsal mediante modelo YOLO + OpenCV en contenedor Docker y registro analítico en series temporales de TimescaleDB."
+        category="BIOMETRÍA Y CONTROL DE CRECIMIENTO"
+        title="Pesaje Inteligente y Estimación por Cámara"
+        description="Estimación de peso sin estrés mediante cámara cenital, registro en báscula y seguimiento de curvas de crecimiento por corral."
         actions={
           <div className="flex items-center gap-2">
             <Button
@@ -98,13 +98,13 @@ export default function WeightView() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                Modelo de Visión
+                Sistema de Pesaje Visual
               </p>
               <h4 className="text-xl font-black text-slate-900 mt-2 flex items-center gap-2">
-                YOLOv8 + OpenCV
+                Cámara Cenital IA
               </h4>
               <p className="text-[11px] text-emerald-600 font-bold mt-1 flex items-center gap-1">
-                <CheckCircle2 size={13} /> Microservicio Docker Activo
+                <CheckCircle2 size={13} /> Estimación Automática Activa
               </p>
             </div>
             <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
@@ -155,13 +155,13 @@ export default function WeightView() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                Base de Datos Temporal
+                Control de Crecimiento
               </p>
               <h4 className="text-xl font-black text-slate-900 mt-2">
-                TimescaleDB
+                Seguimiento Diario
               </h4>
               <p className="text-[11px] text-emerald-600 font-bold mt-1">
-                Hipertabla registro_pesos
+                Historial continuo por corral
               </p>
             </div>
             <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
@@ -207,7 +207,7 @@ export default function WeightView() {
           }`}
         >
           <TrendingUp size={16} />
-          Analítica GMD (TimescaleDB)
+          Curvas de Crecimiento (GMD)
         </button>
         <button
           type="button"

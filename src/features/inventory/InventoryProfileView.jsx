@@ -117,7 +117,7 @@ export default function InventoryProfileView() {
       console.error("Error al cargar ficha de insumo:", err);
       setError(
         err.message ||
-          "No fue posible cargar el detalle del insumo desde PostgreSQL."
+          "No fue posible cargar el detalle del insumo."
       );
     } finally {
       setIsLoading(false);
@@ -401,7 +401,7 @@ export default function InventoryProfileView() {
         <div className="p-4 border-b border-slate-100 flex items-center justify-between">
           <div>
             <h3 className="text-lg font-black text-slate-900">
-              Lotes Registrados y Control de Caducidad (HU30)
+              Lotes Registrados y Control de Caducidad
             </h3>
             <p className="text-xs text-slate-500 mt-0.5">
               Seguimiento FEFO de lotes activos, próximos a vencer y vencidos

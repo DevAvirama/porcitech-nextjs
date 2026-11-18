@@ -70,10 +70,10 @@ export default function AnimalProfileView() {
         <div className="bg-white border border-slate-100 rounded-4xl p-12 shadow-sm">
           <EmptyState
             icon={AlertCircle}
-            title="Animal no encontrado en la base de datos"
+            title="Animal no encontrado"
             description={
               error ||
-              "El identificador o arete consultado no corresponde a ningún animal registrado en la base de datos de PostgreSQL."
+              "El identificador o arete consultado no corresponde a ningún animal registrado en el sistema."
             }
             actionLabel="Volver al Listado de Animales"
             onAction={() => router.push("/dashboard/animals")}

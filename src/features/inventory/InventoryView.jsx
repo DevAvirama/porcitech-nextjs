@@ -89,7 +89,7 @@ export default function InventoryView() {
         ubicacion_bodega: newSupply.ubicacion_bodega.trim() || "Bodega General",
       });
 
-      toast.success("Insumo registrado exitosamente en PostgreSQL");
+      toast.success("Insumo registrado exitosamente");
       setIsAddModalOpen(false);
       await loadData(false);
       return true;
@@ -162,7 +162,7 @@ export default function InventoryView() {
       <ModuleHeader
         category="BODEGA Y LOGÍSTICA"
         title="Inventario de Insumos y Almacén"
-        description="Gestión física y analítica de existencias de alimentos balanceados, medicamentos, vacunas y material sanitario en PostgreSQL."
+        description="Gestión de existencias de alimentos balanceados, medicamentos, vacunas y material sanitario en almacén."
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <Button

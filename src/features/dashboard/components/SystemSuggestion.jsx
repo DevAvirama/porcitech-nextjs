@@ -76,7 +76,7 @@ function SystemSuggestion({ alerts = [], isLoading = false }) {
           </p>
           <div className="mt-6 inline-flex items-center gap-2 rounded-xl bg-emerald-50/80 px-3.5 py-2 text-xs font-semibold text-emerald-700 border border-emerald-200">
             <ShieldCheck className="h-4 w-4" />
-            Monitoreo analítico activo con TimescaleDB y FastAPI
+            Monitoreo sanitario y productivo activo
           </div>
         </div>
       </Card>

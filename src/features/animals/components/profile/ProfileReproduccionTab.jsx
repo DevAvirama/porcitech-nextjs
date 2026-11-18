@@ -260,7 +260,7 @@ export default function ProfileReproduccionTab({
           <EmptyState
             icon={Baby}
             title="Sin historial de partos registrado"
-            description="No se han registrado partos ni camadas para esta hembra en la base de datos de PostgreSQL."
+            description="No se han registrado partos ni camadas para esta hembra."
             actionLabel="+ Registrar Parto o Servicio"
             onAction={onNavigateReproduction}
           />

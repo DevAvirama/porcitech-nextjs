@@ -81,7 +81,7 @@ export function useReproductionData() {
       console.error("Error al cargar ciclo reproductivo:", err);
       setError(
         err.message ||
-          "No se pudieron sincronizar los datos de reproducción con el backend de FastAPI."
+          "No se pudieron cargar los datos de reproducción. Intente nuevamente."
       );
     } finally {
       setIsLoading(false);

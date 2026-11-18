@@ -243,7 +243,7 @@ export async function getCalibrationStatus() {
  */
 export async function calibrateWithAruco(imageFile, tamanoMarcadorCm = 10.0) {
   if (!imageFile) {
-    throw new Error('Se requiere una fotografía con el marcador ArUco visible.');
+    throw new Error('Se requiere una fotografía con el patrón de calibración visible.');
   }
   const formData = new FormData();
   formData.append('file', imageFile);

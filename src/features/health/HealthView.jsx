@@ -56,7 +56,7 @@ export default function HealthView() {
       <ModuleHeader
         category="SANIDAD Y BIOSEGURIDAD"
         title="Gestión de Salud, Vacunación y Bioseguridad"
-        description="Historial clínico de tratamientos, administración de medicamentos con descuento en bodega y monitoreo de retiros farmacológicos en PostgreSQL."
+        description="Historial clínico de tratamientos, aplicación de biológicos con descuento en almacén y control de tiempos de retiro sanitario."
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <Button

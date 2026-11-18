@@ -46,7 +46,7 @@ export default function FeedingView() {
       <ModuleHeader
         category="NUTRICIÓN Y PLAN ALIMENTARIO"
         title="Alimentación y Suministro de Raciones"
-        description="Control de raciones servidas por corral y fase nutricional, con afectación automática del stock en inventario y PostgreSQL."
+        description="Control de raciones servidas por corral y fase nutricional, con descuento automático de existencias en almacén."
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <Button

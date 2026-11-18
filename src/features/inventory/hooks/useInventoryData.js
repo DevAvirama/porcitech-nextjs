@@ -125,7 +125,7 @@ export function useInventoryData() {
       console.error("Error al cargar inventario:", err);
       setError(
         err.message ||
-          "No se pudo sincronizar el inventario con el backend de FastAPI."
+          "No se pudo cargar la información del inventario. Intente nuevamente."
       );
     } finally {
       setIsLoading(false);

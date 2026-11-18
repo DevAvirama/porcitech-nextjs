@@ -101,7 +101,7 @@ export function useFeedingData() {
       console.error("Error al cargar datos de alimentación:", err);
       setError(
         err.message ||
-          "No se pudieron sincronizar los datos de nutrición con el backend de FastAPI."
+          "No se pudieron cargar los datos de nutrición. Intente nuevamente."
       );
     } finally {
       setIsLoading(false);

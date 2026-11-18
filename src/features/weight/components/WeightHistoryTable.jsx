@@ -108,7 +108,7 @@ export default function WeightHistoryTable({
             Historial de Pesajes
           </h3>
           <p className="text-xs text-slate-500">
-            Registros emitidos en la hipertabla de pesajes en TimescaleDB.
+            Registro histórico de controles de peso por ejemplar y corral.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -134,7 +134,7 @@ export default function WeightHistoryTable({
         <div className="p-8 text-center text-slate-400 flex flex-col items-center justify-center gap-2">
           <RefreshCw size={22} className="animate-spin text-indigo-600" />
           <p className="text-xs font-bold text-slate-600">
-            Consultando historial en TimescaleDB...
+            Consultando historial de pesajes...
           </p>
         </div>
       ) : currentDisplayLogs.length === 0 ? (

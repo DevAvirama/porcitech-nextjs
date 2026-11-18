@@ -42,7 +42,7 @@ export default function WeightManualForm({
       };
 
       const result = await registerManualWeight(payload);
-      toast.success("Pesaje de báscula almacenado en TimescaleDB correctamente.");
+      toast.success("Pesaje de báscula guardado correctamente.");
 
       const chosen = animals.find((a) => a.id === manualForm.animalId);
       const corralObj = corrales.find((c) => c.id === manualForm.corralId);
@@ -77,7 +77,7 @@ export default function WeightManualForm({
       });
     } catch (err) {
       console.error("Error al registrar pesaje manual:", err);
-      toast.error(err.message || "Error al guardar el pesaje en TimescaleDB.");
+      toast.error(err.message || "Error al guardar el pesaje.");
     } finally {
       setIsSubmittingManual(false);
     }
@@ -99,7 +99,7 @@ export default function WeightManualForm({
               Registrar Pesaje en Báscula de Piso
             </h3>
             <p className="text-xs text-slate-500">
-              Inserta pesajes físicos directos en la hipertabla de TimescaleDB.
+              Registra mediciones directas de báscula para el control de peso del ejemplar.
             </p>
           </div>
         </div>
@@ -223,7 +223,7 @@ export default function WeightManualForm({
           disabled={isSubmittingManual}
           className="w-full py-3.5 rounded-xl font-black text-sm shadow-md mt-2 cursor-pointer"
         >
-          Guardar Pesaje en TimescaleDB
+          Guardar Pesaje en Báscula
         </Button>
       </Card>
     </div>

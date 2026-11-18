@@ -275,11 +275,10 @@ const AnimalsView = () => {
             <div className="flex items-start gap-3">
               <AlertTriangle className="shrink-0 text-amber-600 mt-0.5" size={20} />
               <div>
-                <p className="font-bold text-sm">Problema al comunicar con la API</p>
+                <p className="font-bold text-sm">Problema de conexión con el servidor</p>
                 <p className="text-xs text-amber-700 mt-1">{error}</p>
                 <p className="text-xs text-slate-500 mt-2">
-                  Verifica que el servicio backend FastAPI esté en ejecución en{" "}
-                  <code>http://localhost:8000</code>.
+                  Verifica tu conexión de red e intenta recargar el listado.
                 </p>
               </div>
             </div>
@@ -315,7 +314,7 @@ const AnimalsView = () => {
             description={
               searchTerm || selectedCorral !== "all" || selectedEstado !== "all"
                 ? "No hay resultados para los filtros seleccionados. Intenta restablecer los filtros."
-                : "Aún no hay cerdos registrados en la base de datos de PostgreSQL. Comienza añadiendo el primer ejemplar al sistema."
+                : "Aún no hay cerdos registrados en el sistema. Comienza añadiendo el primer ejemplar."
             }
             actionLabel={
               searchTerm || selectedCorral !== "all" || selectedEstado !== "all"

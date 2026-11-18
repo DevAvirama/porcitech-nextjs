@@ -314,7 +314,7 @@ export default function ReportsDashboard({
                   Crecimiento Global
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Curva real TimescaleDB vs. proyección zootécnica ideal
+                  Curva de crecimiento real vs. proyección zootécnica ideal
                 </p>
               </div>
 

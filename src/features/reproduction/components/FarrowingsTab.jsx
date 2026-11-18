@@ -93,7 +93,7 @@ export default function FarrowingsTab({
       <EmptyState
         icon={Baby}
         title="Sin partos registrados"
-        description="No se han registrado alumbramientos ni camadas en PostgreSQL."
+        description="No se han registrado alumbramientos ni camadas hasta el momento."
         actionLabel="Registrar Primer Parto"
         onAction={onOpenNewFarrowing}
       />

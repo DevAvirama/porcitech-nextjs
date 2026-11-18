@@ -323,11 +323,7 @@ export default function WeightGMDChart({ corrales, onNavigateToIA }) {
             </h3>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
-            Serie temporal cronológica calculada por la vista continua{" "}
-            <code className="font-mono text-[11px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-700">
-              vista_gmd_diaria_corral
-            </code>{" "}
-            en TimescaleDB.
+            Evolución cronológica de peso y ganancia diaria del lote comparada con la meta productiva.
           </p>
         </div>
 
@@ -401,14 +397,14 @@ export default function WeightGMDChart({ corrales, onNavigateToIA }) {
         <div className="bg-white rounded-3xl p-12 text-center text-slate-400 border border-slate-100 flex flex-col items-center justify-center gap-2">
           <RefreshCw size={24} className="animate-spin text-blue-500" />
           <p className="text-xs font-bold text-slate-600">
-            Consultando hipertabla y agregados continuos en TimescaleDB...
+            Cargando evolución de peso del corral...
           </p>
         </div>
       ) : chronologicalData.length === 0 ? (
         <EmptyState
           icon={Activity}
           title="Sin lecturas de peso registradas en este corral"
-          description="Aún no se han acumulado lecturas de peso en TimescaleDB para calcular la curva de Ganancia Media Diaria en este corral."
+          description="Aún no se han registrado controles de peso suficientes para calcular la curva de Ganancia Media Diaria en este corral."
           actionLabel="Registrar Primer Pesaje"
           onAction={onNavigateToIA}
         />
@@ -742,7 +738,7 @@ export default function WeightGMDChart({ corrales, onNavigateToIA }) {
               <div className="flex items-center justify-between mb-3">
                 <h4 className="text-xs font-black uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
                   <Layers size={14} className="text-blue-600" />
-                  Desglose Cronológico de Cortes en TimescaleDB (Izquierda: Inicio → Derecha: Actual)
+                  Desglose Cronológico de Controles de Peso (Izquierda: Inicio → Derecha: Actual)
                 </h4>
                 <span className="text-[11px] text-slate-400 font-semibold">
                   Haz clic o pasa el cursor sobre cualquier corte para inspeccionarlo

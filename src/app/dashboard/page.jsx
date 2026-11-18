@@ -44,7 +44,7 @@ export default function DashboardPage() {
       console.error("Error al cargar datos del dashboard:", err);
       setError(
         err.message ||
-          "No fue posible conectar con el servidor analítico de PorciTech. Verifique que la API de FastAPI esté activa."
+          "No fue posible conectar con el servidor de PorciTech. Verifique su conexión e intente nuevamente."
       );
     } finally {
       setIsLoading(false);
@@ -72,7 +72,7 @@ export default function DashboardPage() {
             Resumen Operativo de Granja
           </h1>
           <p className="text-sm text-slate-500 mt-1">
-            Métricas analíticas consolidadas con TimescaleDB y visión artificial
+            Indicadores productivos, sanitarios y reproductivos en tiempo real
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -88,10 +88,10 @@ export default function DashboardPage() {
             Actualizar
           </Button>
           <div className="rounded-2xl bg-slate-950 px-4 sm:px-5 py-2.5 sm:py-3 text-white">
-            <p className="text-xs text-slate-400">Motor analítico</p>
+            <p className="text-xs text-slate-400">Estado de granja</p>
             <p className="text-sm font-black flex items-center gap-1.5">
               <Activity className="h-4 w-4 text-emerald-400" />
-              TimescaleDB + AI
+              Monitoreo Activo
             </p>
           </div>
         </div>

@@ -93,7 +93,7 @@ export default function FeedingPlansAndFCRSection({
       });
       if (onRefresh) await onRefresh();
     } catch (err) {
-      toast.error(err.message || "Error al guardar el plan de alimentación (requiere rol Admin/Veterinario).");
+      toast.error(err.message || "No se pudo guardar el plan de alimentación.");
     } finally {
       setIsSavingPlan(false);
     }

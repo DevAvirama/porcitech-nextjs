@@ -24,7 +24,7 @@ export default function UserListTab({
             Personal y Usuarios del Sistema
           </h3>
           <p className="text-xs text-slate-400 font-bold mt-1 uppercase tracking-wider">
-            Directorio oficial sincronizado con base de datos PostgreSQL
+            Directorio oficial de personal autorizado en la granja
           </p>
         </div>
 
@@ -76,7 +76,7 @@ export default function UserListTab({
                   <div className="flex flex-col items-center justify-center gap-2">
                     <RefreshCw className="w-6 h-6 text-emerald-600 animate-spin" />
                     <span className="text-sm font-semibold text-slate-500">
-                      Consultando personal en PostgreSQL...
+                      Consultando directorio de personal...
                     </span>
                   </div>
                 </td>

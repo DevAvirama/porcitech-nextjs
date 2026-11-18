@@ -195,7 +195,7 @@ export default function AddHealthRecordModal({ isOpen, onClose, onSaved }) {
 
     if (selectedLotObj && selectedLotObj.estado_vencimiento === "vencido") {
       toast.error(
-        `Bloqueado (HU30): El lote ${selectedLotObj.numero_lote} venció el ${selectedLotObj.fecha_vencimiento}. No se puede aplicar.`
+        `Operación bloqueada: El lote ${selectedLotObj.numero_lote} venció el ${selectedLotObj.fecha_vencimiento}. No se puede aplicar.`
       );
       return;
     }
@@ -265,7 +265,7 @@ export default function AddHealthRecordModal({ isOpen, onClose, onSaved }) {
               Registro de Evento Sanitario
             </h2>
             <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">
-              Procedimiento Clínico en PostgreSQL
+              Procedimiento Clínico y Sanitario
             </p>
           </div>
         </div>

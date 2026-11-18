@@ -70,7 +70,7 @@ export function useHealthData() {
       console.error("Error al cargar datos sanitarios:", err);
       setError(
         err.message ||
-          "No se pudieron sincronizar los datos de sanidad con el backend de FastAPI.",
+          "No se pudieron cargar los datos de sanidad. Intente nuevamente.",
       );
     } finally {
       setIsLoading(false);

@@ -202,7 +202,7 @@ export default function ReproductionView() {
       }
 
       await createFarrowing(payload);
-      toast.success("Parto y camada registrados en PostgreSQL");
+      toast.success("Parto y camada registrados exitosamente");
       setIsFarrowingModalOpen(false);
       await loadReproductionData(false);
       return true;
@@ -269,7 +269,7 @@ export default function ReproductionView() {
       <ModuleHeader
         category="REPRODUCCIÓN Y CICLO BIOLÓGICO"
         title="Gestión Reproductiva, Partos y Destetes"
-        description="Seguimiento analítico de servicios reproductivos (+114 días de gestación), camadas nacidas y transición a precebo en PostgreSQL."
+        description="Seguimiento de servicios reproductivos (114 días de gestación), camadas nacidas y transición a precebo."
         actions={
           <div className="flex flex-wrap items-center gap-2">
             {activeTab === "services" && (
