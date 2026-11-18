@@ -1,18 +1,11 @@
-import BrandMark from '../../../components/BrandMark.jsx'
+import AuthShowcase from './AuthShowcase.jsx'
 
 function LoginShowcase() {
   return (
-    <div className="flex flex-col items-center gap-16 text-center">
-      <BrandMark light />
-      <div className="max-w-xl">
-        <p className="text-sm font-semibold uppercase tracking-[0.25em] text-emerald-300">
-          Acceso seguro
-        </p>
-        <h1 className="mt-4 text-5xl font-black tracking-tight">
-          Bienvenido al Sistema Integral de Gestion Porcina
-        </h1>
-      </div>
-    </div>
+    <AuthShowcase
+      eyebrow="Acceso seguro"
+      title="Bienvenido al Sistema Integral de Gestión Porcina"
+    />
   )
 }
 
