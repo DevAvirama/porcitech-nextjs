@@ -59,11 +59,11 @@ export default function PrintableReportPreview({
       </div>
 
       {/* Plantilla A4 / Printable Document Container */}
-      <Card className="printable-report bg-white text-slate-900 p-8 sm:p-12 print:p-8 shadow-xl border border-slate-200 rounded-[2.5rem] print:rounded-3xl max-w-225 mx-auto space-y-8 print:space-y-6 font-sans">
+      <Card className="printable-report bg-white text-slate-900 p-5 sm:p-8 md:p-12 print:p-8 shadow-xl border border-slate-200 rounded-[2.5rem] print:rounded-3xl max-w-225 mx-auto space-y-6 sm:space-y-8 print:space-y-6 font-sans">
         {/* Header del Documento PDF */}
-        <div className="flex justify-between items-start border-b-4 border-slate-900 pb-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start gap-4 border-b-4 border-slate-900 pb-6">
           <div className="space-y-1">
-            <h1 className="text-3xl font-black tracking-tight text-slate-950 uppercase italic">
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-950 uppercase italic">
               Porci<span className="text-emerald-600">Tech</span>
             </h1>
             <p className="text-xs font-black uppercase text-slate-500 tracking-widest">
@@ -73,7 +73,7 @@ export default function PrintableReportPreview({
               Alineado con estándares de bioseguridad ICA
             </p>
           </div>
-          <div className="text-right space-y-1 text-xs">
+          <div className="sm:text-right space-y-1 text-xs">
             <div className="bg-slate-100 text-slate-800 px-3 py-1 rounded-md font-bold inline-block">
               CÓDIGO: {activeReport.code}
             </div>
@@ -87,11 +87,11 @@ export default function PrintableReportPreview({
         </div>
 
         {/* Título de Reporte */}
-        <div className="text-center py-4 bg-slate-50 rounded-2xl border border-slate-100">
-          <h2 className="text-2xl font-black text-slate-900 tracking-tight uppercase italic">
+        <div className="text-center py-4 px-3 bg-slate-50 rounded-2xl border border-slate-100">
+          <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight uppercase italic">
             {activeReport.title}
           </h2>
-          <div className="flex justify-center gap-6 mt-2 text-xs font-bold text-slate-500">
+          <div className="flex flex-wrap justify-center gap-2 sm:gap-6 mt-2 text-xs font-bold text-slate-500">
             <span className="flex items-center gap-1">
               <Calendar size={14} /> <strong>Rango:</strong>{" "}
               {activeReport.rangeLabel}

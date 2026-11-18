@@ -28,12 +28,12 @@ export default function ProfileSecurityTab({
   onUpdatePassword,
 }) {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
       {/* Formulario de Perfil */}
       <Card
         as="form"
         onSubmit={onSaveProfile}
-        className="p-8 bg-white border border-slate-100 shadow-sm rounded-4xl flex flex-col gap-6 justify-between"
+        className="p-5 sm:p-8 bg-white border border-slate-100 shadow-sm rounded-4xl flex flex-col gap-6 justify-between"
       >
         <div className="space-y-6">
           <h3 className="text-xl font-black text-slate-900 flex items-center gap-2 border-b pb-3 border-slate-100">
@@ -108,7 +108,7 @@ export default function ProfileSecurityTab({
       <Card
         as="form"
         onSubmit={onUpdatePassword}
-        className="p-8 bg-white border border-slate-100 shadow-sm rounded-4xl flex flex-col gap-6 justify-between"
+        className="p-5 sm:p-8 bg-white border border-slate-100 shadow-sm rounded-4xl flex flex-col gap-6 justify-between"
       >
         <div className="space-y-6">
           <h3 className="text-xl font-black text-slate-900 flex items-center gap-2 border-b pb-3 border-slate-100">

@@ -8,7 +8,7 @@ import { formatCount } from "../../../utils/formatters.js";
 function StatsGrid({ kpis, isLoading = false }) {
   if (isLoading) {
     return (
-      <section className="mt-6 grid gap-5 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+      <section className="mt-6 grid grid-cols-1 gap-4 sm:gap-5 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
         {[1, 2, 3, 4, 5].map((item) => (
           <Card key={item} className="animate-pulse">
             <div className="flex items-start justify-between">
@@ -77,7 +77,7 @@ function StatsGrid({ kpis, isLoading = false }) {
   const gmdProgressWidth = hasGmdData ? Math.min(100, Math.round((gmdPromedio / 1.0) * 100)) : 0;
 
   return (
-    <section className="mt-6 grid gap-5 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+    <section className="mt-6 grid grid-cols-1 gap-4 sm:gap-5 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
       {/* 1. Total Animales */}
       <Card>
         <div className="flex items-start justify-between">
@@ -227,7 +227,7 @@ function StatsGrid({ kpis, isLoading = false }) {
             {totalAlertas > 0 ? "Requiere acción" : "Al día"}
           </span>
         </div>
-        <div className="mt-4 flex items-center justify-between text-xs text-slate-500 font-medium">
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 font-medium">
           <span>Sanidad: {alertasSanitarias}</span>
           <span>Stock: {alertasStock}</span>
           {alertasMaternidad > 0 && (

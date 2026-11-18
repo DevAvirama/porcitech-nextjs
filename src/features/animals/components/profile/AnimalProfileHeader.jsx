@@ -16,10 +16,10 @@ export default function AnimalProfileHeader({
   onNavigateHealth,
 }) {
   return (
-    <Card className="p-8! border border-slate-100 bg-white rounded-4xl shadow-sm">
+    <Card className="p-5! sm:p-8! border border-slate-100 bg-white rounded-4xl shadow-sm">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="flex items-center gap-6">
-          <div className="h-24 w-24 rounded-3xl bg-indigo-50 flex items-center justify-center border-2 border-indigo-100">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 min-w-0">
+          <div className="h-20 w-20 sm:h-24 sm:w-24 shrink-0 rounded-3xl bg-indigo-50 flex items-center justify-center border-2 border-indigo-100">
             <span className="text-3xl font-black text-indigo-300">
               🐷
             </span>

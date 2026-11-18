@@ -13,15 +13,15 @@ export default function ModuleHeader({
   return (
     <Card
       as="header"
-      className={`w-full rounded-4xl p-6 lg:p-8 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between mb-2 bg-white border border-slate-100 shadow-sm ${className}`}
+      className={`w-full rounded-4xl p-5 sm:p-6 lg:p-8 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between mb-2 bg-white border border-slate-100 shadow-sm ${className}`}
     >
-      <div className="space-y-1 flex-1">
+      <div className="space-y-1 flex-1 min-w-0">
         {category && (
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-700">
             {category}
           </p>
         )}
-        <h1 className="text-3xl lg:text-4xl font-black text-slate-955 text-slate-950 tracking-tight">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-955 text-slate-950 tracking-tight break-words">
           {title}
         </h1>
         {description && (
@@ -31,7 +31,7 @@ export default function ModuleHeader({
         )}
       </div>
       {actions && (
-        <div className="flex items-center gap-3 shrink-0 mt-2 lg:mt-0">
+        <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 w-full sm:w-auto lg:shrink-0 mt-1 lg:mt-0">
           {actions}
         </div>
       )}

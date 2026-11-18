@@ -96,20 +96,20 @@ export default function SettingsView() {
 
       {/* Tabs Selector exclusivo para Administrador */}
       {isAdmin && (
-        <div className="flex flex-wrap items-center gap-2 bg-white p-2 rounded-2xl shadow-xs border border-slate-200/80 w-fit">
+        <div className="flex flex-wrap items-center gap-2 bg-white p-2 rounded-2xl shadow-xs border border-slate-200/80 w-full sm:w-fit">
           <button
             type="button"
             onClick={() => setActiveTab("usuarios")}
-            className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center gap-2 cursor-pointer ${
+            className={`px-3.5 sm:px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center gap-2 cursor-pointer ${
               activeTab === "usuarios"
                 ? "bg-slate-900 text-white shadow-md"
                 : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
             }`}
           >
-            <Users className="w-4 h-4" />
-            Gestión de Personal / Usuarios
+            <Users className="w-4 h-4 shrink-0" />
+            <span>Gestión de Personal / Usuarios</span>
             <span
-              className={`ml-1.5 px-2 py-0.5 text-xs rounded-full font-bold ${
+              className={`ml-1 px-2 py-0.5 text-xs rounded-full font-bold ${
                 activeTab === "usuarios"
                   ? "bg-slate-700 text-white"
                   : "bg-slate-200 text-slate-700"
@@ -122,14 +122,14 @@ export default function SettingsView() {
           <button
             type="button"
             onClick={() => setActiveTab("perfil")}
-            className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center gap-2 cursor-pointer ${
+            className={`px-3.5 sm:px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center gap-2 cursor-pointer ${
               activeTab === "perfil"
                 ? "bg-slate-900 text-white shadow-md"
                 : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
             }`}
           >
-            <User className="w-4 h-4" />
-            Mi Cuenta y Seguridad
+            <User className="w-4 h-4 shrink-0" />
+            <span>Mi Cuenta y Seguridad</span>
           </button>
         </div>
       )}

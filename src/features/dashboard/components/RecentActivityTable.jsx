@@ -115,18 +115,18 @@ function RecentActivityTable({ rows, activities, isLoading = false }) {
   ];
 
   return (
-    <Card className="flex flex-col justify-between">
-      <div>
-        <div className="flex items-center justify-between">
+    <Card className="flex flex-col justify-between min-w-0">
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h3 className="text-2xl font-black text-slate-950">
+            <h3 className="text-xl sm:text-2xl font-black text-slate-950">
               Actividad Reciente
             </h3>
             <p className="text-xs font-medium text-slate-500 mt-1">
               Últimos eventos registrados en tiempo real por el equipo operativo
             </p>
           </div>
-          <span className="rounded-xl bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-600">
+          <span className="rounded-xl bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-600 shrink-0">
             {data.length} eventos
           </span>
         </div>

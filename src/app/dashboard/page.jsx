@@ -61,21 +61,21 @@ export default function DashboardPage() {
         as="header"
         className="flex flex-col gap-4 mb-6 rounded-4xl lg:flex-row lg:items-end lg:justify-between"
       >
-        <div>
+        <div className="min-w-0">
           <div className="flex items-center gap-2">
             <span className="flex h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-700">
               Dashboard Analítico en Vivo
             </p>
           </div>
-          <h1 className="mt-2 text-3xl md:text-4xl font-black tracking-tight text-slate-950">
+          <h1 className="mt-2 text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-slate-950">
             Resumen Operativo de Granja
           </h1>
           <p className="text-sm text-slate-500 mt-1">
             Métricas analíticas consolidadas con TimescaleDB y visión artificial
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <Button
             onClick={loadDashboardData}
             tone="soft"
@@ -87,7 +87,7 @@ export default function DashboardPage() {
             />
             Actualizar
           </Button>
-          <div className="rounded-2xl bg-slate-950 px-5 py-3 text-white">
+          <div className="rounded-2xl bg-slate-950 px-4 sm:px-5 py-2.5 sm:py-3 text-white">
             <p className="text-xs text-slate-400">Motor analítico</p>
             <p className="text-sm font-black flex items-center gap-1.5">
               <Activity className="h-4 w-4 text-emerald-400" />
@@ -127,7 +127,7 @@ export default function DashboardPage() {
 
       <QuickActions actions={QUICK_ACTIONS} />
 
-      <section className="mt-6 grid gap-6 2xl:grid-cols-[1.25fr_0.75fr]">
+      <section className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-[1.25fr_0.75fr]">
         <RecentActivityTable
           rows={recentActivity}
           isLoading={isLoading}

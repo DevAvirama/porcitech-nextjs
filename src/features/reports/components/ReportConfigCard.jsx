@@ -19,13 +19,13 @@ export default function ReportConfigCard({
   onExportFile,
 }) {
   return (
-    <Card className="p-6 md:p-8 bg-white border border-slate-100 shadow-sm rounded-4xl">
+    <Card className="p-5 sm:p-6 md:p-8 bg-white border border-slate-100 shadow-sm rounded-4xl">
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
+        <div className="w-10 h-10 shrink-0 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
           <FileText size={20} />
         </div>
         <div>
-          <h2 className="text-lg font-black text-slate-900">
+          <h2 className="text-base sm:text-lg font-black text-slate-900">
             Generar Nuevo Informe Oficial
           </h2>
           <p className="text-xs text-slate-500 font-medium">
@@ -34,7 +34,7 @@ export default function ReportConfigCard({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 items-end">
         {/* 1. Tipo de Reporte */}
         <div className="space-y-1.5">
           <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">

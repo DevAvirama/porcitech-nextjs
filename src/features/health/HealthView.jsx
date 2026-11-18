@@ -72,12 +72,12 @@ export default function HealthView() {
       />
 
       {/* Selector de Pestañas Principales */}
-      <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-        <div className="flex gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-3">
+        <div className="flex flex-wrap gap-2">
           <button
             type="button"
             onClick={() => setActiveTab("clinical")}
-            className={`px-4 py-2 rounded-xl text-sm font-black transition-all flex items-center gap-2 cursor-pointer ${
+            className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center gap-2 cursor-pointer ${
               activeTab === "clinical"
                 ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/20"
                 : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
@@ -89,7 +89,7 @@ export default function HealthView() {
           <button
             type="button"
             onClick={() => setActiveTab("biosecurity")}
-            className={`px-4 py-2 rounded-xl text-sm font-black transition-all flex items-center gap-2 cursor-pointer ${
+            className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center gap-2 cursor-pointer ${
               activeTab === "biosecurity"
                 ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/20"
                 : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
@@ -104,7 +104,7 @@ export default function HealthView() {
           type="button"
           onClick={() => loadHealthData(false)}
           disabled={isRefreshing}
-          className="text-xs font-semibold text-slate-500 hover:text-emerald-600 flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-all cursor-pointer"
+          className="text-xs font-semibold text-slate-500 hover:text-emerald-600 flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-all cursor-pointer self-start sm:self-auto"
         >
           <RefreshCw
             size={13}

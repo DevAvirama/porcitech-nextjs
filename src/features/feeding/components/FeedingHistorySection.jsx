@@ -28,12 +28,12 @@ export default function FeedingHistorySection({
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="relative">
+        <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
+          <div className="relative flex-1 sm:flex-initial">
             <select
               value={filterCorral}
               onChange={(e) => setFilterCorral(e.target.value)}
-              className="p-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 font-semibold text-xs outline-none cursor-pointer pr-8 shadow-xs"
+              className="w-full sm:w-auto p-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 font-semibold text-xs outline-none cursor-pointer pr-8 shadow-xs"
             >
               <option value="all">Todos los Corrales</option>
               {corrales.map((c) => (

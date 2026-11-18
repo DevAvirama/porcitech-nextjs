@@ -283,13 +283,15 @@ export default function InventoryProfileView() {
             <ArrowLeft size={16} />
             <span>Volver al Inventario</span>
           </button>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <span className="font-mono text-xs font-black text-slate-700 bg-slate-100 px-2.5 py-1 rounded-lg">
               {item.codigo_sku}
             </span>
-            <h1 className="text-3xl font-black text-slate-950">{item.nombre}</h1>
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-950 break-words">
+              {item.nombre}
+            </h1>
           </div>
-          <p className="text-xs text-slate-500 flex items-center gap-1.5 mt-1">
+          <p className="text-xs text-slate-500 flex flex-wrap items-center gap-1.5 mt-1">
             <Warehouse className="h-3.5 w-3.5" />
             Ubicación: <strong>{item.ubicacion_bodega || "Bodega Central"}</strong> · Categoría:{" "}
             <span className="capitalize font-bold text-indigo-600">

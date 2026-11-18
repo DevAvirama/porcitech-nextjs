@@ -303,14 +303,14 @@ export default function ReportsDashboard({
       )}
 
       {/* Gráficos Interactivos Conectados a TimescaleDB y PostgreSQL */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mt-8">
         {/* Gráfica de Crecimiento Global (Real vs Ideal) */}
-        <Card className="p-6 border border-slate-100 flex flex-col justify-between rounded-4xl bg-white shadow-xs">
+        <Card className="p-5 sm:p-6 border border-slate-100 flex flex-col justify-between rounded-4xl bg-white shadow-xs min-w-0">
           <div>
             <div className="flex flex-wrap justify-between items-start gap-3 mb-4">
               <div>
-                <h3 className="text-xl font-black italic text-slate-800 flex items-center gap-2">
-                  <TrendingUp className="text-blue-500 h-6 w-6" />{" "}
+                <h3 className="text-lg sm:text-xl font-black italic text-slate-800 flex items-center gap-2">
+                  <TrendingUp className="text-blue-500 h-6 w-6 shrink-0" />{" "}
                   Crecimiento Global
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
@@ -318,7 +318,7 @@ export default function ReportsDashboard({
                 </p>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 {corrales.length > 0 && setSelectedBatch && (
                   <select
                     value={selectedBatch}
@@ -354,7 +354,7 @@ export default function ReportsDashboard({
             ) : (
               <>
                 {/* Mini KPIs Superiores de la Curva */}
-                <div className="grid grid-cols-3 gap-2.5 mb-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-3">
                   <div className="bg-slate-50 border border-slate-100 rounded-xl p-2.5">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
                       Peso Prom. Actual

@@ -212,16 +212,16 @@ const AnimalsView = () => {
           </div>
 
           {/* Filtros por Corral y Estado */}
-          <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+          <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 w-full lg:w-auto">
             {/* Filtro de Corrales */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-1 sm:flex-initial min-w-[140px]">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider hidden sm:inline">
                 Corral:
               </span>
               <select
                 value={selectedCorral}
                 onChange={(e) => setSelectedCorral(e.target.value)}
-                className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-emerald-500 cursor-pointer"
+                className="w-full sm:w-auto px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-emerald-500 cursor-pointer"
               >
                 <option value="all">Todos los corrales</option>
                 {corrales.map((c) => (
@@ -233,14 +233,14 @@ const AnimalsView = () => {
             </div>
 
             {/* Filtro de Estado */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-1 sm:flex-initial min-w-[140px]">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider hidden sm:inline">
                 Fase:
               </span>
               <select
                 value={selectedEstado}
                 onChange={(e) => setSelectedEstado(e.target.value)}
-                className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-emerald-500 cursor-pointer"
+                className="w-full sm:w-auto px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-emerald-500 cursor-pointer"
               >
                 <option value="all">Todas las fases</option>
                 <option value="activo">Activo</option>
@@ -259,7 +259,7 @@ const AnimalsView = () => {
               onClick={loadAnimals}
               title="Recargar datos desde la base de datos"
               disabled={isLoading}
-              className="p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
+              className="p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-slate-600 hover:text-slate-900 transition-colors cursor-pointer shrink-0"
             >
               <RefreshCw
                 size={16}
@@ -271,7 +271,7 @@ const AnimalsView = () => {
 
         {/* ALERTA DE ERROR DE CONEXIÓN */}
         {error && (
-          <div className="flex items-start justify-between gap-4 p-5 rounded-3xl bg-amber-50 border border-amber-200 text-amber-900">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-3xl bg-amber-50 border border-amber-200 text-amber-900">
             <div className="flex items-start gap-3">
               <AlertTriangle className="shrink-0 text-amber-600 mt-0.5" size={20} />
               <div>

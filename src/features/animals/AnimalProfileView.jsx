@@ -99,7 +99,7 @@ export default function AnimalProfileView() {
         title={`Hoja de Vida Porcina: ${getAnimalDisplayName(animal)}`}
         description={`${animal.raza} • ${animal.sexo} • Edad: ${calcularEdad(animal.fechaNacimiento)} • ${animal.lote}`}
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               tone="soft"
               onClick={() => setIsQrModalOpen(true)}
@@ -144,7 +144,7 @@ export default function AnimalProfileView() {
               ))}
             </div>
 
-            <div className="p-6 mt-4 border-t border-slate-100">
+            <div className="p-4 sm:p-6 mt-3 sm:mt-4 border-t border-slate-100">
               {activeTab === "resumen" && (
                 <ProfileResumenTab
                   animal={animal}

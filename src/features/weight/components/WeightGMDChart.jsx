@@ -338,7 +338,7 @@ export default function WeightGMDChart({ corrales, onNavigateToIA }) {
           <select
             value={analyticsCorralId}
             onChange={(e) => setAnalyticsCorralId(e.target.value)}
-            className="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-black text-slate-900 outline-none focus:border-blue-500 cursor-pointer shadow-xs"
+            className="flex-1 sm:flex-initial px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-black text-slate-900 outline-none focus:border-blue-500 cursor-pointer shadow-xs"
           >
             {corrales.map((c) => (
               <option key={c.id} value={c.id}>

@@ -38,8 +38,9 @@ export default function LandingView() {
             Innovacion SENA
           </div>
           <div className="space-y-4">
-            <h1 className="text-5xl font-black tracking-tight text-sena-blue sm:text-[3.5rem] leading-[1.1]">
-              El futuro de la <br /> porcicultura es <br />
+            <h1 className="text-4xl font-black tracking-tight text-sena-blue sm:text-5xl lg:text-[3.5rem] leading-[1.1]">
+              El futuro de la <br className="hidden sm:inline" /> porcicultura es{" "}
+              <br className="hidden sm:inline" />
               <span className="text-sena-green relative">
                 Inteligente
                 <div className="absolute -bottom-2 left-0 h-1.5 w-full bg-sena-green/20 rounded-full"></div>

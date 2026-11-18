@@ -16,11 +16,11 @@ export default function UserListTab({
   onDeleteUser,
 }) {
   return (
-    <Card className="rounded-[2.5rem]! p-8 bg-white border border-slate-100 shadow-sm flex flex-col gap-6">
+    <Card className="rounded-[2.5rem]! p-5 sm:p-8 bg-white border border-slate-100 shadow-sm flex flex-col gap-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-slate-100">
         <div>
-          <h3 className="text-xl font-black text-slate-900 flex items-center gap-2">
-            <Users className="text-purple-600 w-6 h-6" />
+          <h3 className="text-lg sm:text-xl font-black text-slate-900 flex items-center gap-2">
+            <Users className="text-purple-600 w-6 h-6 shrink-0" />
             Personal y Usuarios del Sistema
           </h3>
           <p className="text-xs text-slate-400 font-bold mt-1 uppercase tracking-wider">
@@ -28,7 +28,7 @@ export default function UserListTab({
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
           <Button
             type="button"
             tone="soft"
